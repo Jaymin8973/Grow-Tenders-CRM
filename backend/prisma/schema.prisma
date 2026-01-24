@@ -1,0 +1,656 @@
+// This is your Prisma schema file for MongoDB
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum Role {
+  SUPER_ADMIN
+  MANAGER
+  EMPLOYEE
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL
+  NEGOTIATION
+  WON
+  LOST
+}
+
+enum LeadSource {
+  WEBSITE
+  REFERRAL
+  COLD_CALL
+  SOCIAL_MEDIA
+  ADVERTISEMENT
+  TRADE_SHOW
+  OTHER
+}
+
+enum CustomerLifecycle {
+  LEAD
+  PROSPECT
+  CUSTOMER
+  CHURNED
+}
+
+enum DealStage {
+  QUALIFICATION
+  NEEDS_ANALYSIS
+  PROPOSAL
+  NEGOTIATION
+  CLOSED_WON
+  CLOSED_LOST
+}
+
+enum ActivityType {
+  CALL
+  MEETING
+  DEMO
+  EMAIL
+  TASK
+  REMINDER
+  FOLLOW_UP
+}
+
+enum ActivityStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  OVERDUE
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum TenderStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+  AWARDED
+}
+
+enum NotificationType {
+  LEAD_ASSIGNED
+  DEAL_UPDATE
+  ACTIVITY_REMINDER
+  INVOICE_CREATED
+  TENDER_PUBLISHED
+  FOLLOW_UP_OVERDUE
+  SYSTEM_ALERT
+}
+
+enum ScrapedTenderStatus {
+  ACTIVE
+  EXPIRED
+  CLOSED
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CHEQUE
+  UPI
+  CARD
+  OTHER
+}
+
+enum GstType {
+  WITH_GST
+  WITHOUT_GST
+}
+
+enum ReferenceType {
+  INTERNAL
+  EXTERNAL
+}
+
+// Models
+
+// Branch Model for multi-branch support
+model Branch {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String   @unique
+  code        String   @unique
+  address     String?
+  phone       String?
+  email       String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  users       User[]
+  leads       Lead[]
+  customers   Customer[]
+  deals       Deal[]
+
+  @@map("branches")
+}
+
+model User {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  email         String   @unique
+  password      String
+  firstName     String
+  lastName      String
+  role          Role     @default(EMPLOYEE)
+  phone         String?
+  avatar        String?
+  isActive      Boolean  @default(true)
+  
+  // Branch relation (optional for Super Admin)
+  branchId      String?  @db.ObjectId
+  branch        Branch?  @relation(fields: [branchId], references: [id])
+  
+  // Manager relation
+  managerId     String?  @db.ObjectId
+  manager       User?    @relation("ManagerEmployees", fields: [managerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  employees     User[]   @relation("ManagerEmployees")
+  
+  refreshToken  String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  leadsAssigned         Lead[]         @relation("LeadAssignee")
+  leadsCreated          Lead[]         @relation("LeadCreator")
+  customersAssigned     Customer[]     @relation("CustomerAssignee")
+  dealsOwned            Deal[]         @relation("DealOwner")
+  activitiesAssigned    Activity[]     @relation("ActivityAssignee")
+  activitiesCreated     Activity[]     @relation("ActivityCreator")
+  invoicesCreated       Invoice[]      @relation("InvoiceCreator")
+  tendersCreated        Tender[]       @relation("TenderCreator")
+  paymentsCreated       Payment[]      @relation("PaymentCreator")
+  notifications         Notification[]
+  auditLogs             AuditLog[]
+
+  @@map("users")
+}
+
+model Lead {
+  id            String      @id @default(auto()) @map("_id") @db.ObjectId
+  title         String
+  firstName     String
+  lastName      String
+  email         String
+  phone         String?
+  company       String?
+  position      String?
+  status        LeadStatus  @default(NEW)
+  source        LeadSource  @default(OTHER)
+  value         Float?
+  description   String?
+  address       String?
+  city          String?
+  state         String?
+  country       String?
+  website       String?
+  
+  assigneeId    String?     @db.ObjectId
+  assignee      User?       @relation("LeadAssignee", fields: [assigneeId], references: [id])
+  
+  createdById   String      @db.ObjectId
+  createdBy     User        @relation("LeadCreator", fields: [createdById], references: [id])
+  
+  // Branch relation
+  branchId      String?     @db.ObjectId
+  branch        Branch?     @relation(fields: [branchId], references: [id])
+  
+  convertedToCustomerId String? @db.ObjectId
+  
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  // Relations
+  activities    Activity[]
+  deals         Deal[]
+  notes         Note[]
+  attachments   Attachment[]
+  emailLogs     EmailLog[]
+
+  @@map("leads")
+}
+
+model Customer {
+  id            String            @id @default(auto()) @map("_id") @db.ObjectId
+  firstName     String
+  lastName      String
+  email         String            @unique
+  phone         String?
+  company       String?
+  position      String?
+  lifecycle     CustomerLifecycle @default(PROSPECT)
+  address       String?
+  city          String?
+  state         String?
+  country       String?
+  website       String?
+  industry      String?
+  annualRevenue Float?
+  notes         String?
+  
+  assigneeId    String?           @db.ObjectId
+  assignee      User?             @relation("CustomerAssignee", fields: [assigneeId], references: [id])
+  
+  // Branch relation
+  branchId      String?           @db.ObjectId
+  branch        Branch?           @relation(fields: [branchId], references: [id])
+  
+  leadId        String?           @db.ObjectId
+  
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  // Relations
+  deals              Deal[]
+  activities         Activity[]
+  invoices           Invoice[]
+  payments           Payment[]
+  attachments        Attachment[]
+  emailLogs          EmailLog[]
+  tenderSubscriptions TenderSubscription[]
+  customerNotes      Note[]
+
+  @@map("customers")
+}
+
+model Deal {
+  id              String      @id @default(auto()) @map("_id") @db.ObjectId
+  title           String
+  value           Float
+  stage           DealStage   @default(QUALIFICATION)
+  probability     Int         @default(10)
+  expectedCloseDate DateTime?
+  actualCloseDate DateTime?
+  description     String?
+  
+  leadId          String?     @db.ObjectId
+  lead            Lead?       @relation(fields: [leadId], references: [id])
+  
+  customerId      String?     @db.ObjectId
+  customer        Customer?   @relation(fields: [customerId], references: [id])
+  
+  ownerId         String      @db.ObjectId
+  owner           User        @relation("DealOwner", fields: [ownerId], references: [id])
+  
+  // Branch relation
+  branchId        String?     @db.ObjectId
+  branch          Branch?     @relation(fields: [branchId], references: [id])
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  // Relations
+  activities      Activity[]
+  invoices        Invoice[]
+  notes           Note[]
+  attachments     Attachment[]
+
+  @@map("deals")
+}
+
+model Activity {
+  id            String         @id @default(auto()) @map("_id") @db.ObjectId
+  title         String
+  type          ActivityType
+  status        ActivityStatus @default(SCHEDULED)
+  description   String?
+  scheduledAt   DateTime
+  completedAt   DateTime?
+  duration      Int?           // in minutes
+  location      String?
+  outcome       String?
+  
+  assigneeId    String         @db.ObjectId
+  assignee      User           @relation("ActivityAssignee", fields: [assigneeId], references: [id])
+  
+  createdById   String         @db.ObjectId
+  createdBy     User           @relation("ActivityCreator", fields: [createdById], references: [id])
+  
+  leadId        String?        @db.ObjectId
+  lead          Lead?          @relation(fields: [leadId], references: [id])
+  
+  customerId    String?        @db.ObjectId
+  customer      Customer?      @relation(fields: [customerId], references: [id])
+  
+  dealId        String?        @db.ObjectId
+  deal          Deal?          @relation(fields: [dealId], references: [id])
+  
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@map("activities")
+}
+
+model Invoice {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  invoiceNumber   String         @unique
+  status          InvoiceStatus  @default(DRAFT)
+  
+  // Company Details
+  companyName     String
+  companyAddress  String?
+  companyPhone    String?
+  companyEmail    String?
+  companyLogo     String?
+  
+  // Customer Details
+  customerId      String         @db.ObjectId
+  customer        Customer       @relation(fields: [customerId], references: [id])
+  
+  // Deal reference
+  dealId          String?        @db.ObjectId
+  deal            Deal?          @relation(fields: [dealId], references: [id])
+  
+  // Financial
+  subtotal        Float
+  taxRate         Float          @default(0)
+  taxAmount       Float          @default(0)
+  discount        Float          @default(0)
+  discountType    String?        // 'percentage' or 'fixed'
+  total           Float
+  
+  // Payment Terms
+  paymentTerms    String?
+  dueDate         DateTime?
+  paidDate        DateTime?
+  
+  notes           String?
+  termsConditions String?
+  
+  // Created by
+  createdById     String         @db.ObjectId
+  createdBy       User           @relation("InvoiceCreator", fields: [createdById], references: [id])
+  
+  // PDF
+  pdfUrl          String?
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // Relations
+  lineItems       InvoiceLineItem[]
+  emailLogs       EmailLog[]
+  payments        Payment[]
+
+  @@map("invoices")
+}
+
+model InvoiceLineItem {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  invoiceId   String   @db.ObjectId
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  
+  description String
+  quantity    Int
+  unitPrice   Float
+  total       Float
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("invoice_line_items")
+}
+
+model TenderCategory {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  name        String    @unique
+  description String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  tenders     Tender[]
+
+  @@map("tender_categories")
+}
+
+model Tender {
+  id            String       @id @default(auto()) @map("_id") @db.ObjectId
+  title         String
+  description   String
+  status        TenderStatus @default(DRAFT)
+  
+  categoryId    String       @db.ObjectId
+  category      TenderCategory @relation(fields: [categoryId], references: [id])
+  
+  openDate      DateTime
+  closeDate     DateTime
+  value         Float?
+  
+  requirements  String?
+  
+  createdById   String       @db.ObjectId
+  createdBy     User         @relation("TenderCreator", fields: [createdById], references: [id])
+  
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  // Relations
+  attachments   Attachment[]
+  emailLogs     EmailLog[]
+
+  @@map("tenders")
+}
+
+model TenderSubscription {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  customerId  String    @db.ObjectId
+  customer    Customer  @relation(fields: [customerId], references: [id])
+  
+  categories  String[]  // Array of category keywords
+  states      String[]  // Array of state names for matching
+  isActive    Boolean   @default(true)
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([customerId])
+  @@map("tender_subscriptions")
+}
+
+model ScrapedTender {
+  id            String              @id @default(auto()) @map("_id") @db.ObjectId
+  bidNo         String              @unique
+  title         String
+  description   String?
+  category      String?
+  state         String?
+  location      String?
+  department    String?
+  items         Int?
+  quantity      String?
+  startDate     DateTime?
+  endDate       DateTime?
+  status        ScrapedTenderStatus @default(ACTIVE)
+  source        String              @default("GeM")
+  sourceUrl     String?
+  
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  @@index([status])
+  @@index([state])
+  @@index([endDate])
+  @@map("scraped_tenders")
+}
+
+model EmailTemplate {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  name        String    @unique
+  subject     String
+  body        String
+  type        String    // invoice, tender, notification, etc.
+  variables   String[]  // List of available variables
+  isActive    Boolean   @default(true)
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("email_templates")
+}
+
+model EmailLog {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  to          String
+  cc          String?
+  bcc         String?
+  subject     String
+  body        String
+  status      String    // sent, failed, pending
+  error       String?
+  
+  // Optional references
+  customerId  String?   @db.ObjectId
+  customer    Customer? @relation(fields: [customerId], references: [id])
+  
+  leadId      String?   @db.ObjectId
+  lead        Lead?     @relation(fields: [leadId], references: [id])
+  
+  invoiceId   String?   @db.ObjectId
+  invoice     Invoice?  @relation(fields: [invoiceId], references: [id])
+  
+  tenderId    String?   @db.ObjectId
+  tender      Tender?   @relation(fields: [tenderId], references: [id])
+  
+  createdAt   DateTime  @default(now())
+
+  @@map("email_logs")
+}
+
+model Notification {
+  id          String           @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String           @db.ObjectId
+  user        User             @relation(fields: [userId], references: [id])
+  
+  type        NotificationType
+  title       String
+  message     String
+  link        String?
+  isRead      Boolean          @default(false)
+  
+  createdAt   DateTime         @default(now())
+
+  @@map("notifications")
+}
+
+model AuditLog {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String    @db.ObjectId
+  user        User      @relation(fields: [userId], references: [id])
+  
+  action      String    // CREATE, UPDATE, DELETE
+  module      String    // leads, customers, deals, etc.
+  entityId    String?
+  oldValues   Json?
+  newValues   Json?
+  ipAddress   String?
+  userAgent   String?
+  
+  createdAt   DateTime  @default(now())
+
+  @@map("audit_logs")
+}
+
+model Note {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  content     String
+  
+  leadId      String?   @db.ObjectId
+  lead        Lead?     @relation(fields: [leadId], references: [id])
+  
+  customerId  String?   @db.ObjectId
+  customer    Customer? @relation(fields: [customerId], references: [id])
+  
+  dealId      String?   @db.ObjectId
+  deal        Deal?     @relation(fields: [dealId], references: [id])
+  
+  createdById String    @db.ObjectId
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("notes")
+}
+
+model Attachment {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  filename    String
+  originalName String
+  mimeType    String
+  size        Int
+  url         String
+  s3Key       String?
+  
+  leadId      String?   @db.ObjectId
+  lead        Lead?     @relation(fields: [leadId], references: [id])
+  
+  customerId  String?   @db.ObjectId
+  customer    Customer? @relation(fields: [customerId], references: [id])
+  
+  dealId      String?   @db.ObjectId
+  deal        Deal?     @relation(fields: [dealId], references: [id])
+  
+  tenderId    String?   @db.ObjectId
+  tender      Tender?   @relation(fields: [tenderId], references: [id])
+  
+  createdAt   DateTime  @default(now())
+
+  @@map("attachments")
+}
+
+model Payment {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  paymentNumber   String         @unique
+  
+  // Customer Info (for internal - linked, for external - manual)
+  referenceType   ReferenceType  @default(INTERNAL)
+  customerId      String?        @db.ObjectId
+  customer        Customer?      @relation(fields: [customerId], references: [id])
+  customerName    String?        // For external customers
+  companyName     String?        // For external customers
+  phone           String?
+  
+  // Amount & GST
+  amount          Float
+  gstType         GstType        @default(WITHOUT_GST)
+  gstPercentage   Float          @default(18)
+  gstAmount       Float          @default(0)
+  totalAmount     Float
+  
+  // Payment Details
+  paymentDate     DateTime       @default(now())
+  paymentMethod   PaymentMethod  @default(CASH)
+  referenceNumber String?        // Transaction/cheque number
+  notes           String?
+  
+  // Optional Invoice link
+  invoiceId       String?        @db.ObjectId
+  invoice         Invoice?       @relation(fields: [invoiceId], references: [id])
+  
+  // Created by
+  createdById     String         @db.ObjectId
+  createdBy       User           @relation("PaymentCreator", fields: [createdById], references: [id])
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@map("payments")
+}
