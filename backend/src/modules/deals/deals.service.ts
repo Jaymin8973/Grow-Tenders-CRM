@@ -15,11 +15,15 @@ export class DealsService {
     constructor(private prisma: PrismaService) { }
 
     async create(createDealDto: CreateDealDto, userId: string) {
+        const data: any = {
+            ...createDealDto,
+            ownerId: userId,
+        };
+        if (createDealDto.expectedCloseDate) {
+            data.expectedCloseDate = new Date(createDealDto.expectedCloseDate);
+        }
         return this.prisma.deal.create({
-            data: {
-                ...createDealDto,
-                ownerId: userId,
-            },
+            data,
             include: {
                 owner: {
                     select: { id: true, firstName: true, lastName: true, email: true },
@@ -41,12 +45,17 @@ export class DealsService {
             throw new NotFoundException('Lead not found');
         }
 
+        const data: any = {
+            ...dealData,
+            leadId,
+            ownerId: userId,
+        };
+        if (dealData.expectedCloseDate) {
+            data.expectedCloseDate = new Date(dealData.expectedCloseDate);
+        }
+
         return this.prisma.deal.create({
-            data: {
-                ...dealData,
-                leadId,
-                ownerId: userId,
-            },
+            data,
             include: {
                 owner: {
                     select: { id: true, firstName: true, lastName: true, email: true },
@@ -163,6 +172,9 @@ export class DealsService {
 
         // If closing the deal, set actual close date
         const data: any = { ...updateDealDto };
+        if (updateDealDto.expectedCloseDate) {
+            data.expectedCloseDate = new Date(updateDealDto.expectedCloseDate);
+        }
         if (updateDealDto.stage === DealStage.CLOSED_WON || updateDealDto.stage === DealStage.CLOSED_LOST) {
             data.actualCloseDate = new Date();
         }

@@ -29,14 +29,15 @@ const navigation = [
     { name: 'Leads', href: '/leads', icon: UserPlus },
     { name: 'Customers', href: '/customers', icon: Users },
     { name: 'Deals', href: '/deals', icon: Briefcase },
-    { name: 'Activities', href: '/activities', icon: CalendarDays },
+    { name: 'Teams', href: '/teams', icon: Users },
+    { name: 'Tasks', href: '/tasks', icon: FileText },
     { name: 'GeM Tenders', href: '/scraped-tenders', icon: FileSearch },
     { name: 'Leaderboard', href: '/leaderboard', icon: Trophy },
 ];
 
 const adminNav = [
-    { name: 'Payments', href: '/payments', icon: Wallet, roles: ['SUPER_ADMIN'] },
-    { name: 'Invoices', href: '/invoices', icon: FileText, roles: ['SUPER_ADMIN'] },
+    { name: 'Payments', href: '/payments', icon: Wallet, roles: ['SUPER_ADMIN', 'MANAGER'] },
+    { name: 'Invoices', href: '/invoices', icon: FileText, roles: ['SUPER_ADMIN', 'MANAGER'] },
     { name: 'Reports', href: '/reports', icon: BarChart3, roles: ['SUPER_ADMIN', 'MANAGER'] },
     { name: 'Users', href: '/users', icon: Building2, roles: ['SUPER_ADMIN', 'MANAGER'] },
 ];
@@ -79,8 +80,13 @@ export function Sidebar() {
         <div className="flex h-full w-72 flex-col bg-card border-r">
             {/* Logo */}
             <div className="flex h-20 items-center gap-3 px-6 border-b">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-[#1a5f6c] to-[#0d3a42] shadow-lg">
-                    <span className="text-xl font-bold text-white">GT</span>
+                <div className="relative h-11 w-11 rounded-xl overflow-hidden shadow-lg border-2 border-primary/20">
+                    <Image
+                        src="/images/logo.jpg"
+                        alt="Company Logo"
+                        fill
+                        className="object-cover"
+                    />
                 </div>
                 <div>
                     <span className="text-xl font-bold bg-gradient-to-r from-[#1a5f6c] to-[#e67e22] bg-clip-text text-transparent">

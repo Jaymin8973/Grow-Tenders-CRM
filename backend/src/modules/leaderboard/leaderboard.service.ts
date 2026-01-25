@@ -30,13 +30,14 @@ export class LeaderboardService {
 
     async getGlobalLeaderboard(period?: { startDate: Date; endDate: Date }): Promise<LeaderboardEntry[]> {
         const users = await this.prisma.user.findMany({
-            where: { isActive: true, role: { not: Role.SUPER_ADMIN } },
+            where: { isActive: true, role: Role.EMPLOYEE },
             select: {
                 id: true,
                 firstName: true,
                 lastName: true,
                 email: true,
                 avatar: true,
+                role: true,
             },
         });
 
@@ -49,6 +50,7 @@ export class LeaderboardService {
                     lastName: user.lastName,
                     email: user.email,
                     avatar: user.avatar || undefined,
+                    role: user.role,
                     metrics,
                     rank: 0,
                 };
@@ -213,5 +215,90 @@ export class LeaderboardService {
         const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
         return this.getSelfStats(userId, { startDate: startOfMonth, endDate: endOfMonth });
+    }
+    async getManagersLeaderboard(period?: { startDate: Date; endDate: Date }) {
+        const managers = await this.prisma.user.findMany({
+            where: {
+                role: Role.MANAGER,
+                isActive: true,
+            },
+            select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                avatar: true,
+                role: true,
+            },
+        });
+
+        const leaderboard = await Promise.all(
+            managers.map(async (manager) => {
+                // Get all team members
+                const teamMembers = await this.prisma.user.findMany({
+                    where: { managerId: manager.id },
+                    select: { id: true },
+                });
+                const teamIds = teamMembers.map(m => m.id);
+
+                if (teamIds.length === 0) {
+                    return {
+                        userId: manager.id,
+                        firstName: manager.firstName,
+                        lastName: manager.lastName,
+                        email: manager.email,
+                        avatar: manager.avatar,
+                        role: manager.role,
+                        metrics: {
+                            revenueClosed: 0,
+                            dealsWon: 0,
+                            teamSize: 0,
+                        },
+                        rank: 0,
+                    };
+                }
+
+                // Calculate team metrics
+                const dateFilter = period ? {
+                    createdAt: { gte: period.startDate, lte: period.endDate },
+                } : {};
+
+                const wonDeals = await this.prisma.deal.aggregate({
+                    where: {
+                        ownerId: { in: teamIds },
+                        stage: DealStage.CLOSED_WON,
+                        ...dateFilter,
+                    },
+                    _sum: { value: true },
+                    _count: true,
+                });
+
+                return {
+                    userId: manager.id,
+                    firstName: manager.firstName,
+                    lastName: manager.lastName,
+                    email: manager.email,
+                    avatar: manager.avatar,
+                    role: manager.role,
+                    metrics: {
+                        revenueClosed: wonDeals._sum.value || 0,
+                        dealsWon: wonDeals._count,
+                        teamSize: teamIds.length,
+                    },
+                    rank: 0,
+                };
+            })
+        );
+
+        // Filter out managers with 0 revenue if you want, or just sort
+        // Sort by revenue
+        leaderboard.sort((a, b) => b.metrics.revenueClosed - a.metrics.revenueClosed);
+
+        // Assign ranks
+        leaderboard.forEach((entry, index) => {
+            entry.rank = index + 1;
+        });
+
+        return leaderboard;
     }
 }

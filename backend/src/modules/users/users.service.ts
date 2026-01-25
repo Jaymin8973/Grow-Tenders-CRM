@@ -250,7 +250,7 @@ export class UsersService {
     async getManagers() {
         return this.prisma.user.findMany({
             where: {
-                role: { in: [Role.SUPER_ADMIN, Role.MANAGER] },
+                role: Role.MANAGER,
                 isActive: true,
             },
             select: {

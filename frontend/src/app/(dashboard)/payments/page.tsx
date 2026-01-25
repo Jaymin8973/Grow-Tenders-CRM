@@ -37,6 +37,7 @@ import {
     Banknote,
 } from 'lucide-react';
 import { formatCurrency, cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/auth-context';
 
 const paymentMethodConfig: Record<string, { label: string; icon: any; color: string }> = {
     CASH: { label: 'Cash', icon: Banknote, color: 'text-green-600' },
@@ -59,6 +60,7 @@ const referenceTypeConfig: Record<string, { label: string; bg: string; color: st
 
 export default function PaymentsPage() {
     const router = useRouter();
+    const { user } = useAuth();
     const [search, setSearch] = useState('');
     const [methodFilter, setMethodFilter] = useState<string | null>(null);
     const [referenceFilter, setReferenceFilter] = useState<string | null>(null);
@@ -80,6 +82,14 @@ export default function PaymentsPage() {
         queryFn: async () => {
             const response = await apiClient.get('/payments/stats');
             return response.data;
+        },
+    });
+
+    const { data: collectionsSummary } = useQuery({
+        queryKey: ['collections-summary'],
+        queryFn: async () => {
+            const res = await apiClient.get('/payments/collections/summary');
+            return res.data as Array<{ user: any; count: number; totalAmount: number }>;
         },
     });
 
@@ -122,10 +132,12 @@ export default function PaymentsPage() {
                         Record and manage client payments
                     </p>
                 </div>
-                <Button className="gap-2" onClick={() => router.push('/payments/new')}>
-                    <Plus className="h-4 w-4" />
-                    Record Payment
-                </Button>
+                {user?.role === 'SUPER_ADMIN' && (
+                    <Button className="gap-2" onClick={() => router.push('/payments/new')}>
+                        <Plus className="h-4 w-4" />
+                        Record Payment
+                    </Button>
+                )}
             </div>
 
             {/* Stats Cards */}
@@ -324,6 +336,48 @@ export default function PaymentsPage() {
                                             <p>No payments found</p>
                                             <p className="text-sm">Record your first payment to get started</p>
                                         </div>
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+
+            {/* Collections Summary */}
+            <Card>
+                <CardContent className="p-5">
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-xl font-semibold">Collections Summary</h2>
+                    </div>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Employee</TableHead>
+                                <TableHead>Payments</TableHead>
+                                <TableHead className="text-right">Total Collected</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {collectionsSummary?.map((row: any) => (
+                                <TableRow key={row.user?.id}>
+                                    <TableCell>
+                                        <div className="font-medium">
+                                            {row.user?.firstName} {row.user?.lastName}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge variant="secondary">{row.count}</Badge>
+                                    </TableCell>
+                                    <TableCell className="text-right font-medium">
+                                        {formatCurrency(row.totalAmount || 0)}
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                            {(!collectionsSummary || collectionsSummary.length === 0) && (
+                                <TableRow>
+                                    <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
+                                        No collections data available
                                     </TableCell>
                                 </TableRow>
                             )}

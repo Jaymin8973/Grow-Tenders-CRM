@@ -78,10 +78,16 @@ export default function InvoicesPage() {
                         Manage billing and payments
                     </p>
                 </div>
-                <Button className="gap-2" onClick={() => router.push('/invoices/new')}>
-                    <Plus className="h-4 w-4" />
-                    Create Invoice
-                </Button>
+                <div className="flex gap-2">
+                    <Button variant="outline" className="gap-2" onClick={() => router.push('/invoices/due')}>
+                        <AlertCircle className="h-4 w-4" />
+                        Due Invoices
+                    </Button>
+                    <Button className="gap-2" onClick={() => router.push('/invoices/new')}>
+                        <Plus className="h-4 w-4" />
+                        Create Invoice
+                    </Button>
+                </div>
             </div>
 
             {/* Stats Cards */}

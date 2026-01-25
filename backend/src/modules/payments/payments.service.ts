@@ -1,8 +1,13 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { ReferenceType, GstType, PaymentMethod } from '@prisma/client';
+import { ReferenceType, GstType, PaymentMethod, Role } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
+
+interface UserContext {
+    id: string;
+    role: Role;
+}
 
 @Injectable()
 export class PaymentsService {
@@ -112,6 +117,7 @@ export class PaymentsService {
         startDate?: string;
         endDate?: string;
         search?: string;
+        createdById?: string;
     }) {
         const where: any = {};
 
@@ -125,6 +131,10 @@ export class PaymentsService {
 
         if (filters?.paymentMethod) {
             where.paymentMethod = filters.paymentMethod;
+        }
+
+        if (filters?.createdById) {
+            where.createdById = filters.createdById;
         }
 
         if (filters?.startDate || filters?.endDate) {
@@ -266,5 +276,35 @@ export class PaymentsService {
             byMethod: methodStats,
             byGstType: gstStats,
         };
+    }
+
+    async getCollectionsByEmployee(user: UserContext) {
+        let userIds: string[] | undefined = undefined;
+        if (user.role === Role.MANAGER) {
+            const teamMembers = await this.prisma.user.findMany({
+                where: { managerId: user.id },
+                select: { id: true },
+            });
+            userIds = [user.id, ...teamMembers.map(m => m.id)];
+        }
+
+        const grouped = await this.prisma.payment.groupBy({
+            by: ['createdById'],
+            where: userIds ? { createdById: { in: userIds } } : undefined,
+            _count: true,
+            _sum: { totalAmount: true },
+        });
+
+        const users = await this.prisma.user.findMany({
+            where: { id: { in: grouped.map(g => g.createdById) } },
+            select: { id: true, firstName: true, lastName: true },
+        });
+
+        const userMap = new Map(users.map(u => [u.id, u]));
+        return grouped.map(g => ({
+            user: userMap.get(g.createdById),
+            count: g._count,
+            totalAmount: g._sum.totalAmount || 0,
+        }));
     }
 }

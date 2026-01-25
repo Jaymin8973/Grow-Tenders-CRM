@@ -17,6 +17,12 @@ enum Role {
   EMPLOYEE
 }
 
+enum LeadType {
+  HOT
+  WARM
+  COLD
+}
+
 enum LeadStatus {
   NEW
   CONTACTED
@@ -61,6 +67,9 @@ enum ActivityType {
   TASK
   REMINDER
   FOLLOW_UP
+  INVOICE
+  PAYMENT
+  LEAD
 }
 
 enum ActivityStatus {
@@ -118,6 +127,12 @@ enum GstType {
 enum ReferenceType {
   INTERNAL
   EXTERNAL
+}
+
+enum TransferStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 // Models
@@ -179,6 +194,8 @@ model User {
   paymentsCreated       Payment[]      @relation("PaymentCreator")
   notifications         Notification[]
   auditLogs             AuditLog[]
+  transferRequestsMade     LeadTransferRequest[] @relation("TransferRequester")
+  transferRequestsReceived LeadTransferRequest[] @relation("TransferTarget")
 
   @@map("users")
 }
@@ -193,14 +210,15 @@ model Lead {
   company       String?
   position      String?
   status        LeadStatus  @default(NEW)
+  type          LeadType    @default(COLD)
   source        LeadSource  @default(OTHER)
-  value         Float?
   description   String?
   address       String?
   city          String?
   state         String?
   country       String?
   website       String?
+  value         Float?
   
   assigneeId    String?     @db.ObjectId
   assignee      User?       @relation("LeadAssignee", fields: [assigneeId], references: [id])
@@ -223,6 +241,7 @@ model Lead {
   notes         Note[]
   attachments   Attachment[]
   emailLogs     EmailLog[]
+  transferRequests LeadTransferRequest[]
 
   @@map("leads")
 }
@@ -653,4 +672,25 @@ model Payment {
   updatedAt       DateTime       @updatedAt
 
   @@map("payments")
+}
+
+model LeadTransferRequest {
+  id          String         @id @default(auto()) @map("_id") @db.ObjectId
+  leadId      String         @db.ObjectId
+  lead        Lead           @relation(fields: [leadId], references: [id])
+  
+  requesterId String         @db.ObjectId
+  requester   User           @relation("TransferRequester", fields: [requesterId], references: [id])
+  
+  targetUserId String?       @db.ObjectId
+  targetUser   User?         @relation("TransferTarget", fields: [targetUserId], references: [id])
+  
+  status      TransferStatus @default(PENDING)
+  reason      String?
+  adminNotes  String?
+  
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@map("lead_transfer_requests")
 }

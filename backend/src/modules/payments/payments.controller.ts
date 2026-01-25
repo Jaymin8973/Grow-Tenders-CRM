@@ -33,8 +33,8 @@ export class PaymentsController {
     }
 
     @Get()
-    @Roles(Role.SUPER_ADMIN)
-    @ApiOperation({ summary: 'Get all payments (Super Admin only)' })
+    @Roles(Role.SUPER_ADMIN, Role.MANAGER)
+    @ApiOperation({ summary: 'Get all payments' })
     @ApiQuery({ name: 'customerId', required: false })
     @ApiQuery({ name: 'referenceType', required: false, enum: ReferenceType })
     @ApiQuery({ name: 'paymentMethod', required: false, enum: PaymentMethod })
@@ -60,15 +60,22 @@ export class PaymentsController {
     }
 
     @Get('stats')
-    @Roles(Role.SUPER_ADMIN)
-    @ApiOperation({ summary: 'Get payment statistics (Super Admin only)' })
+    @Roles(Role.SUPER_ADMIN, Role.MANAGER)
+    @ApiOperation({ summary: 'Get payment statistics' })
     getStats() {
         return this.paymentsService.getStats();
     }
 
+    @Get('collections/summary')
+    @Roles(Role.SUPER_ADMIN, Role.MANAGER)
+    @ApiOperation({ summary: 'Get collections grouped by employee' })
+    getCollectionsSummary(@CurrentUser() user: any) {
+        return this.paymentsService.getCollectionsByEmployee({ id: user.id, role: user.role });
+    }
+
     @Get(':id')
-    @Roles(Role.SUPER_ADMIN)
-    @ApiOperation({ summary: 'Get payment by ID (Super Admin only)' })
+    @Roles(Role.SUPER_ADMIN, Role.MANAGER)
+    @ApiOperation({ summary: 'Get payment by ID' })
     findOne(@Param('id') id: string) {
         return this.paymentsService.findOne(id);
     }

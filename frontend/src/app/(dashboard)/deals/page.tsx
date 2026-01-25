@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
 import { useAuth } from '@/contexts/auth-context';
@@ -33,6 +34,7 @@ const stages = ['QUALIFICATION', 'NEEDS_ANALYSIS', 'PROPOSAL', 'NEGOTIATION', 'C
 
 export default function DealsPage() {
     const { user } = useAuth();
+    const router = useRouter();
     const [view, setView] = useState<'pipeline' | 'list'>('pipeline');
 
     const { data: deals, isLoading } = useQuery({
@@ -190,6 +192,7 @@ export default function DealsPage() {
                                             <Card
                                                 key={deal.id}
                                                 className="cursor-pointer card-hover bg-card border shadow-sm"
+                                                onClick={() => router.push(`/deals/${deal.id}`)}
                                             >
                                                 <CardContent className="p-4">
                                                     <div className="flex items-start justify-between mb-3">
@@ -251,7 +254,11 @@ export default function DealsPage() {
                             {deals?.map((deal: any) => {
                                 const config = stageConfig[deal.stage] || stageConfig.QUALIFICATION;
                                 return (
-                                    <div key={deal.id} className="p-4 flex items-center justify-between table-row-hover">
+                                    <div
+                                        key={deal.id}
+                                        className="p-4 flex items-center justify-between table-row-hover cursor-pointer"
+                                        onClick={() => router.push(`/deals/${deal.id}`)}
+                                    >
                                         <div className="flex items-center gap-4">
                                             <div className={cn("w-2 h-12 rounded-full", config.bg)} />
                                             <div>

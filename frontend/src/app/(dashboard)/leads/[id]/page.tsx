@@ -41,6 +41,10 @@ import {
     Edit,
     Trash2,
 } from 'lucide-react';
+import { CreateTaskDialog } from '@/components/tasks/create-task-dialog';
+import { ComposeEmailDialog } from '@/components/mail/compose-email-dialog';
+import { AssignLeadDialog } from '@/components/leads/assign-lead-dialog';
+import { TransferLeadDialog } from '@/components/leads/transfer-lead-dialog';
 import { formatDistanceToNow } from 'date-fns';
 import { getInitials, cn, formatCurrency } from '@/lib/utils';
 
@@ -72,6 +76,12 @@ export default function LeadDetailPage() {
     const [emailOpen, setEmailOpen] = useState(false);
     const [emailSubject, setEmailSubject] = useState('');
     const [emailBody, setEmailBody] = useState('');
+    const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+    const [transferDialogOpen, setTransferDialogOpen] = useState(false);
+    const [createDealOpen, setCreateDealOpen] = useState(false);
+    const [dealTitle, setDealTitle] = useState('');
+    const [dealValue, setDealValue] = useState('');
+    const [expectedCloseDate, setExpectedCloseDate] = useState('');
 
     // Fetch lead details
     const { data: lead, isLoading } = useQuery({
@@ -80,6 +90,47 @@ export default function LeadDetailPage() {
             const response = await apiClient.get(`/leads/${leadId}`);
             return response.data;
         },
+    });
+
+    // Create deal from lead
+    const createDealMutation = useMutation({
+        mutationFn: async () => {
+            const payload: any = {
+                title: dealTitle || `${lead?.firstName || ''} ${lead?.lastName || ''}`.trim() || 'New Deal',
+                value: Number(dealValue) || 0,
+                expectedCloseDate: expectedCloseDate || undefined,
+            };
+            const res = await apiClient.post(`/deals/from-lead/${leadId}`, payload);
+            return res.data;
+        },
+        onSuccess: (deal) => {
+            queryClient.invalidateQueries({ queryKey: ['deals'] });
+            setCreateDealOpen(false);
+            setDealTitle('');
+            setDealValue('');
+            setExpectedCloseDate('');
+            toast({ title: 'Deal created from lead' });
+            router.push(`/deals/${deal.id}`);
+        },
+        onError: (err: any) => {
+            toast({ title: err.response?.data?.message || 'Failed to create deal', variant: 'destructive' });
+        }
+    });
+
+    // Convert to customer from lead (Managers/Admins)
+    const convertToCustomerMutation = useMutation({
+        mutationFn: async () => {
+            const res = await apiClient.post(`/customers/from-lead/${leadId}`);
+            return res.data;
+        },
+        onSuccess: (customer) => {
+            queryClient.invalidateQueries({ queryKey: ['customers'] });
+            toast({ title: 'Lead converted to customer' });
+            router.push(`/customers/${customer.id}`);
+        },
+        onError: (err: any) => {
+            toast({ title: err.response?.data?.message || 'Failed to convert lead', variant: 'destructive' });
+        }
     });
 
     // Fetch notes
@@ -186,44 +237,77 @@ export default function LeadDetailPage() {
                     </div>
                     <p className="text-muted-foreground">{lead.company || 'No company'}</p>
                 </div>
-                <Dialog open={emailOpen} onOpenChange={setEmailOpen}>
+                <ComposeEmailDialog
+                    isOpen={emailOpen}
+                    onClose={() => setEmailOpen(false)}
+                    defaultTo={lead.email}
+                    relatedTo={{ type: 'Lead', id: lead.id, name: `${lead.firstName} ${lead.lastName}` }}
+                >
+                    <Button className="gap-2">
+                        <Mail className="h-4 w-4" />
+                        Send Email
+                    </Button>
+                </ComposeEmailDialog>
+
+                <Dialog open={createDealOpen} onOpenChange={setCreateDealOpen}>
                     <DialogTrigger asChild>
-                        <Button className="gap-2">
-                            <Mail className="h-4 w-4" />
-                            Send Email
+                        <Button variant="outline" className="gap-2">
+                            <Plus className="h-4 w-4" />
+                            Create Deal
                         </Button>
                     </DialogTrigger>
                     <DialogContent>
                         <DialogHeader>
-                            <DialogTitle>Send Email to {lead.email}</DialogTitle>
+                            <DialogTitle>Create Deal from Lead</DialogTitle>
                         </DialogHeader>
-                        <div className="space-y-4 pt-4">
-                            <Input
-                                placeholder="Subject"
-                                value={emailSubject}
-                                onChange={(e) => setEmailSubject(e.target.value)}
-                            />
-                            <Textarea
-                                placeholder="Email body..."
-                                rows={6}
-                                value={emailBody}
-                                onChange={(e) => setEmailBody(e.target.value)}
-                            />
-                            <Button
-                                className="w-full gap-2"
-                                onClick={() => sendEmailMutation.mutate({
-                                    to: lead.email,
-                                    subject: emailSubject,
-                                    body: emailBody,
-                                })}
-                                disabled={sendEmailMutation.isPending || !emailSubject || !emailBody}
-                            >
-                                <Send className="h-4 w-4" />
-                                {sendEmailMutation.isPending ? 'Sending...' : 'Send Email'}
-                            </Button>
+                        <div className="space-y-3">
+                            <div className="space-y-1">
+                                <label className="text-sm">Title</label>
+                                <Input value={dealTitle} onChange={(e) => setDealTitle(e.target.value)} placeholder="Deal title" />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-sm">Value</label>
+                                <Input type="number" value={dealValue} onChange={(e) => setDealValue(e.target.value)} placeholder="Amount" />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-sm">Expected Close Date</label>
+                                <Input type="date" value={expectedCloseDate} onChange={(e) => setExpectedCloseDate(e.target.value)} />
+                            </div>
+                            <div className="flex justify-end gap-2 pt-2">
+                                <Button variant="outline" onClick={() => setCreateDealOpen(false)}>Cancel</Button>
+                                <Button onClick={() => createDealMutation.mutate()} disabled={createDealMutation.isPending} className="gap-2">
+                                    {createDealMutation.isPending ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" /> : null}
+                                    Create
+                                </Button>
+                            </div>
                         </div>
                     </DialogContent>
                 </Dialog>
+
+                {(user?.role === 'SUPER_ADMIN' || user?.role === 'MANAGER') && (
+                    <Button
+                        variant="secondary"
+                        className="gap-2"
+                        onClick={() => convertToCustomerMutation.mutate()}
+                        disabled={convertToCustomerMutation.isPending}
+                    >
+                        <User className="h-4 w-4" />
+                        Convert to Customer
+                    </Button>
+                )}
+
+                <AssignLeadDialog
+                    open={assignDialogOpen}
+                    onOpenChange={setAssignDialogOpen}
+                    leadId={leadId}
+                    currentAssigneeId={lead.assignee?.id}
+                />
+
+                <TransferLeadDialog
+                    open={transferDialogOpen}
+                    onOpenChange={setTransferDialogOpen}
+                    leadId={leadId}
+                />
             </div>
 
             <div className="grid gap-6 lg:grid-cols-3">
@@ -268,11 +352,11 @@ export default function LeadDetailPage() {
                                         <span>{lead.company}</span>
                                     </div>
                                 )}
-                                {(lead.city || lead.country) && (
+                                {(lead.city || lead.state) && (
                                     <div className="flex items-center gap-3 text-sm">
                                         <MapPin className="h-4 w-4 text-muted-foreground" />
                                         <span>
-                                            {[lead.city, lead.state, lead.country].filter(Boolean).join(', ')}
+                                            {[lead.city, lead.state].filter(Boolean).join(', ')}
                                         </span>
                                     </div>
                                 )}
@@ -298,15 +382,34 @@ export default function LeadDetailPage() {
                                 <span className="text-muted-foreground">Source</span>
                                 <span className="font-medium">{lead.source || 'Unknown'}</span>
                             </div>
-                            <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Value</span>
-                                <span className="font-medium">{formatCurrency(lead.value || 0)}</span>
-                            </div>
+
                             <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Assigned To</span>
-                                <span className="font-medium">
-                                    {lead.assignee ? `${lead.assignee.firstName} ${lead.assignee.lastName}` : 'Unassigned'}
-                                </span>
+                                <div className="flex items-center gap-2">
+                                    <span className="font-medium">
+                                        {lead.assignee ? `${lead.assignee.firstName} ${lead.assignee.lastName}` : 'Unassigned'}
+                                    </span>
+                                    {(user?.role === 'SUPER_ADMIN' || user?.role === 'MANAGER') && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-6 w-6 p-0"
+                                            onClick={() => setAssignDialogOpen(true)}
+                                        >
+                                            <Edit className="h-3 w-3" />
+                                        </Button>
+                                    )}
+                                    {user?.role === 'EMPLOYEE' && lead.assignee?.id === user.id && (
+                                        <Button
+                                            variant="link"
+                                            size="sm"
+                                            className="h-auto p-0 text-xs text-muted-foreground"
+                                            onClick={() => setTransferDialogOpen(true)}
+                                        >
+                                            Request Transfer
+                                        </Button>
+                                    )}
+                                </div>
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Created</span>
@@ -332,7 +435,10 @@ export default function LeadDetailPage() {
                         <TabsContent value="timeline">
                             <Card>
                                 <CardHeader>
-                                    <CardTitle className="text-lg">Activity Timeline</CardTitle>
+                                    <div className="flex items-center justify-between">
+                                        <CardTitle className="text-lg">Activity Timeline</CardTitle>
+                                        <CreateTaskDialog leadId={leadId} />
+                                    </div>
                                 </CardHeader>
                                 <CardContent>
                                     <div className="space-y-4">

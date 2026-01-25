@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
 import { useToast } from '@/components/ui/use-toast';
@@ -48,6 +48,7 @@ import {
     Loader2,
 } from 'lucide-react';
 import { formatCurrency, cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/auth-context';
 
 interface LineItem {
     id: string;
@@ -68,10 +69,13 @@ const statusConfig: Record<string, { label: string; color: string; bg: string }>
 export default function InvoiceDetailPage() {
     const params = useParams();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { toast } = useToast();
     const queryClient = useQueryClient();
     const invoiceId = params.id as string;
     const isNew = invoiceId === 'new';
+    const { user } = useAuth();
+    const dealIdParam = searchParams.get('dealId');
 
     const [lineItems, setLineItems] = useState<LineItem[]>([
         { id: '1', description: '', quantity: 1, rate: 0, amount: 0 },
@@ -107,13 +111,13 @@ export default function InvoiceDetailPage() {
     // Pre-fill form when editing
     useEffect(() => {
         if (invoice) {
-            if (invoice.items?.length) {
-                setLineItems(invoice.items.map((item: any, idx: number) => ({
+            if (invoice.lineItems?.length) {
+                setLineItems(invoice.lineItems.map((item: any, idx: number) => ({
                     id: String(idx + 1),
                     description: item.description,
                     quantity: item.quantity,
-                    rate: item.rate,
-                    amount: item.quantity * item.rate,
+                    rate: item.unitPrice,
+                    amount: item.quantity * item.unitPrice,
                 })));
             }
             setDiscount(invoice.discount || 0);
@@ -123,6 +127,37 @@ export default function InvoiceDetailPage() {
             setDueDate(invoice.dueDate ? new Date(invoice.dueDate).toISOString().split('T')[0] : '');
         }
     }, [invoice]);
+
+    // Prefill from deal if provided via query param
+    useEffect(() => {
+        const dealId = searchParams.get('dealId');
+        if (isNew && dealId && !selectedCustomerId) {
+            (async () => {
+                try {
+                    const res = await apiClient.get(`/deals/${dealId}`);
+                    const deal = res.data;
+                    if (deal?.customerId) {
+                        setSelectedCustomerId(deal.customerId);
+                    } else if (deal?.customer?.id) {
+                        setSelectedCustomerId(deal.customer.id);
+                    }
+                    if (deal?.title || deal?.value) {
+                        setLineItems([
+                            {
+                                id: String(Date.now()),
+                                description: deal.title || 'Deal Item',
+                                quantity: 1,
+                                rate: Number(deal.value) || 0,
+                                amount: Number(deal.value) || 0,
+                            },
+                        ]);
+                    }
+                } catch {
+                    // ignore
+                }
+            })();
+        }
+    }, [isNew, searchParams, selectedCustomerId]);
 
     // Calculate totals
     const subtotal = lineItems.reduce((sum, item) => sum + item.amount, 0);
@@ -160,27 +195,32 @@ export default function InvoiceDetailPage() {
         }));
     };
 
-    // Save invoice mutation
+    // Save (create/update) invoice mutation
     const saveMutation = useMutation({
-        mutationFn: async (status: string) => {
-            const data = {
+        mutationFn: async () => {
+            const selectedCustomer = customers?.find((c: any) => c.id === selectedCustomerId);
+            const payload: any = {
                 customerId: selectedCustomerId,
-                items: lineItems.map(item => ({
+                companyName: selectedCustomer?.company || 'N/A',
+                taxRate,
+                discount: discount || undefined,
+                discountType: discount ? 'percentage' : undefined,
+                notes: notes || undefined,
+                dueDate: dueDate || undefined,
+                lineItems: lineItems.map(item => ({
                     description: item.description,
                     quantity: item.quantity,
-                    rate: item.rate,
+                    unitPrice: item.rate,
                 })),
-                discount,
-                taxRate,
-                notes,
-                dueDate: dueDate || undefined,
-                status,
             };
 
             if (isNew) {
-                return apiClient.post('/invoices', data);
+                if (dealIdParam) {
+                    return apiClient.post(`/invoices/from-deal/${dealIdParam}`, payload);
+                }
+                return apiClient.post('/invoices', payload);
             } else {
-                return apiClient.put(`/invoices/${invoiceId}`, data);
+                return apiClient.patch(`/invoices/${invoiceId}`, payload);
             }
         },
         onSuccess: (response) => {
@@ -192,6 +232,21 @@ export default function InvoiceDetailPage() {
         },
         onError: () => {
             toast({ title: 'Failed to save invoice', variant: 'destructive' });
+        },
+    });
+
+    // Update status mutation
+    const updateStatusMutation = useMutation({
+        mutationFn: async (status: string) => {
+            return apiClient.patch(`/invoices/${invoiceId}/status`, { status });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['invoice', invoiceId] });
+            queryClient.invalidateQueries({ queryKey: ['invoices'] });
+            toast({ title: 'Invoice status updated' });
+        },
+        onError: () => {
+            toast({ title: 'Failed to update status', variant: 'destructive' });
         },
     });
 
@@ -220,7 +275,7 @@ export default function InvoiceDetailPage() {
     // Send email mutation
     const sendEmailMutation = useMutation({
         mutationFn: async () => {
-            return apiClient.post(`/invoices/${invoiceId}/email`, { body: emailBody });
+            return apiClient.post(`/invoices/${invoiceId}/email`, { to: selectedCustomer?.email });
         },
         onSuccess: () => {
             setEmailOpen(false);
@@ -316,8 +371,8 @@ export default function InvoiceDetailPage() {
                     )}
                     <Button
                         className="gap-2"
-                        onClick={() => saveMutation.mutate('DRAFT')}
-                        disabled={saveMutation.isPending || !selectedCustomerId}
+                        onClick={() => saveMutation.mutate()}
+                        disabled={saveMutation.isPending || !selectedCustomerId || (!isNew && user?.role !== 'SUPER_ADMIN')}
                     >
                         {saveMutation.isPending ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
@@ -533,7 +588,7 @@ export default function InvoiceDetailPage() {
                     </Card>
 
                     {/* Status Actions */}
-                    {!isNew && invoice?.status === 'DRAFT' && (
+                    {!isNew && invoice?.status === 'DRAFT' && user?.role === 'SUPER_ADMIN' && (
                         <Card>
                             <CardHeader>
                                 <CardTitle className="text-lg">Actions</CardTitle>
@@ -541,8 +596,8 @@ export default function InvoiceDetailPage() {
                             <CardContent className="space-y-2">
                                 <Button
                                     className="w-full gap-2"
-                                    onClick={() => saveMutation.mutate('SENT')}
-                                    disabled={saveMutation.isPending}
+                                    onClick={() => updateStatusMutation.mutate('SENT')}
+                                    disabled={updateStatusMutation.isPending}
                                 >
                                     <Send className="h-4 w-4" />
                                     Mark as Sent
@@ -551,16 +606,32 @@ export default function InvoiceDetailPage() {
                         </Card>
                     )}
 
-                    {!isNew && invoice?.status === 'SENT' && (
+                    {!isNew && invoice?.status === 'SENT' && user?.role === 'SUPER_ADMIN' && (
                         <Card>
                             <CardHeader>
                                 <CardTitle className="text-lg">Actions</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-2">
                                 <Button
+                                    className="w-full gap-2"
+                                    variant="outline"
+                                    onClick={() => {
+                                        const params = new URLSearchParams({
+                                            invoiceId,
+                                            customerId: invoice?.customerId || '',
+                                            amount: String(total || 0),
+                                            companyName: invoice?.customer?.company || invoice?.companyName || '',
+                                        });
+                                        router.push(`/payments/new?${params.toString()}`);
+                                    }}
+                                >
+                                    <FileText className="h-4 w-4" />
+                                    Record Payment
+                                </Button>
+                                <Button
                                     className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700"
-                                    onClick={() => saveMutation.mutate('PAID')}
-                                    disabled={saveMutation.isPending}
+                                    onClick={() => updateStatusMutation.mutate('PAID')}
+                                    disabled={updateStatusMutation.isPending}
                                 >
                                     <FileText className="h-4 w-4" />
                                     Mark as Paid

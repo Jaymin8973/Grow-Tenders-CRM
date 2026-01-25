@@ -9,7 +9,6 @@ import {
     UseGuards,
     Query,
     Res,
-    Header,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
@@ -29,16 +28,16 @@ export class InvoicesController {
     constructor(private readonly invoicesService: InvoicesService) { }
 
     @Post()
-    @Roles(Role.SUPER_ADMIN)
-    @ApiOperation({ summary: 'Create a new invoice (Admin only)' })
+    @Roles(Role.SUPER_ADMIN, Role.MANAGER)
+    @ApiOperation({ summary: 'Create a new invoice (Super Admin & Manager)' })
     @ApiResponse({ status: 201, description: 'Invoice created successfully' })
     create(@Body() createInvoiceDto: CreateInvoiceDto, @CurrentUser('id') userId: string) {
         return this.invoicesService.create(createInvoiceDto, userId);
     }
 
     @Post('from-deal/:dealId')
-    @Roles(Role.SUPER_ADMIN)
-    @ApiOperation({ summary: 'Create invoice from closed-won deal (Admin only)' })
+    @Roles(Role.SUPER_ADMIN, Role.MANAGER)
+    @ApiOperation({ summary: 'Create invoice from closed-won deal (Super Admin & Manager)' })
     createFromDeal(
         @Param('dealId') dealId: string,
         @Body() createInvoiceDto: CreateInvoiceDto,
@@ -68,6 +67,24 @@ export class InvoicesController {
         return this.invoicesService.getInvoiceStats();
     }
 
+    @Get('due')
+    @Roles(Role.SUPER_ADMIN, Role.MANAGER)
+    @ApiOperation({ summary: 'Get due invoices' })
+    @ApiQuery({ name: 'assigneeId', required: false })
+    @ApiQuery({ name: 'daysOverdue', required: false })
+    @ApiQuery({ name: 'search', required: false })
+    getDue(
+        @Query('assigneeId') assigneeId?: string,
+        @Query('daysOverdue') daysOverdue?: string,
+        @Query('search') search?: string,
+    ) {
+        return this.invoicesService.getDueInvoices({
+            assigneeId,
+            daysOverdue: daysOverdue ? parseInt(daysOverdue, 10) : undefined,
+            search,
+        });
+    }
+
     @Get(':id')
     @Roles(Role.SUPER_ADMIN, Role.MANAGER)
     @ApiOperation({ summary: 'Get invoice by ID' })
@@ -78,10 +95,21 @@ export class InvoicesController {
     @Get(':id/pdf')
     @Roles(Role.SUPER_ADMIN, Role.MANAGER)
     @ApiOperation({ summary: 'Generate PDF for invoice' })
-    @Header('Content-Type', 'text/html')
     async generatePdf(@Param('id') id: string, @Res() res: Response) {
         const pdf = await this.invoicesService.generatePdf(id);
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', 'inline; filename="invoice.pdf"');
         res.send(pdf);
+    }
+
+    @Post(':id/email')
+    @Roles(Role.SUPER_ADMIN, Role.MANAGER)
+    @ApiOperation({ summary: 'Email invoice PDF to customer' })
+    async emailInvoice(
+        @Param('id') id: string,
+        @Body() body: { to?: string },
+    ) {
+        return this.invoicesService.sendInvoiceEmail(id, body?.to);
     }
 
     @Patch(':id')

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -40,6 +40,7 @@ const paymentMethods = [
 
 export default function NewPaymentPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const queryClient = useQueryClient();
     const { toast } = useToast();
 
@@ -56,6 +57,7 @@ export default function NewPaymentPage() {
         paymentMethod: 'CASH',
         referenceNumber: '',
         notes: '',
+        invoiceId: '',
     });
 
     const [gstAmount, setGstAmount] = useState(0);
@@ -84,6 +86,27 @@ export default function NewPaymentPage() {
             setTotalAmount(amount);
         }
     }, [formData.amount, formData.gstType, formData.gstPercentage]);
+
+    // Prefill from query params
+    useEffect(() => {
+        const qpInvoiceId = searchParams.get('invoiceId') || '';
+        const qpCustomerId = searchParams.get('customerId') || '';
+        const qpAmount = searchParams.get('amount') || '';
+        const qpCompanyName = searchParams.get('companyName') || '';
+
+        if (qpInvoiceId || qpCustomerId || qpAmount || qpCompanyName) {
+            setFormData(prev => ({
+                ...prev,
+                invoiceId: qpInvoiceId || prev.invoiceId,
+                referenceType: qpCustomerId ? 'INTERNAL' : prev.referenceType,
+                customerId: qpCustomerId || prev.customerId,
+                amount: qpAmount || prev.amount,
+                companyName: qpCompanyName || prev.companyName,
+            }));
+        }
+        // only on mount
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Auto-fill customer details when selected
     useEffect(() => {
@@ -165,6 +188,7 @@ export default function NewPaymentPage() {
             paymentMethod: formData.paymentMethod,
             referenceNumber: formData.referenceNumber || undefined,
             notes: formData.notes || undefined,
+            invoiceId: formData.invoiceId || undefined,
         };
 
         createMutation.mutate(payload);

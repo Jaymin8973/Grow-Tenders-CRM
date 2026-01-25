@@ -12,9 +12,23 @@ import { Roles, CurrentUser } from '../../common/decorators';
 export class LeaderboardController {
     constructor(private readonly leaderboardService: LeaderboardService) { }
 
+    @Get('managers')
+    @ApiOperation({ summary: 'Get managers leaderboard' })
+    @ApiQuery({ name: 'startDate', required: false })
+    @ApiQuery({ name: 'endDate', required: false })
+    getManagersLeaderboard(
+        @Query('startDate') startDate?: string,
+        @Query('endDate') endDate?: string,
+    ) {
+        const period = startDate && endDate
+            ? { startDate: new Date(startDate), endDate: new Date(endDate) }
+            : undefined;
+        return this.leaderboardService.getManagersLeaderboard(period);
+    }
+
     @Get('global')
-    @Roles(Role.SUPER_ADMIN)
-    @ApiOperation({ summary: 'Get global leaderboard (Admin only)' })
+    @Roles(Role.SUPER_ADMIN, Role.MANAGER)
+    @ApiOperation({ summary: 'Get global leaderboard' })
     @ApiQuery({ name: 'startDate', required: false })
     @ApiQuery({ name: 'endDate', required: false })
     getGlobalLeaderboard(

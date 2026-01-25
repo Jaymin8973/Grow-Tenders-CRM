@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { Role, LeadStatus, LeadSource } from '@prisma/client';
+import { Role, LeadStatus, LeadSource, Prisma, LeadType } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
@@ -18,6 +18,13 @@ export class LeadsService {
         return this.prisma.lead.create({
             data: {
                 ...createLeadDto,
+                title: createLeadDto.title || `${createLeadDto.firstName} ${createLeadDto.lastName}`,
+                notes: createLeadDto.notes ? {
+                    create: { 
+                        content: createLeadDto.notes,
+                        createdById: userId,
+                    }
+                } : undefined,
                 createdById: userId,
                 assigneeId: createLeadDto.assigneeId || userId,
             },
@@ -41,9 +48,7 @@ export class LeadsService {
         let where: any = {};
 
         // Role-based filtering
-        if (user.role === Role.EMPLOYEE) {
-            where.assigneeId = user.id;
-        } else if (user.role === Role.MANAGER) {
+        if (user.role === Role.MANAGER) {
             // Manager can see their own leads and their team's leads
             const teamMembers = await this.prisma.user.findMany({
                 where: { managerId: user.id },
@@ -124,11 +129,6 @@ export class LeadsService {
             throw new NotFoundException('Lead not found');
         }
 
-        // Check access
-        if (user.role === Role.EMPLOYEE && lead.assigneeId !== user.id) {
-            throw new ForbiddenException('You do not have access to this lead');
-        }
-
         return lead;
     }
 
@@ -146,7 +146,7 @@ export class LeadsService {
 
         return this.prisma.lead.update({
             where: { id },
-            data: updateLeadDto,
+            data: updateLeadDto as Prisma.LeadUncheckedUpdateInput,
             include: {
                 assignee: {
                     select: { id: true, firstName: true, lastName: true, email: true },
@@ -218,9 +218,7 @@ export class LeadsService {
     async getLeadStats(user: UserContext) {
         let where: any = {};
 
-        if (user.role === Role.EMPLOYEE) {
-            where.assigneeId = user.id;
-        } else if (user.role === Role.MANAGER) {
+        if (user.role === Role.MANAGER) {
             const teamMembers = await this.prisma.user.findMany({
                 where: { managerId: user.id },
                 select: { id: true },
@@ -229,17 +227,23 @@ export class LeadsService {
             where.assigneeId = { in: [user.id, ...teamIds] };
         }
 
-        const [total, byStatus] = await Promise.all([
+        const [total, byStatus, hot, warm, converted] = await Promise.all([
             this.prisma.lead.count({ where }),
             this.prisma.lead.groupBy({
                 by: ['status'],
                 where,
                 _count: true,
             }),
+            this.prisma.lead.count({ where: { ...where, type: LeadType.HOT } }),
+            this.prisma.lead.count({ where: { ...where, type: LeadType.WARM } }),
+            this.prisma.lead.count({ where: { ...where, status: LeadStatus.WON } }),
         ]);
 
         return {
             total,
+            hot,
+            warm,
+            converted,
             byStatus: byStatus.reduce((acc, item) => {
                 acc[item.status] = item._count;
                 return acc;

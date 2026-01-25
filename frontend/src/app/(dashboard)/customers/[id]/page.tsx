@@ -42,6 +42,7 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { getInitials, cn, formatCurrency } from '@/lib/utils';
+import { ComposeEmailDialog } from '@/components/mail/compose-email-dialog';
 
 const lifecycleConfig: Record<string, { label: string; color: string; bg: string }> = {
     LEAD: { label: 'Lead', color: 'text-blue-700', bg: 'bg-blue-100' },
@@ -246,44 +247,17 @@ export default function CustomerDetailPage() {
                     </div>
                     <p className="text-muted-foreground">{customer.company || 'No company'}</p>
                 </div>
-                <Dialog open={emailOpen} onOpenChange={setEmailOpen}>
-                    <DialogTrigger asChild>
-                        <Button className="gap-2">
-                            <Mail className="h-4 w-4" />
-                            Send Email
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Send Email to {customer.email}</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4 pt-4">
-                            <Input
-                                placeholder="Subject"
-                                value={emailSubject}
-                                onChange={(e) => setEmailSubject(e.target.value)}
-                            />
-                            <Textarea
-                                placeholder="Email body..."
-                                rows={6}
-                                value={emailBody}
-                                onChange={(e) => setEmailBody(e.target.value)}
-                            />
-                            <Button
-                                className="w-full gap-2"
-                                onClick={() => sendEmailMutation.mutate({
-                                    to: customer.email,
-                                    subject: emailSubject,
-                                    body: emailBody,
-                                })}
-                                disabled={sendEmailMutation.isPending || !emailSubject || !emailBody}
-                            >
-                                <Send className="h-4 w-4" />
-                                {sendEmailMutation.isPending ? 'Sending...' : 'Send Email'}
-                            </Button>
-                        </div>
-                    </DialogContent>
-                </Dialog>
+                <ComposeEmailDialog
+                    isOpen={emailOpen}
+                    onClose={() => setEmailOpen(false)}
+                    defaultTo={customer.email}
+                    relatedTo={{ type: 'Customer', id: customer.id, name: `${customer.firstName} ${customer.lastName}` }}
+                >
+                    <Button className="gap-2">
+                        <Mail className="h-4 w-4" />
+                        Send Email
+                    </Button>
+                </ComposeEmailDialog>
             </div>
 
             {/* Stats Cards */}

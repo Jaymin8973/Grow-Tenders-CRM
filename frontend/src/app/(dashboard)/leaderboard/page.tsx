@@ -3,32 +3,38 @@
 import { useQuery } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
 import { useAuth } from '@/contexts/auth-context';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Trophy,
     Medal,
     Crown,
     TrendingUp,
     Target,
-    CheckCircle2,
-    DollarSign,
     Users,
+    Briefcase,
+    DollarSign,
+    Star
 } from 'lucide-react';
 import { formatCurrency, getInitials, cn } from '@/lib/utils';
-
-const rankIcons = [Crown, Medal, Medal];
-const rankColors = ['text-amber-500', 'text-slate-400', 'text-amber-700'];
-const rankBg = ['bg-amber-50', 'bg-slate-50', 'bg-amber-50/50'];
 
 export default function LeaderboardPage() {
     const { user } = useAuth();
 
-    const { data: leaderboard, isLoading } = useQuery({
-        queryKey: ['leaderboard'],
+    const { data: globalLeaderboard } = useQuery({
+        queryKey: ['leaderboard', 'global'],
         queryFn: async () => {
             const response = await apiClient.get('/leaderboard/global');
+            return response.data;
+        },
+    });
+
+    const { data: managersLeaderboard } = useQuery({
+        queryKey: ['leaderboard', 'managers'],
+        queryFn: async () => {
+            const response = await apiClient.get('/leaderboard/managers');
             return response.data;
         },
     });
@@ -41,240 +47,136 @@ export default function LeaderboardPage() {
         },
     });
 
-    const { data: teamLeaderboard } = useQuery({
-        queryKey: ['team-leaderboard'],
-        queryFn: async () => {
-            const response = await apiClient.get('/leaderboard/team');
-            return response.data;
-        },
-        enabled: user?.role === 'MANAGER',
-    });
+    const LeaderboardCard = ({ entry, rank, type }: { entry: any, rank: number, type: 'employee' | 'team' }) => {
+        if (!entry) return null;
 
-    if (isLoading) {
+        const isFirst = rank === 1;
+        const isSecond = rank === 2;
+        const isThird = rank === 3;
+
         return (
-            <div className="flex h-full items-center justify-center">
-                <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-            </div>
-        );
-    }
+            <Card className={cn(
+                "relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1",
+                isFirst ? "border-amber-200 ring-2 ring-amber-100 dark:ring-amber-900/40 shadow-md bg-gradient-to-b from-white to-amber-50/30" : "hover:border-primary/20"
+            )}>
+                {/* Rank Badge */}
+                <div className={cn(
+                    "absolute top-0 right-0 px-4 py-2 rounded-bl-xl font-bold text-white text-sm",
+                    isFirst ? "bg-amber-500" : isSecond ? "bg-slate-400" : "bg-orange-400"
+                )}>
+                    #{rank}
+                </div>
 
-    return (
-        <div className="space-y-6 page-enter">
-            {/* Page Header */}
-            <div>
-                <h1 className="text-3xl font-bold">Leaderboard</h1>
-                <p className="text-muted-foreground mt-1">
-                    See how you stack up against your team
-                </p>
-            </div>
-
-            {/* My Stats */}
-            {myStats && (
-                <Card className="bg-gradient-to-r from-primary to-violet-600 text-white overflow-hidden">
-                    <CardContent className="p-6">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                            <div className="flex items-center gap-4">
-                                <Avatar className="h-16 w-16 border-4 border-white/20">
-                                    <AvatarImage src={myStats.avatar} />
-                                    <AvatarFallback className="bg-white/20 text-white text-xl">
-                                        {getInitials(myStats.firstName, myStats.lastName)}
-                                    </AvatarFallback>
-                                </Avatar>
-                                <div>
-                                    <p className="text-2xl font-bold">{myStats.firstName} {myStats.lastName}</p>
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <Trophy className="h-4 w-4" />
-                                        <span>Rank #{myStats.globalRank || '-'}</span>
-                                    </div>
-                                </div>
+                <CardContent className="p-6 flex flex-col items-center text-center">
+                    <div className="relative mb-4">
+                        <Avatar className={cn(
+                            "w-20 h-20 border-4",
+                            isFirst ? "border-amber-100" : "border-slate-100"
+                        )}>
+                            <AvatarImage src={entry.avatar} />
+                            <AvatarFallback className="bg-primary/5 text-primary text-xl font-bold">
+                                {getInitials(entry.firstName, entry.lastName)}
+                            </AvatarFallback>
+                        </Avatar>
+                        {isFirst && (
+                            <div className="absolute -top-3 -right-3 bg-amber-100 p-1.5 rounded-full ring-2 ring-white">
+                                <Crown className="w-4 h-4 text-amber-600 fill-amber-600" />
                             </div>
-
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                                <div className="text-center">
-                                    <p className="text-3xl font-bold">{formatCurrency(myStats.metrics?.revenueClosed || 0)}</p>
-                                    <p className="text-primary-foreground/80 text-sm">Revenue</p>
-                                </div>
-                                <div className="text-center">
-                                    <p className="text-3xl font-bold">{myStats.metrics?.dealsWon || 0}</p>
-                                    <p className="text-primary-foreground/80 text-sm">Deals Won</p>
-                                </div>
-                                <div className="text-center">
-                                    <p className="text-3xl font-bold">{myStats.metrics?.activitiesCompleted || 0}</p>
-                                    <p className="text-primary-foreground/80 text-sm">Activities</p>
-                                </div>
-                                <div className="text-center">
-                                    <p className="text-3xl font-bold">{myStats.metrics?.leadConversionRate || 0}%</p>
-                                    <p className="text-primary-foreground/80 text-sm">Conversion</p>
-                                </div>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
-
-            <div className="grid gap-6 lg:grid-cols-2">
-                {/* Global Leaderboard */}
-                <Card className="card-hover">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="flex items-center gap-2">
-                            <div className="p-2 rounded-lg bg-amber-50">
-                                <Trophy className="h-5 w-5 text-amber-500" />
-                            </div>
-                            Global Rankings
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-3">
-                            {leaderboard?.slice(0, 10).map((entry: any, index: number) => {
-                                const isCurrentUser = entry.userId === user?.id;
-                                const RankIcon = rankIcons[index] || null;
-
-                                return (
-                                    <div
-                                        key={entry.userId}
-                                        className={cn(
-                                            "flex items-center gap-4 p-3 rounded-xl transition-colors",
-                                            isCurrentUser ? "bg-primary/10 ring-2 ring-primary" : "hover:bg-muted",
-                                            index < 3 && rankBg[index]
-                                        )}
-                                    >
-                                        <div className="w-8 text-center font-bold">
-                                            {RankIcon ? (
-                                                <RankIcon className={cn("h-6 w-6 mx-auto", rankColors[index])} />
-                                            ) : (
-                                                <span className="text-muted-foreground">{entry.rank}</span>
-                                            )}
-                                        </div>
-                                        <Avatar className="h-10 w-10">
-                                            <AvatarImage src={entry.avatar} />
-                                            <AvatarFallback className="bg-primary/10 text-primary">
-                                                {getInitials(entry.firstName, entry.lastName)}
-                                            </AvatarFallback>
-                                        </Avatar>
-                                        <div className="flex-1 min-w-0">
-                                            <p className={cn("font-medium truncate", isCurrentUser && "text-primary")}>
-                                                {entry.firstName} {entry.lastName}
-                                                {isCurrentUser && <span className="text-xs ml-2">(You)</span>}
-                                            </p>
-                                            <p className="text-sm text-muted-foreground">
-                                                {entry.metrics?.dealsWon || 0} deals won
-                                            </p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="font-bold">{formatCurrency(entry.metrics?.revenueClosed || 0)}</p>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                            {(!leaderboard || leaderboard.length === 0) && (
-                                <div className="py-8 text-center text-muted-foreground">
-                                    <Users className="h-10 w-10 mx-auto mb-2 opacity-30" />
-                                    <p>No rankings available yet</p>
-                                </div>
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Performance Metrics */}
-                <div className="space-y-6">
-                    {/* Quick Stats */}
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <Card className="card-hover">
-                            <CardContent className="p-5">
-                                <div className="flex items-center gap-4">
-                                    <div className="stat-icon bg-emerald-50">
-                                        <DollarSign className="h-6 w-6 text-emerald-500" />
-                                    </div>
-                                    <div>
-                                        <p className="text-2xl font-bold">
-                                            {formatCurrency(myStats?.metrics?.revenueClosed || 0)}
-                                        </p>
-                                        <p className="text-sm text-muted-foreground">Your Revenue</p>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                        <Card className="card-hover">
-                            <CardContent className="p-5">
-                                <div className="flex items-center gap-4">
-                                    <div className="stat-icon bg-blue-50">
-                                        <Target className="h-6 w-6 text-blue-500" />
-                                    </div>
-                                    <div>
-                                        <p className="text-2xl font-bold">
-                                            {myStats?.metrics?.leadConversionRate || 0}%
-                                        </p>
-                                        <p className="text-sm text-muted-foreground">Conversion Rate</p>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                        <Card className="card-hover">
-                            <CardContent className="p-5">
-                                <div className="flex items-center gap-4">
-                                    <div className="stat-icon bg-violet-50">
-                                        <TrendingUp className="h-6 w-6 text-violet-500" />
-                                    </div>
-                                    <div>
-                                        <p className="text-2xl font-bold">{myStats?.metrics?.dealsWon || 0}</p>
-                                        <p className="text-sm text-muted-foreground">Deals Won</p>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                        <Card className="card-hover">
-                            <CardContent className="p-5">
-                                <div className="flex items-center gap-4">
-                                    <div className="stat-icon bg-cyan-50">
-                                        <CheckCircle2 className="h-6 w-6 text-cyan-500" />
-                                    </div>
-                                    <div>
-                                        <p className="text-2xl font-bold">
-                                            {myStats?.metrics?.followUpCompletionRate || 0}%
-                                        </p>
-                                        <p className="text-sm text-muted-foreground">Task Completion</p>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
+                        )}
                     </div>
 
-                    {/* Team Leaderboard for Managers */}
-                    {user?.role === 'MANAGER' && teamLeaderboard && teamLeaderboard.length > 0 && (
-                        <Card className="card-hover">
-                            <CardHeader className="pb-2">
-                                <CardTitle className="flex items-center gap-2">
-                                    <div className="p-2 rounded-lg bg-violet-50">
-                                        <Users className="h-5 w-5 text-violet-500" />
-                                    </div>
-                                    Your Team
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-3">
-                                    {teamLeaderboard.map((member: any) => (
-                                        <div key={member.userId} className="flex items-center gap-4 p-3 rounded-xl hover:bg-muted">
-                                            <div className="w-8 text-center font-bold text-muted-foreground">
-                                                #{member.rank}
-                                            </div>
-                                            <Avatar className="h-10 w-10">
-                                                <AvatarFallback className="bg-violet-100 text-violet-700">
-                                                    {getInitials(member.firstName, member.lastName)}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                            <div className="flex-1">
-                                                <p className="font-medium">{member.firstName} {member.lastName}</p>
-                                            </div>
-                                            <p className="font-bold">{formatCurrency(member.metrics?.revenueClosed || 0)}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">
+                        {entry.firstName} {entry.lastName}
+                    </h3>
+
+                    <p className="text-xs text-muted-foreground mb-4 uppercase tracking-wider font-medium">
+                        {type === 'team' ? entry.branch?.name || 'Main Branch' : entry.role.toLowerCase()}
+                    </p>
+
+                    <div className="w-full grid grid-cols-2 gap-2 mt-2">
+                        <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg">
+                            <p className="text-[10px] text-muted-foreground uppercase font-bold">Revenue</p>
+                            <p className="text-sm font-bold text-emerald-600 font-mono">
+                                {formatCurrency(entry.metrics?.revenueClosed || 0)}
+                            </p>
+                        </div>
+                        <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg">
+                            {type === 'employee' ? (
+                                <>
+                                    <p className="text-[10px] text-muted-foreground uppercase font-bold">Deals</p>
+                                    <p className="text-sm font-bold text-blue-600">
+                                        {entry.metrics?.dealsWon || 0}
+                                    </p>
+                                </>
+                            ) : (
+                                <>
+                                    <p className="text-[10px] text-muted-foreground uppercase font-bold">Team</p>
+                                    <p className="text-sm font-bold text-blue-600">
+                                        {entry.metrics?.teamSize || 0}
+                                    </p>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    };
+
+    return (
+        <div className="space-y-8 page-enter max-w-6xl mx-auto pb-10">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight">Leaderboard</h1>
+                    <p className="text-muted-foreground">Top performers of the month.</p>
                 </div>
+
+                {myStats && (
+                    <div className="flex items-center gap-4 bg-white dark:bg-slate-950 border px-4 py-2 rounded-full shadow-sm">
+                        <span className="text-sm font-medium text-muted-foreground">My Rank:</span>
+                        <div className="flex items-center gap-2">
+                            <Badge variant="secondary" className="font-bold">#{myStats.globalRank || '-'}</Badge>
+                            <span className="text-sm font-bold text-emerald-600">
+                                {formatCurrency(myStats.metrics?.revenueClosed || 0)}
+                            </span>
+                        </div>
+                    </div>
+                )}
             </div>
+
+            <Tabs defaultValue="employees" className="w-full">
+                <TabsList className="mb-6">
+                    <TabsTrigger value="employees">Top Employees</TabsTrigger>
+                    <TabsTrigger value="teams">Top Teams</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="employees">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {globalLeaderboard?.slice(0, 3).map((entry: any, index: number) => (
+                            <LeaderboardCard key={entry.userId} entry={entry} rank={index + 1} type="employee" />
+                        ))}
+                        {(!globalLeaderboard || globalLeaderboard.length === 0) && (
+                            <div className="col-span-3 py-12 text-center text-muted-foreground bg-muted/20 rounded-xl border border-dashed">
+                                No rankings available yet.
+                            </div>
+                        )}
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="teams">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {managersLeaderboard?.slice(0, 3).map((entry: any, index: number) => (
+                            <LeaderboardCard key={entry.userId} entry={entry} rank={index + 1} type="team" />
+                        ))}
+                        {(!managersLeaderboard || managersLeaderboard.length === 0) && (
+                            <div className="col-span-3 py-12 text-center text-muted-foreground bg-muted/20 rounded-xl border border-dashed">
+                                No team rankings available yet.
+                            </div>
+                        )}
+                    </div>
+                </TabsContent>
+            </Tabs>
         </div>
     );
 }

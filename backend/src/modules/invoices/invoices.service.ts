@@ -1,15 +1,17 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { Role, InvoiceStatus, DealStage } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { PdfService } from './pdf.service';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class InvoicesService {
     constructor(
         private prisma: PrismaService,
         private pdfService: PdfService,
+        private emailService: EmailService,
     ) { }
 
     private async generateInvoiceNumber(): Promise<string> {
@@ -261,6 +263,30 @@ export class InvoicesService {
         return this.pdfService.generateInvoicePdf(invoice);
     }
 
+    async sendInvoiceEmail(id: string, to?: string) {
+        const invoice = await this.findOne(id);
+
+        const recipient = to || invoice.customer?.email;
+        if (!recipient) {
+            throw new BadRequestException('Recipient email is required');
+        }
+
+        const pdfBuffer = await this.pdfService.generateInvoicePdf(invoice);
+        const sent = await this.emailService.sendInvoiceEmail(
+            invoice.id,
+            recipient,
+            invoice.customer?.id || '',
+            pdfBuffer,
+            invoice.invoiceNumber,
+        );
+
+        if (sent && invoice.status === InvoiceStatus.DRAFT) {
+            await this.updateStatus(invoice.id, InvoiceStatus.SENT);
+        }
+
+        return { success: sent };
+    }
+
     async delete(id: string) {
         const invoice = await this.prisma.invoice.findUnique({ where: { id } });
 
@@ -304,6 +330,53 @@ export class InvoicesService {
                 };
                 return acc;
             }, {} as Record<InvoiceStatus, { count: number; value: number }>),
+        };
+    }
+
+    async getDueInvoices(filters?: {
+        assigneeId?: string; // Customer owner
+        daysOverdue?: number;
+        search?: string;
+    }) {
+        const now = new Date();
+        const days = filters?.daysOverdue ?? 0;
+        const cutoff = new Date(now);
+        cutoff.setDate(cutoff.getDate() - days);
+
+        const where: any = {
+            dueDate: { lt: cutoff },
+            status: { notIn: [InvoiceStatus.PAID, InvoiceStatus.CANCELLED] },
+        };
+
+        if (filters?.assigneeId) {
+            where.customer = { assigneeId: filters.assigneeId } as any;
+        }
+
+        if (filters?.search) {
+            where.OR = [
+                { invoiceNumber: { contains: filters.search, mode: 'insensitive' } },
+                { customer: { company: { contains: filters.search, mode: 'insensitive' } } },
+            ];
+        }
+
+        const [items, count, totalDue] = await Promise.all([
+            this.prisma.invoice.findMany({
+                where,
+                include: {
+                    customer: {
+                        select: { id: true, firstName: true, lastName: true, email: true, company: true, assigneeId: true },
+                    },
+                },
+                orderBy: { dueDate: 'asc' },
+            }),
+            this.prisma.invoice.count({ where }),
+            this.prisma.invoice.aggregate({ where, _sum: { total: true } }),
+        ]);
+
+        return {
+            count,
+            totalDue: totalDue._sum.total || 0,
+            invoices: items,
         };
     }
 }

@@ -28,6 +28,7 @@ import {
     MoreHorizontal,
     Mail,
 } from 'lucide-react';
+import { CreateUserDialog } from '@/components/users/create-user-dialog';
 import { getInitials, cn } from '@/lib/utils';
 
 const roleConfig: Record<string, { label: string; color: string; bg: string }> = {
@@ -72,10 +73,7 @@ export default function UsersPage() {
                     </p>
                 </div>
                 {user?.role === 'SUPER_ADMIN' && (
-                    <Button className="gap-2">
-                        <Plus className="h-4 w-4" />
-                        Add User
-                    </Button>
+                    <CreateUserDialog />
                 )}
             </div>
 

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import * as Handlebars from 'handlebars';
+import puppeteer from 'puppeteer';
 
 @Injectable()
 export class PdfService {
@@ -190,16 +191,18 @@ export class PdfService {
         const template = Handlebars.compile(this.invoiceTemplate);
         const html = template(invoice);
 
-        // For production, use Puppeteer - for now return HTML as buffer
-        // This is a simplified version - in production you'd use:
-        // const browser = await puppeteer.launch();
-        // const page = await browser.newPage();
-        // await page.setContent(html);
-        // const pdf = await page.pdf({ format: 'A4' });
-        // await browser.close();
-        // return pdf;
-
-        return Buffer.from(html);
+        try {
+            const browser = await puppeteer.launch({
+                args: ['--no-sandbox', '--disable-setuid-sandbox'],
+            });
+            const page = await browser.newPage();
+            await page.setContent(html, { waitUntil: 'networkidle0' });
+            const pdf = await page.pdf({ format: 'A4', printBackground: true });
+            await browser.close();
+            return pdf;
+        } catch (err) {
+            return Buffer.from(html);
+        }
     }
 
     getInvoiceHtml(invoice: any): string {

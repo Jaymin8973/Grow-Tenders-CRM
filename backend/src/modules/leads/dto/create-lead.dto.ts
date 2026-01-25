@@ -7,13 +7,13 @@ import {
     IsNumber,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { LeadStatus, LeadSource } from '@prisma/client';
+import { LeadStatus, LeadSource, LeadType } from '@prisma/client';
 
 export class CreateLeadDto {
-    @ApiProperty({ example: 'New Business Opportunity' })
+    @ApiProperty({ example: 'New Business Opportunity', required: false })
     @IsString()
-    @IsNotEmpty()
-    title: string;
+    @IsOptional()
+    title?: string;
 
     @ApiProperty({ example: 'John' })
     @IsString()
@@ -55,10 +55,12 @@ export class CreateLeadDto {
     @IsOptional()
     source?: LeadSource;
 
-    @ApiPropertyOptional({ example: 50000 })
-    @IsNumber()
+    @ApiPropertyOptional({ enum: LeadType, default: LeadType.COLD })
+    @IsEnum(LeadType)
     @IsOptional()
-    value?: number;
+    type?: LeadType;
+
+
 
     @ApiPropertyOptional({ example: 'Interested in our enterprise solution' })
     @IsString()
@@ -80,15 +82,17 @@ export class CreateLeadDto {
     @IsOptional()
     state?: string;
 
-    @ApiPropertyOptional({ example: 'USA' })
-    @IsString()
-    @IsOptional()
-    country?: string;
+
 
     @ApiPropertyOptional({ example: 'https://acmecorp.com' })
     @IsString()
     @IsOptional()
     website?: string;
+
+    @ApiPropertyOptional({ example: 'Some key notes about the lead' })
+    @IsString()
+    @IsOptional()
+    notes?: string;
 
     @ApiPropertyOptional()
     @IsString()

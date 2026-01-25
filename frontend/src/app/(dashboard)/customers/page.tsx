@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { EmailComposeDialog } from '@/components/email/email-compose-dialog';
+import { ComposeEmailDialog } from '@/components/mail/compose-email-dialog';
 import { CreateCustomerDialog } from '@/components/customers/create-customer-dialog';
 import {
     Table,
@@ -327,12 +327,11 @@ export default function CustomersPage() {
                 </CardContent>
             </Card>
 
-            <EmailComposeDialog
-                open={emailDialogOpen}
-                onOpenChange={setEmailDialogOpen}
-                to={selectedCustomer?.email || ''}
-                toName={selectedCustomer ? `${selectedCustomer.firstName} ${selectedCustomer.lastName}` : ''}
-                customerId={selectedCustomer?.id}
+            <ComposeEmailDialog
+                isOpen={emailDialogOpen}
+                onClose={() => setEmailDialogOpen(false)}
+                defaultTo={selectedCustomer?.email || ''}
+                relatedTo={selectedCustomer ? { type: 'Customer', id: selectedCustomer.id, name: `${selectedCustomer.firstName} ${selectedCustomer.lastName}` } : undefined}
             />
 
             <CreateCustomerDialog
