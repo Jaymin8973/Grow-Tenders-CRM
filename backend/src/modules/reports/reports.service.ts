@@ -11,10 +11,22 @@ interface DateRange {
 export class ReportsService {
     constructor(private prisma: PrismaService) { }
 
-    async getSalesPerformance(dateRange?: DateRange) {
+    async getSalesPerformance(userId: string, role: Role, dateRange?: DateRange) {
         const dateFilter = dateRange ? {
             createdAt: { gte: dateRange.startDate, lte: dateRange.endDate },
         } : {};
+
+        let userFilter: any = {};
+        if (role === Role.EMPLOYEE) {
+            userFilter = { ownerId: userId };
+        } else if (role === Role.MANAGER) {
+            const teamMembers = await this.prisma.user.findMany({
+                where: { managerId: userId },
+                select: { id: true },
+            });
+            const teamIds = [userId, ...teamMembers.map(m => m.id)];
+            userFilter = { ownerId: { in: teamIds } };
+        }
 
         const [
             totalRevenue,
@@ -23,26 +35,21 @@ export class ReportsService {
             avgDealSize,
             monthlyRevenue,
         ] = await Promise.all([
-            // Total revenue
             this.prisma.deal.aggregate({
-                where: { stage: DealStage.CLOSED_WON, ...dateFilter },
+                where: { stage: DealStage.CLOSED_WON, ...dateFilter, ...userFilter },
                 _sum: { value: true },
             }),
-            // Won deals count
             this.prisma.deal.count({
-                where: { stage: DealStage.CLOSED_WON, ...dateFilter },
+                where: { stage: DealStage.CLOSED_WON, ...dateFilter, ...userFilter },
             }),
-            // Lost deals count
             this.prisma.deal.count({
-                where: { stage: DealStage.CLOSED_LOST, ...dateFilter },
+                where: { stage: DealStage.CLOSED_LOST, ...dateFilter, ...userFilter },
             }),
-            // Average deal size
             this.prisma.deal.aggregate({
-                where: { stage: DealStage.CLOSED_WON, ...dateFilter },
+                where: { stage: DealStage.CLOSED_WON, ...dateFilter, ...userFilter },
                 _avg: { value: true },
             }),
-            // Monthly revenue (last 12 months)
-            this.getMonthlyRevenue(),
+            this.getMonthlyRevenue(userFilter),
         ]);
 
         const winRate = wonDeals + lostDeals > 0
@@ -59,7 +66,7 @@ export class ReportsService {
         };
     }
 
-    private async getMonthlyRevenue() {
+    private async getMonthlyRevenue(userFilter: any) {
         const now = new Date();
         const months = [];
 
@@ -71,6 +78,7 @@ export class ReportsService {
                 where: {
                     stage: DealStage.CLOSED_WON,
                     actualCloseDate: { gte: startDate, lte: endDate },
+                    ...userFilter,
                 },
                 _sum: { value: true },
             });
@@ -84,12 +92,25 @@ export class ReportsService {
         return months;
     }
 
-    async getPipelineBreakdown() {
+    async getPipelineBreakdown(userId: string, role: Role) {
         const stages = Object.values(DealStage);
+
+        let userFilter: any = {};
+        if (role === Role.EMPLOYEE) {
+            userFilter = { ownerId: userId };
+        } else if (role === Role.MANAGER) {
+            const teamMembers = await this.prisma.user.findMany({
+                where: { managerId: userId },
+                select: { id: true },
+            });
+            const teamIds = [userId, ...teamMembers.map(m => m.id)];
+            userFilter = { ownerId: { in: teamIds } };
+        }
+
         const breakdown = await Promise.all(
             stages.map(async (stage) => {
                 const result = await this.prisma.deal.aggregate({
-                    where: { stage },
+                    where: { stage, ...userFilter },
                     _count: true,
                     _sum: { value: true },
                 });

@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { EmailService } from '../../email/email.service';
-import { ScrapedTenderStatus } from '@prisma/client';
+import { TenderStatus } from '@prisma/client';
 
 @Injectable()
 export class TenderNotificationService {
@@ -15,83 +15,147 @@ export class TenderNotificationService {
     async sendNewTenderAlerts(): Promise<number> {
         this.logger.log('Starting tender notification process...');
 
-        // Get all active subscriptions with customer details
+        // 1. Queue Generation
+        await this.generateDispatchQueue();
+
+        // 2. Queue Processing
+        return await this.processDispatchQueue();
+    }
+
+    private async generateDispatchQueue() {
+        // Get all active subscriptions
         const subscriptions = await this.prisma.tenderSubscription.findMany({
             where: { isActive: true },
             include: {
-                customer: {
-                    select: {
-                        id: true,
-                        firstName: true,
-                        lastName: true,
-                        email: true,
-                        company: true,
-                    },
-                },
+                customer: { select: { id: true, subscriptionActive: true } },
             },
         });
 
-        if (subscriptions.length === 0) {
-            this.logger.log('No active subscriptions found');
-            return 0;
-        }
+        if (subscriptions.length === 0) return;
 
-        // Get tenders created since the last scheduler run (approx 2 hours ago)
-        // We use 2.5 hours to be safe against slight delays, duplicates are handled by not sending if already notified (logic below needs enhancement if strict dedupe needed)
-        // Ideally we should track sent emails, but for now relying on creation window + unique constraints
-        const lastRun = new Date(Date.now() - 150 * 60 * 1000); // 2.5 hours
-        const newTenders = await this.prisma.scrapedTender.findMany({
+        // Get recent PUBLISHED tenders (last 24 hours to be safe, duplicates handled by queue unique check if we had one, but we rely on processed flag or similar. 
+        // Actually, we should check if we already queued this tender for this customer.
+        // For now, let's grab tenders created in last run window (e.g. 3 hours)
+        const lastRun = new Date(Date.now() - 3 * 60 * 60 * 1000);
+        const newTenders = await this.prisma.tender.findMany({
             where: {
-                status: ScrapedTenderStatus.ACTIVE,
+                status: 'PUBLISHED',
                 createdAt: { gte: lastRun },
+                source: 'GEM',
             },
         });
 
-        if (newTenders.length === 0) {
-            this.logger.log('No new tenders to notify about');
-            return 0;
-        }
+        if (newTenders.length === 0) return;
 
-        let notificationsSent = 0;
+        let queuedCount = 0;
 
         for (const subscription of subscriptions) {
-            if (!subscription.customer.email) continue;
+            // Check if customer subscription is active (billing wise)
+            if (!subscription.customer.subscriptionActive) continue;
 
-            // Filter tenders matching customer preferences
             const matchingTenders = newTenders.filter(tender => {
-                // Check state match
                 const stateMatch = subscription.states.length === 0 ||
                     (tender.state && subscription.states.some(s =>
                         tender.state!.toLowerCase().includes(s.toLowerCase())
                     ));
 
-                // Check category/keyword match
                 const categoryMatch = subscription.categories.length === 0 ||
                     subscription.categories.some(cat =>
                         tender.title?.toLowerCase().includes(cat.toLowerCase()) ||
-                        tender.department?.toLowerCase().includes(cat.toLowerCase())
+                        tender.description?.toLowerCase().includes(cat.toLowerCase()) ||
+                        tender.categoryName?.toLowerCase().includes(cat.toLowerCase())
                     );
 
                 return stateMatch && categoryMatch;
             });
 
-            if (matchingTenders.length === 0) continue;
+            for (const tender of matchingTenders) {
+                // Check if already queued
+                const existing = await this.prisma.tenderDispatchQueue.findFirst({
+                    where: {
+                        tenderId: tender.id,
+                        customerId: subscription.customer.id,
+                    },
+                });
+
+                if (!existing) {
+                    await this.prisma.tenderDispatchQueue.create({
+                        data: {
+                            tenderId: tender.id,
+                            customerId: subscription.customer.id,
+                            status: 'PENDING',
+                        },
+                    });
+                    queuedCount++;
+                }
+            }
+        }
+        this.logger.log(`Queued ${queuedCount} new dispatch items.`);
+    }
+
+    private async processDispatchQueue(): Promise<number> {
+        const pendingItems = await this.prisma.tenderDispatchQueue.findMany({
+            where: { status: 'PENDING' },
+            take: 50, // Batch size
+            include: {
+                tender: true,
+                customer: { select: { id: true, email: true, firstName: true } },
+            },
+        });
+
+        if (pendingItems.length === 0) return 0;
+
+        let sentCount = 0;
+
+        // Group by customer to send 1 email with multiple tenders
+        const customerBatches = new Map<string, typeof pendingItems>();
+
+        for (const item of pendingItems) {
+            const customerId = item.customerId;
+            if (!customerBatches.has(customerId)) {
+                customerBatches.set(customerId, []);
+            }
+            customerBatches.get(customerId)?.push(item);
+        }
+
+        for (const [customerId, items] of customerBatches) {
+            const customer = items[0].customer; // All items have same customer
+            if (!customer || !customer.email) {
+                // Mark as failed
+                await this.prisma.tenderDispatchQueue.updateMany({
+                    where: { id: { in: items.map(i => i.id) } },
+                    data: { status: 'FAILED', errorMessage: 'No email found' }
+                });
+                continue;
+            }
+
+            const tenders = items.map(i => i.tender);
 
             try {
-                await this.sendTenderEmail(
-                    subscription.customer.email,
-                    subscription.customer.firstName || 'Customer',
-                    matchingTenders,
-                );
-                notificationsSent++;
-                this.logger.log(`Sent ${matchingTenders.length} tenders to ${subscription.customer.email}`);
+                await this.sendTenderEmail(customer.email, customer.firstName || 'Customer', tenders);
+
+                // Mark as SENT
+                await this.prisma.tenderDispatchQueue.updateMany({
+                    where: { id: { in: items.map(i => i.id) } },
+                    data: { status: 'SENT', lastAttemptAt: new Date() }
+                });
+                sentCount += items.length;
             } catch (error) {
-                this.logger.error(`Failed to send email to ${subscription.customer.email}: ${error.message}`);
+                this.logger.error(`Failed to send email to ${customer.email}: ${error.message}`);
+                // Mark as FAILED or retry logic (increment retry count)
+                await this.prisma.tenderDispatchQueue.updateMany({
+                    where: { id: { in: items.map(i => i.id) } },
+                    data: {
+                        status: 'FAILED',
+                        errorMessage: error.message,
+                        lastAttemptAt: new Date(),
+                        retryCount: { increment: 1 }
+                    }
+                });
             }
         }
 
-        this.logger.log(`Sent notifications to ${notificationsSent} customers`);
-        return notificationsSent;
+        return sentCount;
     }
 
     private async sendTenderEmail(
@@ -104,18 +168,18 @@ export class TenderNotificationService {
         const tenderList = tenders.slice(0, 10).map(t => `
             <tr>
                 <td style="padding: 10px; border-bottom: 1px solid #eee;">
-                    <strong><a href="${t.sourceUrl || '#'}" style="color: #667eea; text-decoration: none;">${t.bidNo}</a></strong><br>
+                    <strong><a href="${t.tenderUrl || '#'}" style="color: #667eea; text-decoration: none;">${t.referenceId || 'View'}</a></strong><br>
                     <span style="color: #666;">${t.title?.substring(0, 100)}${t.title?.length > 100 ? '...' : ''}</span>
                 </td>
                 <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">
                     ${t.state || 'N/A'}
                 </td>
                 <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">
-                    ${t.endDate ? new Date(t.endDate).toLocaleDateString('en-IN') : 'N/A'}
+                    ${t.closingDate ? new Date(t.closingDate).toLocaleDateString('en-IN') : 'N/A'}
                 </td>
                 <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">
-                    ${t.sourceUrl ? `
-                    <a href="${t.sourceUrl}" style="background: #28a745; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 12px; white-space: nowrap;">
+                    ${t.tenderUrl ? `
+                    <a href="${t.tenderUrl}" style="background: #28a745; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 12px; white-space: nowrap;">
                         View on GeM
                     </a>` : '-'}
                 </td>
@@ -149,7 +213,7 @@ export class TenderNotificationService {
                     ${tenders.length > 10 ? `<p style="color: #666; text-align: center;">...and ${tenders.length - 10} more tenders</p>` : ''}
                     
                     <div style="text-align: center; margin-top: 20px;">
-                        <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/scraped-tenders" 
+                        <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/gem-tenders" 
                            style="background: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
                             View All Tenders
                         </a>

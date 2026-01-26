@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { Response } from 'express';
-import { Role, ScrapedTenderStatus } from '@prisma/client';
+import { Role } from '@prisma/client';
 import { ScrapedTendersService } from './services/scraped-tenders.service';
 import { TenderSchedulerService } from './services/tender-scheduler.service';
 import { JwtAuthGuard, RolesGuard } from '../../common/guards';
@@ -27,14 +27,14 @@ export class ScrapedTendersController {
 
     @Get()
     @ApiOperation({ summary: 'Get all scraped tenders with pagination' })
-    @ApiQuery({ name: 'status', required: false, enum: ScrapedTenderStatus })
+    @ApiQuery({ name: 'status', required: false })
     @ApiQuery({ name: 'state', required: false })
     @ApiQuery({ name: 'search', required: false })
     @ApiQuery({ name: 'category', required: false })
     @ApiQuery({ name: 'page', required: false, description: 'Page number (default: 1)' })
     @ApiQuery({ name: 'limit', required: false, description: 'Items per page (default: 20)' })
     findAll(
-        @Query('status') status?: ScrapedTenderStatus,
+        @Query('status') status?: string,
         @Query('state') state?: string,
         @Query('search') search?: string,
         @Query('category') category?: string,
@@ -83,7 +83,7 @@ export class ScrapedTendersController {
 
         res.set({
             'Content-Type': 'application/pdf',
-            'Content-Disposition': `attachment; filename="tender-${tender.bidNo.replace(/\//g, '-')}.pdf"`,
+            'Content-Disposition': `attachment; filename="tender-${(tender.bidNo || 'unknown').replace(/\//g, '-')}.pdf"`,
             'Content-Length': pdfBuffer.length,
         });
 

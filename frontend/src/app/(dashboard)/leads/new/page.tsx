@@ -1,14 +1,14 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import apiClient from '@/lib/api-client';
 import { useAuth } from '@/contexts/auth-context';
 import { useToast } from '@/hooks/use-toast';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,19 +23,16 @@ import {
 import {
     ArrowLeft,
     Loader2,
-    Save,
     User,
-    Phone,
     MapPin,
-    Briefcase,
-    Database,
-    Globe,
-    Mail,
     Building2,
+    Database,
+    BadgeCheck,
     Hash,
-    BadgeCheck
+    Mail
 } from 'lucide-react';
 
+// Schema
 const leadSchema = z.object({
     salutation: z.string().optional(),
     firstName: z.string().min(1, 'First name is required'),
@@ -90,6 +87,7 @@ export default function NewLeadPage() {
         },
     });
 
+    // Fetch team members for assignment
     const { data: teamMembers } = useQuery({
         queryKey: ['team-members'],
         queryFn: async () => {
@@ -107,406 +105,285 @@ export default function NewLeadPage() {
             queryClient.invalidateQueries({ queryKey: ['leads'] });
             queryClient.invalidateQueries({ queryKey: ['lead-stats'] });
             toast({
-                title: 'Lead created successfully',
-                description: 'The new lead has been added to your CRM.',
+                title: 'Success',
+                description: 'Lead created successfully.',
             });
             router.push('/leads');
         },
         onError: (error: any) => {
             toast({
-                title: 'Failed to create lead',
-                description: error.response?.data?.message || 'Something went wrong',
+                title: 'Error',
+                description: error.response?.data?.message || 'Failed to create lead',
                 variant: 'destructive',
             });
         },
     });
 
     const onSubmit = (data: LeadFormData) => {
-        if (data.value) {
-            data.value = Number(data.value);
-        }
+        if (data.value) data.value = Number(data.value);
         createLeadMutation.mutate(data);
     };
 
     return (
-        <div className="max-w-[1200px] mx-auto space-y-8 page-enter">
-            {/* Page Header */}
-            <div className="flex items-center justify-between py-4 border-b mb-6">
-                <div className="flex items-center gap-4">
-                    <Button
-                        variant="outline"
-                        size="icon"
-                        className="rounded-full hover:bg-primary hover:text-primary-foreground transition-all duration-300"
-                        onClick={() => router.push('/leads')}
-                    >
-                        <ArrowLeft className="h-5 w-5" />
-                    </Button>
-                    <div>
-                        <h1 className="text-2xl font-bold tracking-tight">Create New Lead</h1>
-                        <p className="text-sm text-muted-foreground">Fill in the details to add a new business opportunity</p>
+        <div className="max-w-7xl mx-auto">
+            <form onSubmit={handleSubmit(onSubmit)}>
+                {/* Header */}
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            type="button"
+                            onClick={() => router.back()}
+                            className="rounded-full"
+                        >
+                            <ArrowLeft className="h-5 w-5" />
+                        </Button>
+                        <div>
+                            <h1 className="text-xl font-bold tracking-tight">Create New Lead</h1>
+                        </div>
+                    </div>
+                    <div className="flex gap-2">
+                        <Button type="button" variant="outline" size="sm" onClick={() => router.back()}>
+                            Cancel
+                        </Button>
+                        <Button type="submit" size="sm" disabled={createLeadMutation.isPending}>
+                            {createLeadMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Save Lead
+                        </Button>
                     </div>
                 </div>
-                <div className="flex gap-3">
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={() => router.push('/leads')}
-                        className="px-6"
-                    >
-                        Discard
-                    </Button>
-                    <Button
-                        onClick={handleSubmit(onSubmit)}
-                        disabled={createLeadMutation.isPending}
-                        className="gap-2 px-8 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300"
-                    >
-                        {createLeadMutation.isPending ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                            <Save className="h-4 w-4" />
-                        )}
-                        Save Lead
-                    </Button>
-                </div>
-            </div>
 
-            <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    {/* Left Column (8/12) */}
+                    <div className="lg:col-span-8 space-y-6">
 
-                {/* Left Column - Main Info */}
-                <div className="lg:col-span-2 space-y-8">
-
-                    {/* Primary Information */}
-                    <Card className="border-none shadow-md bg-card/50">
-                        <CardHeader className="flex flex-row items-center gap-4 pb-2">
-                            <div className="p-2 bg-primary/10 rounded-lg">
-                                <User className="h-5 w-5 text-primary" />
-                            </div>
-                            <div>
-                                <CardTitle className="text-lg">Primary Information</CardTitle>
-                                <CardDescription>Basic contact details and identity</CardDescription>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="pt-4 grid grid-cols-1 md:grid-cols-6 gap-6">
-                            <div className="md:col-span-1 space-y-2">
-                                <Label>Select</Label>
-                                <Select onValueChange={(val) => setValue('salutation', val)}>
-                                    <SelectTrigger className="bg-background/50 border-muted-foreground/20">
-                                        <SelectValue placeholder="Prefix" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Mr.">Mr.</SelectItem>
-                                        <SelectItem value="Ms.">Ms.</SelectItem>
-                                        <SelectItem value="Mrs.">Mrs.</SelectItem>
-                                        <SelectItem value="Dr.">Dr.</SelectItem>
-                                        <SelectItem value="Prof.">Prof.</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="md:col-span-2 space-y-2">
-                                <Label>First Name <span className="text-destructive">*</span></Label>
-                                <Input
-                                    {...register('firstName')}
-                                    placeholder="Enter first name"
-                                    className="bg-background/50 border-muted-foreground/20 focus:border-primary transition-all"
-                                />
-                                {errors.firstName && <p className="text-xs text-destructive font-medium">{errors.firstName.message}</p>}
-                            </div>
-                            <div className="md:col-span-3 space-y-2">
-                                <Label>Last Name <span className="text-destructive">*</span></Label>
-                                <Input
-                                    {...register('lastName')}
-                                    placeholder="Enter last name"
-                                    className="bg-background/50 border-muted-foreground/20 focus:border-primary transition-all"
-                                />
-                                {errors.lastName && <p className="text-xs text-destructive font-medium">{errors.lastName.message}</p>}
-                            </div>
-
-                            <div className="md:col-span-3 space-y-2">
-                                <div className="flex items-center gap-2">
-                                    <Mail className="h-4 w-4 text-muted-foreground" />
-                                    <Label>Email Address <span className="text-destructive">*</span></Label>
-                                </div>
-                                <Input
-                                    {...register('email')}
-                                    type="email"
-                                    placeholder="example@company.com"
-                                    className="bg-background/50 border-muted-foreground/20 focus:border-primary transition-all"
-                                />
-                                {errors.email && <p className="text-xs text-destructive font-medium">{errors.email.message}</p>}
-                            </div>
-
-                            <div className="md:col-span-3 space-y-2">
-                                <div className="flex items-center gap-2">
-                                    <Briefcase className="h-4 w-4 text-muted-foreground" />
-                                    <Label>Job Title</Label>
-                                </div>
-                                <Input
-                                    {...register('position')}
-                                    placeholder="e.g. CEO, Sales Manager"
-                                    className="bg-background/50 border-muted-foreground/20 focus:border-primary transition-all"
-                                />
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Business Details */}
-                    <Card className="border-none shadow-md bg-card/50">
-                        <CardHeader className="flex flex-row items-center gap-4 pb-2">
-                            <div className="p-2 bg-primary/10 rounded-lg">
-                                <Building2 className="h-5 w-5 text-primary" />
-                            </div>
-                            <div>
-                                <CardTitle className="text-lg">Business Details</CardTitle>
-                                <CardDescription>Company and professional information</CardDescription>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <Label>Account Name / Company</Label>
-                                <Input
-                                    {...register('company')}
-                                    placeholder="Company name"
-                                    className="bg-background/50 border-muted-foreground/20"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Department</Label>
-                                <Input
-                                    {...register('department')}
-                                    placeholder="e.g. Procurement, IT"
-                                    className="bg-background/50 border-muted-foreground/20"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Industry</Label>
-                                <Input
-                                    {...register('industry')}
-                                    placeholder="e.g. Manufacturing, Retail"
-                                    className="bg-background/50 border-muted-foreground/20"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <div className="flex items-center gap-2">
-                                    <Globe className="h-4 w-4 text-muted-foreground" />
-                                    <Label>Website</Label>
-                                </div>
-                                <Input
-                                    {...register('website')}
-                                    placeholder="https://"
-                                    className="bg-background/50 border-muted-foreground/20"
-                                />
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Address Information */}
-                    <Card className="border-none shadow-md bg-card/50">
-                        <CardHeader className="flex flex-row items-center gap-4 pb-2">
-                            <div className="p-2 bg-primary/10 rounded-lg">
-                                <MapPin className="h-5 w-5 text-primary" />
-                            </div>
-                            <div>
-                                <CardTitle className="text-lg">Address Details</CardTitle>
-                                <CardDescription>Physical location and mailing address</CardDescription>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="pt-4 space-y-6">
-                            <div className="space-y-2">
-                                <Label>Street Address</Label>
-                                <Input
-                                    {...register('address')}
-                                    placeholder="Unit #, Street address"
-                                    className="bg-background/50 border-muted-foreground/20"
-                                />
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div className="space-y-2">
-                                    <Label>City</Label>
-                                    <Input {...register('city')} placeholder="City" className="bg-background/50 border-muted-foreground/20" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>State / Province</Label>
-                                    <Input {...register('state')} placeholder="State" className="bg-background/50 border-muted-foreground/20" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Postal Code</Label>
-                                    <Input {...register('postalCode')} placeholder="Zip Code" className="bg-background/50 border-muted-foreground/20" />
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Country</Label>
-                                <Input {...register('country')} placeholder="Country" className="bg-background/50 border-muted-foreground/20" />
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Description */}
-                    <Card className="border-none shadow-md bg-card/50">
-                        <CardHeader className="flex flex-row items-center gap-4 pb-2">
-                            <div className="p-2 bg-primary/10 rounded-lg">
-                                <Database className="h-5 w-5 text-primary" />
-                            </div>
-                            <div>
-                                <CardTitle className="text-lg">Internal Notes</CardTitle>
-                                <CardDescription>Additional context and background</CardDescription>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="pt-4">
-                            <Textarea
-                                {...register('description')}
-                                rows={4}
-                                placeholder="Describe the lead's needs, history, or specific requirements..."
-                                className="bg-background/50 border-muted-foreground/20 resize-none focus:ring-1 focus:ring-primary"
-                            />
-                        </CardContent>
-                    </Card>
-                </div>
-
-                {/* Right Column - Status & Intelligence */}
-                <div className="space-y-8">
-
-                    {/* Contact Channels */}
-                    <Card className="border-none shadow-md bg-card/50">
-                        <CardHeader className="pb-3 border-b">
-                            <CardTitle className="text-base flex items-center gap-2">
-                                <Phone className="h-4 w-4 text-primary" />
-                                Contact Channels
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="pt-4 space-y-4">
-                            <div className="space-y-2">
-                                <Label>Mobile Number</Label>
-                                <Input {...register('mobile')} placeholder="+XX XXXXX XXXXX" className="bg-background/50 border-muted-foreground/20" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Office Phone</Label>
-                                <Input {...register('phone')} placeholder="+XX XXX XXXXXX" className="bg-background/50 border-muted-foreground/20" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Fax</Label>
-                                <Input {...register('fax')} placeholder="Fax number" className="bg-background/50 border-muted-foreground/20" />
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Lead Classification */}
-                    <Card className="border-none shadow-md bg-card/50">
-                        <CardHeader className="pb-3 border-b">
-                            <CardTitle className="text-base flex items-center gap-2">
-                                <BadgeCheck className="h-4 w-4 text-primary" />
-                                Classification
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="pt-4 space-y-4">
-                            <div className="space-y-2">
-                                <Label>Status</Label>
-                                <Select onValueChange={(val) => setValue('status', val as any)} defaultValue="NEW">
-                                    <SelectTrigger className="bg-background/50 border-muted-foreground/20">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="NEW">New</SelectItem>
-                                        <SelectItem value="CONTACTED">Contacted</SelectItem>
-                                        <SelectItem value="QUALIFIED">Qualified</SelectItem>
-                                        <SelectItem value="PROPOSAL">Proposal</SelectItem>
-                                        <SelectItem value="NEGOTIATION">Negotiation</SelectItem>
-                                        <SelectItem value="WON">Won</SelectItem>
-                                        <SelectItem value="LOST">Lost</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Lead Type</Label>
-                                <Select onValueChange={(val) => setValue('type', val as any)} defaultValue="COLD">
-                                    <SelectTrigger className="bg-background/50 border-muted-foreground/20">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="HOT">Hot 🔥</SelectItem>
-                                        <SelectItem value="WARM">Warm ⚡</SelectItem>
-                                        <SelectItem value="COLD">Cold ❄️</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Lead Source</Label>
-                                <Select onValueChange={(val) => setValue('source', val)} defaultValue="WEBSITE">
-                                    <SelectTrigger className="bg-background/50 border-muted-foreground/20">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="WEBSITE">Website</SelectItem>
-                                        <SelectItem value="REFERRAL">Referral</SelectItem>
-                                        <SelectItem value="COLD_CALL">Cold Call</SelectItem>
-                                        <SelectItem value="SOCIAL_MEDIA">Social Media</SelectItem>
-                                        <SelectItem value="ADVERTISEMENT">Advertisement</SelectItem>
-                                        <SelectItem value="TRADE_SHOW">Trade Show</SelectItem>
-                                        <SelectItem value="OTHER">Other</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Opportunity Value */}
-                    <Card className="border-none shadow-md bg-card/50 overflow-hidden bg-gradient-to-br from-primary/5 to-transparent">
-                        <CardHeader className="pb-3 border-b border-primary/10">
-                            <CardTitle className="text-base flex items-center gap-2 text-primary font-semibold">
-                                <Hash className="h-4 w-4" />
-                                Economic Value
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="pt-4">
-                            <div className="space-y-2">
-                                <Label>Opportunity Amount</Label>
-                                <div className="relative">
-                                    <span className="absolute left-3 top-2.5 text-muted-foreground font-medium">$</span>
-                                    <Input
-                                        type="number"
-                                        {...register('value', { valueAsNumber: true })}
-                                        placeholder="0.00"
-                                        className="pl-7 bg-background/70 border-primary/20 focus:border-primary font-semibold text-lg"
-                                    />
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Assignment */}
-                    {(user?.role === 'SUPER_ADMIN' || user?.role === 'MANAGER') && (
-                        <Card className="border-none shadow-md bg-card/50">
+                        {/* Primary Contact & Business Mixed for compactness */}
+                        <Card>
                             <CardHeader className="pb-3 border-b">
                                 <CardTitle className="text-base flex items-center gap-2">
                                     <User className="h-4 w-4 text-primary" />
-                                    Assignment
+                                    Lead Information
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="pt-4">
-                                <div className="space-y-2">
-                                    <Label>Assign To User</Label>
-                                    {teamMembers ? (
-                                        <Select onValueChange={(value) => setValue('assigneeId', value)}>
-                                            <SelectTrigger className="bg-background/50 border-muted-foreground/20">
-                                                <SelectValue placeholder="Select team member" />
+                            <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Name Row */}
+                                <div className="space-y-1 md:col-span-2 grid grid-cols-12 gap-4">
+                                    <div className="col-span-2">
+                                        <Label className="text-xs text-muted-foreground">Prefix</Label>
+                                        <Select onValueChange={(val) => setValue('salutation', val)}>
+                                            <SelectTrigger className="h-9">
+                                                <SelectValue placeholder="-" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                {teamMembers.map((member: any) => (
-                                                    <SelectItem key={member.id} value={member.id}>
-                                                        {member.firstName} {member.lastName}
+                                                <SelectItem value="Mr.">Mr.</SelectItem>
+                                                <SelectItem value="Ms.">Ms.</SelectItem>
+                                                <SelectItem value="Mrs.">Mrs.</SelectItem>
+                                                <SelectItem value="Dr.">Dr.</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="col-span-5">
+                                        <Label className="text-xs text-muted-foreground">First Name <span className="text-red-500">*</span></Label>
+                                        <Input {...register('firstName')} placeholder="John" className="h-9" />
+                                        {errors.firstName && <p className="text-xs text-red-500">{errors.firstName.message}</p>}
+                                    </div>
+                                    <div className="col-span-5">
+                                        <Label className="text-xs text-muted-foreground">Last Name <span className="text-red-500">*</span></Label>
+                                        <Input {...register('lastName')} placeholder="Doe" className="h-9" />
+                                        {errors.lastName && <p className="text-xs text-red-500">{errors.lastName.message}</p>}
+                                    </div>
+                                </div>
+
+                                {/* Email & Title */}
+                                <div className="grid grid-cols-2 gap-4 md:col-span-2">
+                                    <div>
+                                        <Label className="text-xs text-muted-foreground">Email <span className="text-red-500">*</span></Label>
+                                        <div className="relative">
+                                            <Mail className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                            <Input {...register('email')} className="pl-9 h-9" placeholder="john@example.com" />
+                                        </div>
+                                        {errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}
+                                    </div>
+                                    <div>
+                                        <Label className="text-xs text-muted-foreground">Job Title</Label>
+                                        <Input {...register('position')} placeholder="e.g. Manager" className="h-9" />
+                                    </div>
+                                </div>
+
+                                {/* Phone Numbers */}
+                                <div>
+                                    <Label className="text-xs text-muted-foreground">Mobile</Label>
+                                    <Input {...register('mobile')} placeholder="+XX XXXXX" className="h-9" />
+                                </div>
+                                <div>
+                                    <Label className="text-xs text-muted-foreground">Office Phone</Label>
+                                    <Input {...register('phone')} placeholder="+XX XXX..." className="h-9" />
+                                </div>
+
+                                {/* Business Details Section in same card */}
+                                <div className="md:col-span-2 pt-2 border-t mt-2">
+                                    <Label className="text-sm font-semibold flex items-center gap-2 mb-2">
+                                        <Building2 className="h-3 w-3" />
+                                        Organization
+                                    </Label>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <Label className="text-xs text-muted-foreground">Company</Label>
+                                            <Input {...register('company')} placeholder="Acme Inc" className="h-9" />
+                                        </div>
+                                        <div>
+                                            <Label className="text-xs text-muted-foreground">Website</Label>
+                                            <Input {...register('website')} placeholder="https://" className="h-9" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Address & Notes Combined */}
+                        <Card>
+                            <CardHeader className="pb-3 border-b">
+                                <CardTitle className="text-base flex items-center gap-2">
+                                    <MapPin className="h-4 w-4 text-primary" />
+                                    Location & Details
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="md:col-span-2">
+                                    <Label className="text-xs text-muted-foreground">Street Address</Label>
+                                    <Input {...register('address')} placeholder="123 Main St" className="h-9" />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4 md:col-span-2">
+                                    <div>
+                                        <Label className="text-xs text-muted-foreground">City</Label>
+                                        <Input {...register('city')} className="h-9" />
+                                    </div>
+                                    <div>
+                                        <Label className="text-xs text-muted-foreground">State</Label>
+                                        <Input {...register('state')} className="h-9" />
+                                    </div>
+                                    <div>
+                                        <Label className="text-xs text-muted-foreground">Zip Code</Label>
+                                        <Input {...register('postalCode')} className="h-9" />
+                                    </div>
+                                    <div>
+                                        <Label className="text-xs text-muted-foreground">Country</Label>
+                                        <Input {...register('country')} className="h-9" />
+                                    </div>
+                                </div>
+
+                                <div className="md:col-span-2 pt-2 border-t mt-2">
+                                    <Label className="text-sm font-semibold flex items-center gap-2 mb-2">
+                                        <Database className="h-3 w-3" />
+                                        Notes
+                                    </Label>
+                                    <Textarea {...register('description')} placeholder="Internal notes..." className="min-h-[80px]" />
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    {/* Right Column (4/12) */}
+                    <div className="lg:col-span-4 space-y-6">
+
+                        {/* Classification */}
+                        <Card>
+                            <CardHeader className="pb-3 border-b">
+                                <CardTitle className="text-base flex items-center gap-2">
+                                    <BadgeCheck className="h-4 w-4 text-primary" />
+                                    Pipeline Status
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="pt-6 space-y-4">
+                                <div>
+                                    <Label className="text-xs text-muted-foreground">Lead Status</Label>
+                                    <Select onValueChange={(val) => setValue('status', val as any)} defaultValue="NEW">
+                                        <SelectTrigger className="h-9">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="NEW">New</SelectItem>
+                                            <SelectItem value="CONTACTED">Contacted</SelectItem>
+                                            <SelectItem value="QUALIFIED">Qualified</SelectItem>
+                                            <SelectItem value="PROPOSAL">Proposal</SelectItem>
+                                            <SelectItem value="WON">Won</SelectItem>
+                                            <SelectItem value="LOST">Lost</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div>
+                                    <Label className="text-xs text-muted-foreground">Source</Label>
+                                    <Select onValueChange={(val) => setValue('source', val)} defaultValue="WEBSITE">
+                                        <SelectTrigger className="h-9">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="WEBSITE">Website</SelectItem>
+                                            <SelectItem value="REFERRAL">Referral</SelectItem>
+                                            <SelectItem value="COLD_CALL">Cold Call</SelectItem>
+                                            <SelectItem value="OTHER">Other</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div>
+                                    <Label className="text-xs text-muted-foreground">Type</Label>
+                                    <Select onValueChange={(val) => setValue('type', val as any)} defaultValue="COLD">
+                                        <SelectTrigger className="h-9">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="HOT">Hot 🔥</SelectItem>
+                                            <SelectItem value="WARM">Warm ⚡</SelectItem>
+                                            <SelectItem value="COLD">Cold ❄️</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Value & Assignment */}
+                        <Card>
+                            <CardHeader className="pb-3 border-b">
+                                <CardTitle className="text-base flex items-center gap-2">
+                                    <Hash className="h-4 w-4 text-primary" />
+                                    Deal Intelligence
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="pt-6 space-y-4">
+                                <div>
+                                    <Label className="text-xs text-muted-foreground">Estimated Value</Label>
+                                    <div className="relative mt-1">
+                                        <span className="absolute left-3 top-2.5 text-muted-foreground text-sm">$</span>
+                                        <Input
+                                            type="number"
+                                            {...register('value')}
+                                            className="pl-7 h-9 font-medium"
+                                            placeholder="0.00"
+                                        />
+                                    </div>
+                                </div>
+
+                                {(user?.role === 'SUPER_ADMIN' || user?.role === 'MANAGER') && (
+                                    <div>
+                                        <Label className="text-xs text-muted-foreground">Assignee</Label>
+                                        <Select onValueChange={(val) => setValue('assigneeId', val)}>
+                                            <SelectTrigger className="h-9">
+                                                <SelectValue placeholder="Select user" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {teamMembers?.map((m: any) => (
+                                                    <SelectItem key={m.id} value={m.id}>
+                                                        {m.firstName} {m.lastName}
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
-                                    ) : (
-                                        <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/20 p-2 rounded border border-dashed">
-                                            <Loader2 className="h-3 w-3 animate-spin" />
-                                            Loading owners...
-                                        </div>
-                                    )}
-                                </div>
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
-                    )}
+                    </div>
                 </div>
             </form>
         </div>

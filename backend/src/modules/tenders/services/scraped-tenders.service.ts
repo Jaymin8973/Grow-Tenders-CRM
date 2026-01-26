@@ -1,6 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { ScrapedTenderStatus } from '@prisma/client';
 import * as PDFDocument from 'pdfkit';
 
 @Injectable()
@@ -8,7 +7,7 @@ export class ScrapedTendersService {
     constructor(private prisma: PrismaService) { }
 
     async findAll(filters?: {
-        status?: ScrapedTenderStatus;
+        status?: string;
         state?: string;
         search?: string;
         category?: string;
@@ -19,37 +18,57 @@ export class ScrapedTendersService {
         const limit = filters?.limit || 20;
         const skip = (page - 1) * limit;
 
-        const where: any = {};
+        const where: any = { source: 'GEM' };
 
         if (filters?.status) {
-            where.status = filters.status;
+            // Map frontend status to backend status
+            if (filters.status === 'ACTIVE') where.status = 'PUBLISHED';
+            else if (filters.status === 'CLOSED') where.status = 'CLOSED';
+            // EXPIRED logic handled by date usually, or CLOSED
         }
         if (filters?.state) {
             where.state = { contains: filters.state, mode: 'insensitive' };
         }
         if (filters?.category) {
-            where.category = { contains: filters.category, mode: 'insensitive' };
+            where.categoryName = { contains: filters.category, mode: 'insensitive' };
         }
         if (filters?.search) {
             where.OR = [
-                { bidNo: { contains: filters.search, mode: 'insensitive' } },
+                { referenceId: { contains: filters.search, mode: 'insensitive' } },
                 { title: { contains: filters.search, mode: 'insensitive' } },
-                { department: { contains: filters.search, mode: 'insensitive' } },
+                { description: { contains: filters.search, mode: 'insensitive' } },
             ];
         }
 
         const [data, total] = await Promise.all([
-            this.prisma.scrapedTender.findMany({
+            this.prisma.tender.findMany({
                 where,
-                orderBy: { startDate: 'desc' },
+                orderBy: { publishDate: 'desc' },
                 skip,
                 take: limit,
             }),
-            this.prisma.scrapedTender.count({ where }),
+            this.prisma.tender.count({ where }),
         ]);
 
+        // Map to frontend expected format
+        const mappedData = data.map(t => ({
+            id: t.id,
+            bidNo: t.referenceId,
+            title: t.title,
+            category: t.categoryName,
+            department: t.description,
+            state: t.state,
+            quantity: '', // Not in new schema yet, optional
+            startDate: t.publishDate,
+            endDate: t.closingDate,
+            status: t.status === 'PUBLISHED' ? 'ACTIVE' : t.status,
+            source: 'GeM',
+            sourceUrl: t.tenderUrl,
+            createdAt: t.createdAt,
+        }));
+
         return {
-            data,
+            data: mappedData,
             meta: {
                 total,
                 page,
@@ -60,7 +79,7 @@ export class ScrapedTendersService {
     }
 
     async findOne(id: string) {
-        const tender = await this.prisma.scrapedTender.findUnique({
+        const tender = await this.prisma.tender.findUnique({
             where: { id },
         });
 
@@ -68,19 +87,35 @@ export class ScrapedTendersService {
             throw new NotFoundException('Tender not found');
         }
 
-        return tender;
+        // Map
+        return {
+            id: tender.id,
+            bidNo: tender.referenceId,
+            title: tender.title,
+            category: tender.categoryName,
+            department: tender.description,
+            state: tender.state,
+            quantity: '',
+            startDate: tender.publishDate,
+            endDate: tender.closingDate,
+            status: tender.status === 'PUBLISHED' ? 'ACTIVE' : tender.status,
+            source: 'GeM',
+            sourceUrl: tender.tenderUrl,
+            createdAt: tender.createdAt,
+        };
     }
 
     async getStats() {
         const [total, active, expiringSoon] = await Promise.all([
-            this.prisma.scrapedTender.count(),
-            this.prisma.scrapedTender.count({
-                where: { status: ScrapedTenderStatus.ACTIVE },
+            this.prisma.tender.count({ where: { source: 'GEM' } }),
+            this.prisma.tender.count({
+                where: { source: 'GEM', status: 'PUBLISHED' },
             }),
-            this.prisma.scrapedTender.count({
+            this.prisma.tender.count({
                 where: {
-                    status: ScrapedTenderStatus.ACTIVE,
-                    endDate: {
+                    source: 'GEM',
+                    status: 'PUBLISHED',
+                    closingDate: {
                         gte: new Date(),
                         lte: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days
                     },
@@ -92,8 +127,8 @@ export class ScrapedTendersService {
     }
 
     async getStates(): Promise<string[]> {
-        const tenders = await this.prisma.scrapedTender.findMany({
-            where: { state: { not: null } },
+        const tenders = await this.prisma.tender.findMany({
+            where: { source: 'GEM', state: { not: null } },
             select: { state: true },
             distinct: ['state'],
         });
@@ -102,13 +137,13 @@ export class ScrapedTendersService {
     }
 
     async getCategories(): Promise<string[]> {
-        const tenders = await this.prisma.scrapedTender.findMany({
-            where: { category: { not: null } },
-            select: { category: true },
-            distinct: ['category'],
+        const tenders = await this.prisma.tender.findMany({
+            where: { source: 'GEM', categoryName: { not: null } },
+            select: { categoryName: true },
+            distinct: ['categoryName'],
         });
 
-        return tenders.map(t => t.category!).filter(Boolean).sort();
+        return tenders.map(t => t.categoryName!).filter(Boolean).sort();
     }
 
     async generatePdf(id: string): Promise<Buffer> {
@@ -132,7 +167,7 @@ export class ScrapedTendersService {
 
             // Tender Info
             doc.fontSize(12).font('Helvetica-Bold').text('Bid Number: ', { continued: true });
-            doc.font('Helvetica').text(tender.bidNo);
+            doc.font('Helvetica').text(tender.bidNo || 'N/A');
             doc.moveDown(0.5);
 
             doc.font('Helvetica-Bold').text('Title: ', { continued: true });
@@ -197,5 +232,26 @@ export class ScrapedTendersService {
 
             doc.end();
         });
+    }
+    async getScrapeLogs(page = 1, limit = 20) {
+        const skip = (page - 1) * limit;
+        const [data, total] = await Promise.all([
+            this.prisma.tenderScrapeJob.findMany({
+                orderBy: { startTime: 'desc' },
+                skip,
+                take: limit,
+            }),
+            this.prisma.tenderScrapeJob.count(),
+        ]);
+
+        return {
+            data,
+            meta: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
+            },
+        };
     }
 }

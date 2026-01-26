@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { ScrapedTenderStatus } from '@prisma/client';
+
 
 // puppeteer-extra for stealth
 const puppeteer = require('puppeteer-extra');
@@ -37,10 +37,21 @@ export class GemScraperService {
     ): Promise<{ added: number; skipped: number; skippedOld: number }> {
         this.logger.log(`Starting GeM tender scraping... (pages: ${pages}, todayOnly: ${todayOnly})`);
 
+        // Create Scrape Job
+        const job = await this.prisma.tenderScrapeJob.create({
+            data: {
+                status: 'RUNNING',
+                tendersFound: 0,
+                tendersInserted: 0,
+                errors: [],
+            }
+        });
+
         let browser: any = null;
         let added = 0;
         let skipped = 0;
         let skippedOld = 0;
+        const errors: string[] = [];
 
         const maxRetries = 3;
 
@@ -51,12 +62,10 @@ export class GemScraperService {
             .toString()
             .padStart(2, '0')}-${today.getFullYear()}`;
 
-        this.logger.log(`Today's date for filtering: ${todayStr}`);
-
         try {
             browser = await puppeteer.launch({
-                headless: "new", // Use modern headless mode
-                executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe', // Use real Chrome
+                headless: "new",
+                executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
                 args: [
                     '--no-sandbox',
                     '--disable-setuid-sandbox',
@@ -70,8 +79,7 @@ export class GemScraperService {
             });
 
             const page = await browser.newPage();
-
-            // Set Referer and other headers
+            // ... (headers setup same as before)
             await page.setExtraHTTPHeaders({
                 'Accept-Language': 'en-US,en;q=0.9',
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
@@ -79,98 +87,63 @@ export class GemScraperService {
                 'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
                 'Sec-Ch-Ua-Mobile': '?0',
                 'Sec-Ch-Ua-Platform': '"Windows"',
-                'Referer': 'https://gem.gov.in/' // Important!
+                'Referer': 'https://gem.gov.in/'
             });
-
             await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
             page.setDefaultNavigationTimeout(60000);
 
-            // 1. Visit Home Page First (Warm-up)
+            // 1. Visit Home Page
             try {
-                this.logger.log('Warming up: Visiting GeM Home Page...');
                 await page.goto('https://gem.gov.in/', { waitUntil: 'domcontentloaded', timeout: 30000 });
                 await this.delay(2000);
-            } catch (e) {
-                this.logger.warn('Home page load warning (ignoring): ' + e.message);
-            }
+            } catch (e) { }
 
             // 2. Go to Bids Page
             let retries = 0;
             let pageLoaded = false;
-
             while (retries < maxRetries && !pageLoaded) {
                 try {
-                    this.logger.log(`Loading GeM page... (attempt ${retries + 1}/${maxRetries})`);
-
-                    await page.goto(this.baseUrl, {
-                        waitUntil: 'domcontentloaded',
-                        timeout: 60000,
-                    });
-
+                    await page.goto(this.baseUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
                     await page.waitForSelector('.card', { timeout: 30000 });
                     pageLoaded = true;
                 } catch (err: any) {
                     retries++;
-                    this.logger.warn(`Page load failed: ${err.message}`);
                     await this.delay(3000 * retries);
                 }
             }
 
-            if (!pageLoaded) {
-                throw new Error('GeM bid list page could not be loaded after retries.');
-            }
+            if (!pageLoaded) throw new Error('GeM bid list page not loaded.');
 
             const now = new Date();
 
             for (let pageNum = 1; pageNum <= pages; pageNum++) {
                 this.logger.log(`Scraping page ${pageNum}/${pages}...`);
-
-                // ✅ Extract tenders from current page
                 const tenders = await this.extractTendersFromPage(page);
-                this.logger.log(`Found ${tenders.length} tenders on page ${pageNum}`);
 
-                if (!tenders.length) {
-                    this.logger.warn(`No tenders found on page ${pageNum}. Possible block/selector change.`);
-                }
-
-                // ✅ Bulk duplicate check (FAST)
-                const bidNos = tenders.map((t) => t.bidNo).filter(Boolean);
-
-                const existing = await this.prisma.scrapedTender.findMany({
-                    where: { bidNo: { in: bidNos } },
-                    select: { bidNo: true },
+                // Bulk duplicate check
+                const referenceIds = tenders.map((t) => t.bidNo).filter(Boolean);
+                const existing = await this.prisma.tender.findMany({
+                    where: { referenceId: { in: referenceIds } },
+                    select: { referenceId: true },
                 });
+                const existingSet = new Set(existing.map((e) => e.referenceId));
 
-                const existingSet = new Set(existing.map((e) => e.bidNo));
-
-                let foundOldTenderOnThisPage = false;
                 let addedThisPage = 0;
+                let foundOldTenderOnThisPage = false;
 
                 for (const tender of tenders) {
                     try {
                         const startDateObj = this.parseGemdDate(tender.startDate);
                         const endDateObj = this.parseGemdDate(tender.endDate);
 
-                        // ✅ Skip expired
-                        if (endDateObj && endDateObj < now) {
+                        if (endDateObj && endDateObj < now) continue;
+
+                        if (todayOnly && startDateObj && this.formatDate(startDateObj) !== todayStr) {
+                            skippedOld++;
+                            foundOldTenderOnThisPage = true;
                             continue;
                         }
 
-                        // ✅ Today-only filter (best-effort)
-                        if (todayOnly && startDateObj) {
-                            const tDate = startDateObj.getDate().toString().padStart(2, '0');
-                            const tMonth = (startDateObj.getMonth() + 1).toString().padStart(2, '0');
-                            const tYear = startDateObj.getFullYear();
-                            const tenderDateStr = `${tDate}-${tMonth}-${tYear}`;
-
-                            if (tenderDateStr !== todayStr) {
-                                skippedOld++;
-                                foundOldTenderOnThisPage = true;
-                                continue;
-                            }
-                        }
-
-                        // ✅ Skip duplicates using bulk set
                         if (existingSet.has(tender.bidNo)) {
                             skipped++;
                             continue;
@@ -178,65 +151,87 @@ export class GemScraperService {
 
                         const state = this.extractState(tender.department);
 
-                        await this.prisma.scrapedTender.create({
+                        await this.prisma.tender.create({
                             data: {
-                                bidNo: tender.bidNo,
                                 title: tender.title,
-                                category: tender.category || null,
-                                department: tender.department,
-                                quantity: tender.quantity || '',
-                                startDate: startDateObj,
-                                endDate: endDateObj,
-                                state,
-                                status: ScrapedTenderStatus.ACTIVE,
-                                source: 'GeM',
-                                sourceUrl: tender.sourceUrl,
-                            },
+                                description: tender.department || '', // mapping department to description/requirements
+                                status: 'PUBLISHED',
+                                source: 'GEM',
+                                referenceId: tender.bidNo,
+                                tenderUrl: tender.sourceUrl,
+                                categoryName: tender.category,
+                                state: state,
+                                publishDate: startDateObj,
+                                closingDate: endDateObj,
+                                // Schema requires these or they are optional? 
+                                // Checked schema: requirements is optional. openDate/closeDate deprecated but fields exist?
+                                // I made them optional in schema update? Yes.
+                            }
                         });
 
                         added++;
                         addedThisPage++;
-                        existingSet.add(tender.bidNo); // ✅ prevent double insert in same run
-
-                        this.logger.log(`✅ Added tender ${tender.bidNo}`);
+                        existingSet.add(tender.bidNo);
                     } catch (err: any) {
-                        this.logger.warn(`❌ Failed to save tender ${tender.bidNo}: ${err.message}`);
+                        this.logger.warn(`Failed to save tender ${tender.bidNo}: ${err.message}`);
+                        errors.push(`Failed to save ${tender.bidNo}: ${err.message}`);
                     }
                 }
 
-                // ✅ FIXED Early stop logic (per-page)
-                if (todayOnly && foundOldTenderOnThisPage && addedThisPage === 0) {
-                    this.logger.log(`Stopping early: page ${pageNum} contains only old tenders (todayOnly enabled).`);
-                    break;
-                }
+                // Update job progress
+                await this.prisma.tenderScrapeJob.update({
+                    where: { id: job.id },
+                    data: {
+                        tendersFound: job.tendersFound + tenders.length,
+                        tendersInserted: added,
+                    }
+                });
 
-                // ✅ Go next page
+                if (todayOnly && foundOldTenderOnThisPage && addedThisPage === 0) break;
+
                 if (pageNum < pages) {
                     const hasNext = await this.goToNextPage(page);
-                    if (!hasNext) {
-                        this.logger.log(`No next page found, stopping.`);
-                        break;
-                    }
-
-                    // Wait for cards on next page to load
+                    if (!hasNext) break;
                     await page.waitForSelector('.card', { timeout: 30000 });
                     await this.delay(1500);
                 }
             }
 
-            this.logger.log(
-                `Scraping complete. Added: ${added}, Skipped duplicates: ${skipped}, Skipped old: ${skippedOld}`,
-            );
+            // Job Complete
+            await this.prisma.tenderScrapeJob.update({
+                where: { id: job.id },
+                data: {
+                    status: 'COMPLETED',
+                    endTime: new Date(),
+                    tendersInserted: added,
+                    errors: errors,
+                }
+            });
 
             return { added, skipped, skippedOld };
+
         } catch (error: any) {
             this.logger.error(`Scraping failed: ${error.message}`);
+
+            // Job Failed
+            await this.prisma.tenderScrapeJob.update({
+                where: { id: job.id },
+                data: {
+                    status: 'FAILED',
+                    endTime: new Date(),
+                    errors: [...errors, error.message],
+                }
+            });
             throw error;
         } finally {
-            if (browser) {
-                await browser.close();
-            }
+            if (browser) await browser.close();
         }
+    }
+
+    private formatDate(date: Date): string {
+        return `${date.getDate().toString().padStart(2, '0')}-${(date.getMonth() + 1)
+            .toString()
+            .padStart(2, '0')}-${date.getFullYear()}`;
     }
 
     /**
@@ -449,13 +444,13 @@ export class GemScraperService {
      * Mark expired tenders
      */
     async updateExpiredTenders(): Promise<number> {
-        const result = await this.prisma.scrapedTender.updateMany({
+        const result = await this.prisma.tender.updateMany({
             where: {
-                status: ScrapedTenderStatus.ACTIVE,
-                endDate: { lt: new Date() },
+                status: 'PUBLISHED',
+                closingDate: { lt: new Date() },
             },
             data: {
-                status: ScrapedTenderStatus.EXPIRED,
+                status: 'CLOSED',
             },
         });
 

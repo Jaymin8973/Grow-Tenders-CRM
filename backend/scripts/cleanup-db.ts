@@ -29,6 +29,15 @@ async function main() {
         console.log('Deleting Audit Logs...');
         await prisma.auditLog.deleteMany({});
 
+        console.log('Deleting Scrape Jobs...');
+        await prisma.tenderScrapeJob.deleteMany({});
+
+        console.log('Deleting Dispatch Queue...');
+        await prisma.tenderDispatchQueue.deleteMany({});
+
+        console.log('Deleting Leaderboard Scores...');
+        await prisma.leaderboardScore.deleteMany({});
+
         console.log('Deleting Notifications...');
         await prisma.notification.deleteMany({});
 
@@ -59,8 +68,7 @@ async function main() {
         console.log('Deleting Subscriptions...');
         await prisma.tenderSubscription.deleteMany({});
 
-        console.log('Deleting Scraped Tenders...');
-        await prisma.scrapedTender.deleteMany({});
+
 
         // Tenders might be created by Admin, but usually we want to clear test tenders too?
         // User said "test data sab remove kr do". Tenders are data.

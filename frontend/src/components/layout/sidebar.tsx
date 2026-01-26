@@ -29,7 +29,7 @@ const navigation = [
     { name: 'Leads', href: '/leads', icon: UserPlus },
     { name: 'Customers', href: '/customers', icon: Users },
     { name: 'Deals', href: '/deals', icon: Briefcase },
-    { name: 'Teams', href: '/teams', icon: Users },
+    { name: 'Teams', href: '/teams', icon: Users, roles: ['SUPER_ADMIN', 'MANAGER'] },
     { name: 'Tasks', href: '/tasks', icon: FileText },
     { name: 'GeM Tenders', href: '/scraped-tenders', icon: FileSearch },
     { name: 'Leaderboard', href: '/leaderboard', icon: Trophy },
@@ -40,6 +40,7 @@ const adminNav = [
     { name: 'Invoices', href: '/invoices', icon: FileText, roles: ['SUPER_ADMIN', 'MANAGER'] },
     { name: 'Reports', href: '/reports', icon: BarChart3, roles: ['SUPER_ADMIN', 'MANAGER'] },
     { name: 'Users', href: '/users', icon: Building2, roles: ['SUPER_ADMIN', 'MANAGER'] },
+    { name: 'Scraper Logs', href: '/scraper-logs', icon: FileSearch, roles: ['SUPER_ADMIN'] },
 ];
 
 export function Sidebar() {
@@ -99,9 +100,11 @@ export function Sidebar() {
             {/* Main Navigation */}
             <div className="flex-1 overflow-y-auto px-4 py-6">
                 <div className="space-y-1.5">
-                    {navigation.map((item) => (
-                        <NavLink key={item.name} item={item} />
-                    ))}
+                    <div className="space-y-1.5">
+                        {navigation.filter(item => !item.roles || (user && item.roles.includes(user.role))).map((item) => (
+                            <NavLink key={item.name} item={item} />
+                        ))}
+                    </div>
                 </div>
 
                 {/* Admin Section */}

@@ -196,6 +196,7 @@ model User {
   auditLogs             AuditLog[]
   transferRequestsMade     LeadTransferRequest[] @relation("TransferRequester")
   transferRequestsReceived LeadTransferRequest[] @relation("TransferTarget")
+  leaderboardScores        LeaderboardScore[]
 
   @@map("users")
 }
@@ -280,6 +281,16 @@ model Customer {
   branch        Branch?           @relation(fields: [branchId], references: [id])
   
   leadId        String?           @db.ObjectId
+
+  // Subscription Details
+  subscriptionActive    Boolean     @default(false)
+  subscriptionStartDate DateTime?
+  subscriptionEndDate   DateTime?
+  planType              String?     // BASIC, PRO, ENTERPRISE
+  
+  statePreferences      String[]
+  categoryPreferences   String[]
+  emailRecipients       String[]
   
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
@@ -293,6 +304,7 @@ model Customer {
   emailLogs          EmailLog[]
   tenderSubscriptions TenderSubscription[]
   customerNotes      Note[]
+  dispatchQueue      TenderDispatchQueue[]
 
   @@map("customers")
 }
@@ -455,20 +467,33 @@ model Tender {
   description   String
   status        TenderStatus @default(DRAFT)
   
-  categoryId    String       @db.ObjectId
-  category      TenderCategory @relation(fields: [categoryId], references: [id])
+  categoryId    String?      @db.ObjectId
+  category      TenderCategory? @relation(fields: [categoryId], references: [id])
   
-  openDate      DateTime
-  closeDate     DateTime
+  // Scraped Fields
+  source        String       @default("MANUAL") // MANUAL or GEM
+  referenceId   String?      @unique // Bid Number for GEM
+  tenderUrl     String?
+  state         String?
+  categoryName  String?      // If categoryId is not mapped yet
+
+  publishDate   DateTime?
+  closingDate   DateTime?
+  
+  openDate      DateTime?    // Deprecated, use publishDate
+  closeDate     DateTime?    // Deprecated, use closingDate
   value         Float?
   
   requirements  String?
   
-  createdById   String       @db.ObjectId
-  createdBy     User         @relation("TenderCreator", fields: [createdById], references: [id])
+  createdById   String?      @db.ObjectId
+  createdBy     User?        @relation("TenderCreator", fields: [createdById], references: [id])
   
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
+
+  // Dispatch Queue
+  dispatchQueue TenderDispatchQueue[]
 
   // Relations
   attachments   Attachment[]
@@ -493,31 +518,7 @@ model TenderSubscription {
   @@map("tender_subscriptions")
 }
 
-model ScrapedTender {
-  id            String              @id @default(auto()) @map("_id") @db.ObjectId
-  bidNo         String              @unique
-  title         String
-  description   String?
-  category      String?
-  state         String?
-  location      String?
-  department    String?
-  items         Int?
-  quantity      String?
-  startDate     DateTime?
-  endDate       DateTime?
-  status        ScrapedTenderStatus @default(ACTIVE)
-  source        String              @default("GeM")
-  sourceUrl     String?
-  
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
 
-  @@index([status])
-  @@index([state])
-  @@index([endDate])
-  @@map("scraped_tenders")
-}
 
 model EmailTemplate {
   id          String    @id @default(auto()) @map("_id") @db.ObjectId
@@ -700,5 +701,60 @@ model LeadTransferRequest {
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
+
+
   @@map("lead_transfer_requests")
+}
+
+model TenderScrapeJob {
+  id              String      @id @default(auto()) @map("_id") @db.ObjectId
+  startTime       DateTime    @default(now())
+  endTime         DateTime?
+  status          String      // RUNNING, COMPLETED, FAILED
+  tendersFound    Int         @default(0)
+  tendersInserted Int         @default(0)
+  errors          String[]
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@map("tender_scrape_jobs")
+}
+
+model TenderDispatchQueue {
+  id              String      @id @default(auto()) @map("_id") @db.ObjectId
+  tenderId        String      @db.ObjectId
+  tender          Tender      @relation(fields: [tenderId], references: [id])
+  
+  customerId      String      @db.ObjectId
+  customer        Customer    @relation(fields: [customerId], references: [id])
+  
+  status          String      @default("PENDING") // PENDING, SENT, FAILED
+  retryCount      Int         @default(0)
+  lastAttemptAt   DateTime?
+  errorMessage    String?
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([status])
+  @@map("tender_dispatch_queue")
+}
+
+model LeaderboardScore {
+  id              String      @id @default(auto()) @map("_id") @db.ObjectId
+  employeeId      String      @db.ObjectId
+  employee        User        @relation(fields: [employeeId], references: [id])
+  
+  month           DateTime    // First day of the month
+  points          Int         @default(0)
+  revenueClosed   Float       @default(0)
+  dealsWon        Int         @default(0)
+  conversionRate  Float       @default(0)
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@unique([employeeId, month])
+  @@map("leaderboard_scores")
 }

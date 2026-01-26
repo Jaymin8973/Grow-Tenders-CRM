@@ -51,7 +51,6 @@ export default function DashboardPage() {
             const response = await apiClient.get('/reports/sales-performance');
             return response.data;
         },
-        enabled: user?.role !== 'EMPLOYEE',
     });
 
     const { data: pipelineData } = useQuery({
@@ -60,7 +59,6 @@ export default function DashboardPage() {
             const response = await apiClient.get('/reports/pipeline');
             return response.data;
         },
-        enabled: user?.role !== 'EMPLOYEE',
     });
 
     if (isLoading) {
@@ -195,115 +193,113 @@ export default function DashboardPage() {
             </div>
 
             {/* Charts */}
-            {user?.role !== 'EMPLOYEE' && (
-                <div className="grid gap-6 lg:grid-cols-2">
-                    {/* Monthly Revenue Chart */}
-                    <Card className="card-hover">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="flex items-center gap-2 text-lg">
-                                <div className="p-2 rounded-lg bg-primary/10">
-                                    <TrendingUp className="h-5 w-5 text-primary" />
-                                </div>
-                                Monthly Revenue
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="h-80">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <AreaChart data={salesData?.monthlyRevenue || []}>
-                                        <defs>
-                                            <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-                                                <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                                            </linearGradient>
-                                        </defs>
-                                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
-                                        <XAxis dataKey="month" className="text-xs" axisLine={false} tickLine={false} />
-                                        <YAxis className="text-xs" axisLine={false} tickLine={false} />
-                                        <Tooltip
-                                            contentStyle={{
-                                                backgroundColor: 'hsl(var(--card))',
-                                                border: '1px solid hsl(var(--border))',
-                                                borderRadius: '12px',
-                                                boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-                                            }}
-                                            formatter={(value: number) => [formatCurrency(value), 'Revenue']}
-                                        />
-                                        <Area
-                                            type="monotone"
-                                            dataKey="revenue"
-                                            stroke="#6366f1"
-                                            strokeWidth={3}
-                                            fillOpacity={1}
-                                            fill="url(#colorRevenue)"
-                                        />
-                                    </AreaChart>
-                                </ResponsiveContainer>
+            <div className="grid gap-6 lg:grid-cols-2">
+                {/* Monthly Revenue Chart */}
+                <Card className="card-hover">
+                    <CardHeader className="pb-2">
+                        <CardTitle className="flex items-center gap-2 text-lg">
+                            <div className="p-2 rounded-lg bg-primary/10">
+                                <TrendingUp className="h-5 w-5 text-primary" />
                             </div>
-                        </CardContent>
-                    </Card>
+                            Monthly Revenue
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="h-80">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={salesData?.monthlyRevenue || []}>
+                                    <defs>
+                                        <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
+                                            <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
+                                    <XAxis dataKey="month" className="text-xs" axisLine={false} tickLine={false} />
+                                    <YAxis className="text-xs" axisLine={false} tickLine={false} />
+                                    <Tooltip
+                                        contentStyle={{
+                                            backgroundColor: 'hsl(var(--card))',
+                                            border: '1px solid hsl(var(--border))',
+                                            borderRadius: '12px',
+                                            boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                                        }}
+                                        formatter={(value: number) => [formatCurrency(value), 'Revenue']}
+                                    />
+                                    <Area
+                                        type="monotone"
+                                        dataKey="revenue"
+                                        stroke="#6366f1"
+                                        strokeWidth={3}
+                                        fillOpacity={1}
+                                        fill="url(#colorRevenue)"
+                                    />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </CardContent>
+                </Card>
 
-                    {/* Pipeline Chart */}
-                    <Card className="card-hover">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="flex items-center gap-2 text-lg">
-                                <div className="p-2 rounded-lg bg-primary/10">
-                                    <Target className="h-5 w-5 text-primary" />
+                {/* Pipeline Chart */}
+                <Card className="card-hover">
+                    <CardHeader className="pb-2">
+                        <CardTitle className="flex items-center gap-2 text-lg">
+                            <div className="p-2 rounded-lg bg-primary/10">
+                                <Target className="h-5 w-5 text-primary" />
+                            </div>
+                            Deal Pipeline
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="h-80 flex items-center justify-center">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={pipelineData || []}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={70}
+                                        outerRadius={110}
+                                        paddingAngle={4}
+                                        dataKey="count"
+                                        nameKey="stage"
+                                    >
+                                        {(pipelineData || []).map((entry: any, index: number) => (
+                                            <Cell
+                                                key={`cell-${index}`}
+                                                fill={COLORS[index % COLORS.length]}
+                                                className="stroke-2 stroke-card"
+                                            />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip
+                                        contentStyle={{
+                                            backgroundColor: 'hsl(var(--card))',
+                                            border: '1px solid hsl(var(--border))',
+                                            borderRadius: '12px',
+                                        }}
+                                    />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                        {/* Legend */}
+                        <div className="flex flex-wrap justify-center gap-4 -mt-4">
+                            {(pipelineData || []).map((entry: any, index: number) => (
+                                <div key={entry.stage} className="flex items-center gap-2">
+                                    <div
+                                        className="w-3 h-3 rounded-full"
+                                        style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                                    />
+                                    <span className="text-xs text-muted-foreground">{entry.stage}</span>
                                 </div>
-                                Deal Pipeline
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="h-80 flex items-center justify-center">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <PieChart>
-                                        <Pie
-                                            data={pipelineData || []}
-                                            cx="50%"
-                                            cy="50%"
-                                            innerRadius={70}
-                                            outerRadius={110}
-                                            paddingAngle={4}
-                                            dataKey="count"
-                                            nameKey="stage"
-                                        >
-                                            {(pipelineData || []).map((entry: any, index: number) => (
-                                                <Cell
-                                                    key={`cell-${index}`}
-                                                    fill={COLORS[index % COLORS.length]}
-                                                    className="stroke-2 stroke-card"
-                                                />
-                                            ))}
-                                        </Pie>
-                                        <Tooltip
-                                            contentStyle={{
-                                                backgroundColor: 'hsl(var(--card))',
-                                                border: '1px solid hsl(var(--border))',
-                                                borderRadius: '12px',
-                                            }}
-                                        />
-                                    </PieChart>
-                                </ResponsiveContainer>
-                            </div>
-                            {/* Legend */}
-                            <div className="flex flex-wrap justify-center gap-4 -mt-4">
-                                {(pipelineData || []).map((entry: any, index: number) => (
-                                    <div key={entry.stage} className="flex items-center gap-2">
-                                        <div
-                                            className="w-3 h-3 rounded-full"
-                                            style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                                        />
-                                        <span className="text-xs text-muted-foreground">{entry.stage}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-            )}
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
 
             {/* Quick Stats for Admin/Manager */}
-            {user?.role !== 'EMPLOYEE' && salesData && (
+            {salesData && (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <Card className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white">
                         <CardContent className="p-6">

@@ -10,9 +10,14 @@ interface UserContext {
     managerId?: string | null;
 }
 
+import { CustomersService } from '../customers/customers.service';
+
 @Injectable()
 export class LeadsService {
-    constructor(private prisma: PrismaService) { }
+    constructor(
+        private prisma: PrismaService,
+        private customersService: CustomersService,
+    ) { }
 
     async create(createLeadDto: CreateLeadDto, userId: string) {
         return this.prisma.lead.create({
@@ -20,7 +25,7 @@ export class LeadsService {
                 ...createLeadDto,
                 title: createLeadDto.title || `${createLeadDto.firstName} ${createLeadDto.lastName}`,
                 notes: createLeadDto.notes ? {
-                    create: { 
+                    create: {
                         content: createLeadDto.notes,
                         createdById: userId,
                     }
@@ -57,6 +62,7 @@ export class LeadsService {
             const teamIds = teamMembers.map(m => m.id);
             where.assigneeId = { in: [user.id, ...teamIds] };
         }
+        // EMPLOYEE and SUPER_ADMIN can see all (Read-only for others is handled in Update/Delete guards)
         // SUPER_ADMIN sees all
 
         // Apply filters
@@ -66,9 +72,24 @@ export class LeadsService {
         if (filters?.source) {
             where.source = filters.source;
         }
+        // Allow filtering by assignee only if user has permission to see others
         if (filters?.assigneeId && user.role !== Role.EMPLOYEE) {
-            where.assigneeId = filters.assigneeId;
+            // If Manager, ensure the requested assignee is in their team
+            if (user.role === Role.MANAGER) {
+                // We already restricted 'where.assigneeId' above. 
+                // If we overwrite it, we might break the restriction.
+                // Instead, we should check if the requested assigneeId is valid within the restricted set.
+                // Simplest way: The 'AND' of the restriction and the filter.
+                // Type safety note: where.assigneeId might be an object { in: [...] } or a string.
+                // To keep it simple, let's just use AND.
+                where.AND = [
+                    { assigneeId: filters.assigneeId }
+                ];
+            } else {
+                where.assigneeId = filters.assigneeId;
+            }
         }
+
         if (filters?.search) {
             where.OR = [
                 { firstName: { contains: filters.search, mode: 'insensitive' } },
@@ -127,6 +148,23 @@ export class LeadsService {
 
         if (!lead) {
             throw new NotFoundException('Lead not found');
+        }
+
+        // RBAC Check for findOne
+        // Employees can view all leads (Global Read), no restriction here.
+
+        if (user.role === Role.MANAGER) {
+            // Check if lead belongs to manager or their team
+            if (lead.assigneeId !== user.id) {
+                // Check if assignee is in team
+                const assignee = await this.prisma.user.findUnique({
+                    where: { id: lead.assigneeId || undefined },
+                    select: { managerId: true }
+                });
+                if (assignee?.managerId !== user.id) {
+                    throw new ForbiddenException('You do not have access to this lead');
+                }
+            }
         }
 
         return lead;
@@ -209,16 +247,32 @@ export class LeadsService {
             throw new ForbiddenException('You cannot update status of this lead');
         }
 
-        return this.prisma.lead.update({
+        const updatedLead = await this.prisma.lead.update({
             where: { id },
             data: { status },
         });
+
+        // Auto-convert to Customer if Status is WON
+        if (status === LeadStatus.WON && !lead.convertedToCustomerId) {
+            try {
+                await this.customersService.createFromLead(id, user.id);
+            } catch (error) {
+                // Log error but don't fail the status update? 
+                // Or maybe we should fail? 
+                // For now, let's log to console. Ideally use Logger.
+                console.error('Failed to auto-convert lead to customer:', error);
+            }
+        }
+
+        return updatedLead;
     }
 
     async getLeadStats(user: UserContext) {
         let where: any = {};
 
-        if (user.role === Role.MANAGER) {
+        if (user.role === Role.EMPLOYEE) {
+            where.assigneeId = user.id;
+        } else if (user.role === Role.MANAGER) {
             const teamMembers = await this.prisma.user.findMany({
                 where: { managerId: user.id },
                 select: { id: true },

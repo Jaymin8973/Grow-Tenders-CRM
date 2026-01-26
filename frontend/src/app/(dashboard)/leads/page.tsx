@@ -392,20 +392,26 @@ export default function LeadsPage() {
                                                         <Eye className="mr-2 h-4 w-4" />
                                                         View Details
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        router.push(`/leads/${lead.id}/edit`);
-                                                    }}>
-                                                        <Pencil className="mr-2 h-4 w-4" />
-                                                        Edit
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem className="text-red-600" onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setDeleteId(lead.id);
-                                                    }}>
-                                                        <Trash className="mr-2 h-4 w-4" />
-                                                        Delete
-                                                    </DropdownMenuItem>
+
+                                                    {/* Edit/Delete only for Owners or Managers/Admins */}
+                                                    {(user?.role !== 'EMPLOYEE' || lead.assigneeId === user?.id) && (
+                                                        <>
+                                                            <DropdownMenuItem onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                router.push(`/leads/${lead.id}/edit`);
+                                                            }}>
+                                                                <Pencil className="mr-2 h-4 w-4" />
+                                                                Edit
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem className="text-red-600" onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setDeleteId(lead.id);
+                                                            }}>
+                                                                <Trash className="mr-2 h-4 w-4" />
+                                                                Delete
+                                                            </DropdownMenuItem>
+                                                        </>
+                                                    )}
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </TableCell>

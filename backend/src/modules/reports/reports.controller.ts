@@ -19,25 +19,24 @@ export class ReportsController {
     }
 
     @Get('sales-performance')
-    @Roles(Role.SUPER_ADMIN, Role.MANAGER)
     @ApiOperation({ summary: 'Get sales performance report' })
     @ApiQuery({ name: 'startDate', required: false })
     @ApiQuery({ name: 'endDate', required: false })
     getSalesPerformance(
+        @CurrentUser() user: any,
         @Query('startDate') startDate?: string,
         @Query('endDate') endDate?: string,
     ) {
         const dateRange = startDate && endDate
             ? { startDate: new Date(startDate), endDate: new Date(endDate) }
             : undefined;
-        return this.reportsService.getSalesPerformance(dateRange);
+        return this.reportsService.getSalesPerformance(user.id, user.role, dateRange);
     }
 
     @Get('pipeline')
-    @Roles(Role.SUPER_ADMIN, Role.MANAGER)
     @ApiOperation({ summary: 'Get pipeline breakdown' })
-    getPipelineBreakdown() {
-        return this.reportsService.getPipelineBreakdown();
+    getPipelineBreakdown(@CurrentUser() user: any) {
+        return this.reportsService.getPipelineBreakdown(user.id, user.role);
     }
 
     @Get('employee-productivity')

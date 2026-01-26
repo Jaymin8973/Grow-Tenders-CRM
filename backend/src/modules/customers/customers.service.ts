@@ -90,7 +90,14 @@ export class CustomersService {
             where.lifecycle = filters.lifecycle;
         }
         if (filters?.assigneeId && user.role !== Role.EMPLOYEE) {
-            where.assigneeId = filters.assigneeId;
+            // If Manager, ensure the requested assignee is in their team
+            if (user.role === Role.MANAGER) {
+                where.AND = [
+                    { assigneeId: filters.assigneeId }
+                ];
+            } else {
+                where.assigneeId = filters.assigneeId;
+            }
         }
         if (filters?.search) {
             where.OR = [
@@ -152,6 +159,20 @@ export class CustomersService {
 
         if (user.role === Role.EMPLOYEE && customer.assigneeId !== user.id) {
             throw new ForbiddenException('You do not have access to this customer');
+        }
+
+        if (user.role === Role.MANAGER) {
+            // Check if customer belongs to manager or their team
+            if (customer.assigneeId !== user.id) {
+                // Check if assignee is in team
+                const assignee = await this.prisma.user.findUnique({
+                    where: { id: customer.assigneeId || undefined },
+                    select: { managerId: true }
+                });
+                if (assignee?.managerId !== user.id) {
+                    throw new ForbiddenException('You do not have access to this customer');
+                }
+            }
         }
 
         return customer;
