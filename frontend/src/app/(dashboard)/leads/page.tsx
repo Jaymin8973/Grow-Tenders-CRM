@@ -35,8 +35,28 @@ import {
     Snowflake,
     Eye,
     Loader2,
+    Pencil,
+    Trash,
 } from 'lucide-react';
 import { getInitials, cn } from '@/lib/utils';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
 
 const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
     NEW: { label: 'New', color: 'text-blue-700', bg: 'bg-blue-50 border-blue-200' },
@@ -85,8 +105,12 @@ export default function LeadsPage() {
     const [emailDialogOpen, setEmailDialogOpen] = useState(false);
     const [selectedLead, setSelectedLead] = useState<any>(null);
 
+    const [deleteId, setDeleteId] = useState<string | null>(null);
+
     // Debounce search input to avoid excessive API calls
     const debouncedSearch = useDebounce(search, 300);
+    const queryClient = useQueryClient();
+    const { toast } = useToast();
 
     const { data: leads, isLoading, isFetching } = useQuery({
         queryKey: ['leads', debouncedSearch, statusFilter],
@@ -107,6 +131,35 @@ export default function LeadsPage() {
             return response.data;
         },
     });
+
+    const deleteLeadMutation = useMutation({
+        mutationFn: async (id: string) => {
+            await apiClient.delete(`/leads/${id}`);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['leads'] });
+            queryClient.invalidateQueries({ queryKey: ['lead-stats'] });
+            toast({
+                title: 'Lead deleted',
+                description: 'The lead has been successfully deleted.',
+            });
+            setDeleteId(null);
+        },
+        onError: (error: any) => {
+            toast({
+                title: 'Error',
+                description: error.response?.data?.message || 'Failed to delete lead',
+                variant: 'destructive',
+            });
+            setDeleteId(null);
+        },
+    });
+
+    const handleDelete = async () => {
+        if (deleteId) {
+            deleteLeadMutation.mutate(deleteId);
+        }
+    };
 
     return (
         <div className="space-y-6 page-enter">
@@ -223,6 +276,7 @@ export default function LeadsPage() {
                                 <TableHead className="w-[300px]">Lead</TableHead>
                                 <TableHead>Type</TableHead>
                                 <TableHead>Status</TableHead>
+                                <TableHead>Industry</TableHead>
                                 <TableHead>Source</TableHead>
                                 <TableHead>Date</TableHead>
                                 <TableHead>Contact</TableHead>
@@ -283,6 +337,9 @@ export default function LeadsPage() {
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="text-muted-foreground">
+                                            {lead.industry || '-'}
+                                        </TableCell>
+                                        <TableCell className="text-muted-foreground">
                                             {lead.source || '-'}
                                         </TableCell>
                                         <TableCell className="text-muted-foreground whitespace-nowrap">
@@ -317,24 +374,47 @@ export default function LeadsPage() {
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-8 w-8"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    router.push(`/leads/${lead.id}`);
-                                                }}
-                                            >
-                                                <Eye className="h-4 w-4" />
-                                            </Button>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8"
+                                                    >
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        router.push(`/leads/${lead.id}`);
+                                                    }}>
+                                                        <Eye className="mr-2 h-4 w-4" />
+                                                        View Details
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        router.push(`/leads/${lead.id}/edit`);
+                                                    }}>
+                                                        <Pencil className="mr-2 h-4 w-4" />
+                                                        Edit
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem className="text-red-600" onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setDeleteId(lead.id);
+                                                    }}>
+                                                        <Trash className="mr-2 h-4 w-4" />
+                                                        Delete
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </TableCell>
                                     </TableRow>
                                 );
                             })}
                             {!isLoading && (!leads || leads.length === 0) && (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="h-32 text-center">
+                                    <TableCell colSpan={7} className="h-32 text-center">
                                         <div className="flex flex-col items-center justify-center text-muted-foreground">
                                             <UserPlus className="h-10 w-10 mb-2 opacity-50" />
                                             <p>No leads found</p>
@@ -355,6 +435,27 @@ export default function LeadsPage() {
                 defaultTo={selectedLead?.email || ''}
                 relatedTo={selectedLead ? { type: 'Lead', id: selectedLead.id, name: `${selectedLead.firstName} ${selectedLead.lastName}` } : undefined}
             />
+
+            <AlertDialog open={!!deleteId} onOpenChange={(open: boolean) => !open && setDeleteId(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete the lead.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleDelete}
+                            className="bg-red-600 hover:bg-red-700"
+                            disabled={deleteLeadMutation.isPending}
+                        >
+                            {deleteLeadMutation.isPending ? 'Deleting...' : 'Delete'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

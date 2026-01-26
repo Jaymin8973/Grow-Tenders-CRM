@@ -229,13 +229,18 @@ export default function LeadDetailPage() {
                 <div className="flex-1">
                     <div className="flex items-center gap-3">
                         <h1 className="text-2xl font-bold">
-                            {lead.firstName} {lead.lastName}
+                            {lead.salutation} {lead.firstName} {lead.lastName}
                         </h1>
                         <Badge className={cn(status.bg, status.color, 'border-0')}>
                             {status.label}
                         </Badge>
                     </div>
-                    <p className="text-muted-foreground">{lead.company || 'No company'}</p>
+                    <p className="text-sm text-muted-foreground flex items-center gap-2">
+                        <Building2 className="h-3.5 w-3.5" />
+                        {lead.company || 'No company'}
+                        {lead.industry && <span className="text-muted-foreground/50 mx-1">•</span>}
+                        {lead.industry && <span>{lead.industry}</span>}
+                    </p>
                 </div>
                 <ComposeEmailDialog
                     isOpen={emailOpen}
@@ -346,6 +351,22 @@ export default function LeadDetailPage() {
                                         </a>
                                     </div>
                                 )}
+                                {lead.mobile && (
+                                    <div className="flex items-center gap-3 text-sm">
+                                        <Phone className="h-4 w-4 text-muted-foreground" />
+                                        <span className="text-muted-foreground mr-1">Mobile:</span>
+                                        <a href={`tel:${lead.mobile}`} className="hover:underline">
+                                            {lead.mobile}
+                                        </a>
+                                    </div>
+                                )}
+                                {lead.fax && (
+                                    <div className="flex items-center gap-3 text-sm">
+                                        <Phone className="h-4 w-4 text-muted-foreground rotate-90" />
+                                        <span className="text-muted-foreground mr-1">Fax:</span>
+                                        <span>{lead.fax}</span>
+                                    </div>
+                                )}
                                 {lead.company && (
                                     <div className="flex items-center gap-3 text-sm">
                                         <Building2 className="h-4 w-4 text-muted-foreground" />
@@ -382,6 +403,20 @@ export default function LeadDetailPage() {
                                 <span className="text-muted-foreground">Source</span>
                                 <span className="font-medium">{lead.source || 'Unknown'}</span>
                             </div>
+
+                            {lead.department && (
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-muted-foreground">Department</span>
+                                    <span className="font-medium">{lead.department}</span>
+                                </div>
+                            )}
+
+                            {lead.postalCode && (
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-muted-foreground">Postal Code</span>
+                                    <span className="font-medium">{lead.postalCode}</span>
+                                </div>
+                            )}
 
                             <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Assigned To</span>

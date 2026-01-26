@@ -50,9 +50,12 @@ apiClient.interceptors.response.use(
 
                     originalRequest.headers.Authorization = `Bearer ${accessToken}`;
                     return apiClient(originalRequest);
+                } else {
+                    // No refresh token available, redirect immediately
+                    throw new Error('No refresh token');
                 }
             } catch (refreshError) {
-                // Refresh failed, redirect to login
+                // Refresh failed or no token available, clear storage and redirect to login
                 if (typeof window !== 'undefined') {
                     localStorage.removeItem('accessToken');
                     localStorage.removeItem('refreshToken');
@@ -60,6 +63,15 @@ apiClient.interceptors.response.use(
                     localStorage.removeItem('user');
                     window.location.href = '/login';
                 }
+            }
+        } else if (error.response?.status === 401 && originalRequest._retry) {
+            // If it's already a retry and we still get 401, redirect to login to avoid loops
+            if (typeof window !== 'undefined') {
+                localStorage.removeItem('accessToken');
+                localStorage.removeItem('refreshToken');
+                localStorage.removeItem('userId');
+                localStorage.removeItem('user');
+                window.location.href = '/login';
             }
         }
 

@@ -98,4 +98,34 @@ export class CreateLeadDto {
     @IsString()
     @IsOptional()
     assigneeId?: string;
+
+    @ApiPropertyOptional({ example: 'Mr.' })
+    @IsString()
+    @IsOptional()
+    salutation?: string;
+
+    @ApiPropertyOptional({ example: '+1234567890' })
+    @IsString()
+    @IsOptional()
+    mobile?: string;
+
+    @ApiPropertyOptional({ example: '+1234567890' })
+    @IsString()
+    @IsOptional()
+    fax?: string;
+
+    @ApiPropertyOptional({ example: 'Sales' })
+    @IsString()
+    @IsOptional()
+    department?: string;
+
+    @ApiPropertyOptional({ example: '12345' })
+    @IsString()
+    @IsOptional()
+    postalCode?: string;
+
+    @ApiPropertyOptional({ example: 'Technology' })
+    @IsString()
+    @IsOptional()
+    industry?: string;
 }

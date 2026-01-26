@@ -1,6 +1,7 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -69,8 +70,10 @@ const leadSchema = z.object({
 
 type LeadFormData = z.infer<typeof leadSchema>;
 
-export default function NewLeadPage() {
+export default function EditLeadPage() {
     const router = useRouter();
+    const params = useParams();
+    const id = params.id as string;
     const { user } = useAuth();
     const { toast } = useToast();
     const queryClient = useQueryClient();
@@ -79,6 +82,7 @@ export default function NewLeadPage() {
         register,
         handleSubmit,
         setValue,
+        reset,
         formState: { errors },
     } = useForm<LeadFormData>({
         resolver: zodResolver(leadSchema),
@@ -87,6 +91,14 @@ export default function NewLeadPage() {
             status: 'NEW',
             type: 'COLD',
             source: 'WEBSITE',
+        },
+    });
+
+    const { data: leadData, isLoading: isLoadingLead } = useQuery({
+        queryKey: ['lead', id],
+        queryFn: async () => {
+            const response = await apiClient.get(`/leads/${id}`);
+            return response.data;
         },
     });
 
@@ -99,22 +111,33 @@ export default function NewLeadPage() {
         enabled: !!user && (user.role === 'SUPER_ADMIN' || user.role === 'MANAGER'),
     });
 
-    const createLeadMutation = useMutation({
+    useEffect(() => {
+        if (leadData) {
+            reset({
+                ...leadData,
+                value: leadData.value ? Number(leadData.value) : undefined,
+                assigneeId: leadData.assigneeId || undefined,
+            });
+        }
+    }, [leadData, reset]);
+
+    const updateLeadMutation = useMutation({
         mutationFn: async (data: LeadFormData) => {
-            return apiClient.post('/leads', data);
+            return apiClient.patch(`/leads/${id}`, data);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['leads'] });
             queryClient.invalidateQueries({ queryKey: ['lead-stats'] });
+            queryClient.invalidateQueries({ queryKey: ['lead', id] });
             toast({
-                title: 'Lead created successfully',
-                description: 'The new lead has been added to your CRM.',
+                title: 'Lead updated successfully',
+                description: 'The lead details have been updated.',
             });
-            router.push('/leads');
+            router.push(`/leads/${id}`);
         },
         onError: (error: any) => {
             toast({
-                title: 'Failed to create lead',
+                title: 'Failed to update lead',
                 description: error.response?.data?.message || 'Something went wrong',
                 variant: 'destructive',
             });
@@ -125,47 +148,55 @@ export default function NewLeadPage() {
         if (data.value) {
             data.value = Number(data.value);
         }
-        createLeadMutation.mutate(data);
+        updateLeadMutation.mutate(data);
     };
 
+    if (isLoadingLead) {
+        return (
+            <div className="flex h-96 items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        );
+    }
+
     return (
-        <div className="max-w-[1200px] mx-auto space-y-8 page-enter">
-            {/* Page Header */}
-            <div className="flex items-center justify-between py-4 border-b mb-6">
+        <div className="max-w-[1200px] mx-auto space-y-8 animate-in fade-in duration-500 pb-20">
+            {/* Sticky Header */}
+            <div className="sticky top-0 z-30 flex items-center justify-between py-4 bg-background/80 backdrop-blur-md border-b mb-6">
                 <div className="flex items-center gap-4">
                     <Button
                         variant="outline"
                         size="icon"
                         className="rounded-full hover:bg-primary hover:text-primary-foreground transition-all duration-300"
-                        onClick={() => router.push('/leads')}
+                        onClick={() => router.back()}
                     >
                         <ArrowLeft className="h-5 w-5" />
                     </Button>
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight">Create New Lead</h1>
-                        <p className="text-sm text-muted-foreground">Fill in the details to add a new business opportunity</p>
+                        <h1 className="text-2xl font-bold tracking-tight">Edit Lead</h1>
+                        <p className="text-sm text-muted-foreground">Modify the details for {leadData?.firstName} {leadData?.lastName}</p>
                     </div>
                 </div>
                 <div className="flex gap-3">
                     <Button
                         type="button"
                         variant="ghost"
-                        onClick={() => router.push('/leads')}
+                        onClick={() => router.back()}
                         className="px-6"
                     >
-                        Discard
+                        Cancel
                     </Button>
                     <Button
                         onClick={handleSubmit(onSubmit)}
-                        disabled={createLeadMutation.isPending}
+                        disabled={updateLeadMutation.isPending}
                         className="gap-2 px-8 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300"
                     >
-                        {createLeadMutation.isPending ? (
+                        {updateLeadMutation.isPending ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
                             <Save className="h-4 w-4" />
                         )}
-                        Save Lead
+                        Save Changes
                     </Button>
                 </div>
             </div>
@@ -188,8 +219,8 @@ export default function NewLeadPage() {
                         </CardHeader>
                         <CardContent className="pt-4 grid grid-cols-1 md:grid-cols-6 gap-6">
                             <div className="md:col-span-1 space-y-2">
-                                <Label>Select</Label>
-                                <Select onValueChange={(val) => setValue('salutation', val)}>
+                                <Label>Salutation</Label>
+                                <Select onValueChange={(val) => setValue('salutation', val)} defaultValue={leadData?.salutation}>
                                     <SelectTrigger className="bg-background/50 border-muted-foreground/20">
                                         <SelectValue placeholder="Prefix" />
                                     </SelectTrigger>
@@ -400,7 +431,7 @@ export default function NewLeadPage() {
                         <CardContent className="pt-4 space-y-4">
                             <div className="space-y-2">
                                 <Label>Status</Label>
-                                <Select onValueChange={(val) => setValue('status', val as any)} defaultValue="NEW">
+                                <Select onValueChange={(val) => setValue('status', val as any)} defaultValue={leadData?.status || 'NEW'}>
                                     <SelectTrigger className="bg-background/50 border-muted-foreground/20">
                                         <SelectValue />
                                     </SelectTrigger>
@@ -417,7 +448,7 @@ export default function NewLeadPage() {
                             </div>
                             <div className="space-y-2">
                                 <Label>Lead Type</Label>
-                                <Select onValueChange={(val) => setValue('type', val as any)} defaultValue="COLD">
+                                <Select onValueChange={(val) => setValue('type', val as any)} defaultValue={leadData?.type || 'COLD'}>
                                     <SelectTrigger className="bg-background/50 border-muted-foreground/20">
                                         <SelectValue />
                                     </SelectTrigger>
@@ -430,7 +461,7 @@ export default function NewLeadPage() {
                             </div>
                             <div className="space-y-2">
                                 <Label>Lead Source</Label>
-                                <Select onValueChange={(val) => setValue('source', val)} defaultValue="WEBSITE">
+                                <Select onValueChange={(val) => setValue('source', val)} defaultValue={leadData?.source || 'WEBSITE'}>
                                     <SelectTrigger className="bg-background/50 border-muted-foreground/20">
                                         <SelectValue />
                                     </SelectTrigger>
@@ -485,7 +516,7 @@ export default function NewLeadPage() {
                                 <div className="space-y-2">
                                     <Label>Assign To User</Label>
                                     {teamMembers ? (
-                                        <Select onValueChange={(value) => setValue('assigneeId', value)}>
+                                        <Select onValueChange={(value) => setValue('assigneeId', value)} defaultValue={leadData?.assigneeId}>
                                             <SelectTrigger className="bg-background/50 border-muted-foreground/20">
                                                 <SelectValue placeholder="Select team member" />
                                             </SelectTrigger>

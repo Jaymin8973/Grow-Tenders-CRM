@@ -220,6 +220,14 @@ model Lead {
   website       String?
   value         Float?
   
+  // New fields
+  salutation    String?
+  mobile        String?
+  fax           String?
+  department    String?
+  postalCode    String?
+  industry      String?
+  
   assigneeId    String?     @db.ObjectId
   assignee      User?       @relation("LeadAssignee", fields: [assigneeId], references: [id])
   
