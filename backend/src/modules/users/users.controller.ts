@@ -60,6 +60,24 @@ export class UsersController {
         return this.usersService.findOne(userId);
     }
 
+    @Patch('profile')
+    @ApiOperation({ summary: 'Update current user profile' })
+    updateProfile(
+        @CurrentUser('id') userId: string,
+        @Body() updateData: { firstName?: string; lastName?: string; email?: string; phone?: string }
+    ) {
+        return this.usersService.update(userId, updateData);
+    }
+
+    @Patch('change-password')
+    @ApiOperation({ summary: 'Change current user password' })
+    changePassword(
+        @CurrentUser('id') userId: string,
+        @Body() passwordData: { currentPassword: string; newPassword: string }
+    ) {
+        return this.usersService.changePassword(userId, passwordData.currentPassword, passwordData.newPassword);
+    }
+
     @Get(':id')
     @Roles(Role.SUPER_ADMIN, Role.MANAGER)
     @ApiOperation({ summary: 'Get user by ID' })

@@ -160,7 +160,16 @@ export class PaymentsService {
             where,
             include: {
                 customer: {
-                    select: { id: true, firstName: true, lastName: true, company: true, phone: true },
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true,
+                        company: true,
+                        phone: true,
+                        assignee: {
+                            select: { id: true, firstName: true, lastName: true },
+                        },
+                    },
                 },
                 invoice: {
                     select: { id: true, invoiceNumber: true },

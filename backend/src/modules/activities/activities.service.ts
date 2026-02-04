@@ -15,11 +15,13 @@ export class ActivitiesService {
     constructor(private prisma: PrismaService) { }
 
     async create(createActivityDto: CreateActivityDto, userId: string) {
-        return this.prisma.activity.create({
+        const assigneeId = createActivityDto.assigneeId || userId;
+
+        const activity = await this.prisma.activity.create({
             data: {
                 ...createActivityDto,
                 createdById: userId,
-                assigneeId: createActivityDto.assigneeId || userId,
+                assigneeId,
                 scheduledAt: new Date(createActivityDto.scheduledAt),
             },
             include: {
@@ -40,6 +42,21 @@ export class ActivitiesService {
                 },
             },
         });
+
+        // Create notification for the assignee if it's not the creator
+        if (assigneeId !== userId) {
+            await this.prisma.notification.create({
+                data: {
+                    userId: assigneeId,
+                    title: 'New Task Assigned',
+                    message: `You have been assigned a new task: ${createActivityDto.title}`,
+                    type: 'ACTIVITY_REMINDER',
+                    link: `/tasks`,
+                },
+            });
+        }
+
+        return activity;
     }
 
     async findAll(user: UserContext, filters?: {

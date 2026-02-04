@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useQuery, keepPreviousData } from '@tanstack/react-query';
+import { useQuery, keepPreviousData, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
 import { useAuth } from '@/contexts/auth-context';
 import { useDebounce } from '@/hooks/use-debounce';
@@ -12,8 +12,19 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { ComposeEmailDialog } from '@/components/mail/compose-email-dialog';
 import { CreateCustomerDialog } from '@/components/customers/create-customer-dialog';
+import { EditCustomerDialog } from '@/components/customers/edit-customer-dialog';
 import {
     Table,
     TableBody,
@@ -35,6 +46,8 @@ import {
     Star,
     Eye,
     Loader2,
+    Trash2,
+    Edit,
 } from 'lucide-react';
 import { getInitials, formatCurrency, cn } from '@/lib/utils';
 
@@ -71,11 +84,15 @@ function TableRowSkeleton() {
 export default function CustomersPage() {
     const router = useRouter();
     const { user } = useAuth();
+    const queryClient = useQueryClient();
     const [search, setSearch] = useState('');
     const [lifecycleFilter, setLifecycleFilter] = useState<string | null>(null);
     const [emailDialogOpen, setEmailDialogOpen] = useState(false);
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
+    const [editDialogOpen, setEditDialogOpen] = useState(false);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+    const [customerToDelete, setCustomerToDelete] = useState<any>(null);
 
     // Debounce search input to avoid excessive API calls
     const debouncedSearch = useDebounce(search, 300);
@@ -90,6 +107,18 @@ export default function CustomersPage() {
             return response.data;
         },
         placeholderData: keepPreviousData, // Keep showing old data while fetching new
+    });
+
+    // Delete customer mutation
+    const deleteCustomerMutation = useMutation({
+        mutationFn: async (customerId: string) => {
+            await apiClient.delete(`/customers/${customerId}`);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['customers'] });
+            setDeleteDialogOpen(false);
+            setCustomerToDelete(null);
+        },
     });
 
     return (
@@ -299,14 +328,40 @@ export default function CustomersPage() {
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-8 w-8"
-                                                onClick={(e) => e.stopPropagation()}
-                                            >
-                                                <Eye className="h-4 w-4" />
-                                            </Button>
+                                            <div className="flex items-center gap-1 justify-end">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    <Eye className="h-4 w-4" />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedCustomer(customer);
+                                                        setEditDialogOpen(true);
+                                                    }}
+                                                >
+                                                    <Edit className="h-4 w-4" />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setCustomerToDelete(customer);
+                                                        setDeleteDialogOpen(true);
+                                                    }}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 );
@@ -338,6 +393,42 @@ export default function CustomersPage() {
                 open={createDialogOpen}
                 onOpenChange={setCreateDialogOpen}
             />
+
+            <EditCustomerDialog
+                open={editDialogOpen}
+                onOpenChange={setEditDialogOpen}
+                customer={selectedCustomer}
+            />
+
+            {/* Delete Customer Confirmation Dialog */}
+            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Customer</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete {customerToDelete?.firstName} {customerToDelete?.lastName}? 
+                            This action cannot be undone and all associated data will be permanently removed.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() => deleteCustomerMutation.mutate(customerToDelete?.id)}
+                            className="bg-red-600 hover:bg-red-700"
+                            disabled={deleteCustomerMutation.isPending}
+                        >
+                            {deleteCustomerMutation.isPending ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Deleting...
+                                </>
+                            ) : (
+                                'Delete Customer'
+                            )}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

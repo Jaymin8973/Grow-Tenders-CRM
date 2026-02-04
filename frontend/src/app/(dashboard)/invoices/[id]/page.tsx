@@ -84,7 +84,6 @@ export default function InvoiceDetailPage() {
     const [taxRate, setTaxRate] = useState(18);
     const [notes, setNotes] = useState('');
     const [selectedCustomerId, setSelectedCustomerId] = useState('');
-    const [dueDate, setDueDate] = useState('');
     const [emailOpen, setEmailOpen] = useState(false);
     const [emailBody, setEmailBody] = useState('');
 
@@ -124,7 +123,6 @@ export default function InvoiceDetailPage() {
             setTaxRate(invoice.taxRate || 18);
             setNotes(invoice.notes || '');
             setSelectedCustomerId(invoice.customerId || '');
-            setDueDate(invoice.dueDate ? new Date(invoice.dueDate).toISOString().split('T')[0] : '');
         }
     }, [invoice]);
 
@@ -206,7 +204,6 @@ export default function InvoiceDetailPage() {
                 discount: discount || undefined,
                 discountType: discount ? 'percentage' : undefined,
                 notes: notes || undefined,
-                dueDate: dueDate || undefined,
                 lineItems: lineItems.map(item => ({
                     description: item.description,
                     quantity: item.quantity,
@@ -517,16 +514,26 @@ export default function InvoiceDetailPage() {
 
                 {/* Right Column - Summary */}
                 <div className="space-y-6">
-                    {/* Due Date */}
+                    {/* Invoice Date */}
                     <Card>
                         <CardHeader>
-                            <CardTitle className="text-lg">Due Date</CardTitle>
+                            <CardTitle className="text-lg">Invoice Date</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <Input
-                                type="date"
-                                value={dueDate}
-                                onChange={(e) => setDueDate(e.target.value)}
+                                readOnly
+                                value={invoice?.createdAt
+                                    ? new Date(invoice.createdAt).toLocaleDateString('en-US', {
+                                        month: 'short',
+                                        day: 'numeric',
+                                        year: 'numeric',
+                                    })
+                                    : new Date().toLocaleDateString('en-US', {
+                                        month: 'short',
+                                        day: 'numeric',
+                                        year: 'numeric',
+                                    })
+                                }
                             />
                         </CardContent>
                     </Card>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
 import { useAuth } from '@/contexts/auth-context';
 import { Card, CardContent } from '@/components/ui/card';
@@ -27,8 +27,20 @@ import {
     Users,
     MoreHorizontal,
     Mail,
+    Edit,
+    Trash2,
+    Power,
 } from 'lucide-react';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { CreateUserDialog } from '@/components/users/create-user-dialog';
+import { EditUserDialog } from '@/components/users/edit-user-dialog';
+import { useToast } from '@/hooks/use-toast';
 import { getInitials, cn } from '@/lib/utils';
 
 const roleConfig: Record<string, { label: string; color: string; bg: string }> = {
@@ -40,6 +52,9 @@ const roleConfig: Record<string, { label: string; color: string; bg: string }> =
 export default function UsersPage() {
     const { user } = useAuth();
     const [search, setSearch] = useState('');
+    const [editUser, setEditUser] = useState<any>(null);
+    const queryClient = useQueryClient();
+    const { toast } = useToast();
 
     const { data: users, isLoading } = useQuery({
         queryKey: ['users', search],
@@ -48,6 +63,42 @@ export default function UsersPage() {
             if (search) params.append('search', search);
             const response = await apiClient.get(`/users?${params.toString()}`);
             return response.data;
+        },
+    });
+
+    // Toggle user active status mutation
+    const toggleStatusMutation = useMutation({
+        mutationFn: async ({ userId, isActive }: { userId: string; isActive: boolean }) => {
+            return apiClient.patch(`/users/${userId}`, { isActive: !isActive });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['users'] });
+            toast({ title: 'User status updated successfully' });
+        },
+        onError: (error: any) => {
+            toast({
+                title: 'Failed to update user status',
+                description: error.response?.data?.message || 'Something went wrong',
+                variant: 'destructive',
+            });
+        },
+    });
+
+    // Delete user mutation
+    const deleteUserMutation = useMutation({
+        mutationFn: async (userId: string) => {
+            return apiClient.delete(`/users/${userId}`);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['users'] });
+            toast({ title: 'User deleted successfully' });
+        },
+        onError: (error: any) => {
+            toast({
+                title: 'Failed to delete user',
+                description: error.response?.data?.message || 'Something went wrong',
+                variant: 'destructive',
+            });
         },
     });
 
@@ -222,14 +273,41 @@ export default function UsersPage() {
                                             })}
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <div className="flex items-center justify-end gap-2">
-                                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                    <Mail className="h-4 w-4" />
-                                                </Button>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                </Button>
-                                            </div>
+                                            {user?.role === 'SUPER_ADMIN' && u.id !== user?.id && (
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                            <MoreHorizontal className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        <DropdownMenuItem
+                                                            onClick={() => setEditUser(u)}
+                                                        >
+                                                            <Edit className="mr-2 h-4 w-4" />
+                                                            Edit User
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem
+                                                            onClick={() => toggleStatusMutation.mutate({ userId: u.id, isActive: u.isActive })}
+                                                        >
+                                                            <Power className="mr-2 h-4 w-4" />
+                                                            {u.isActive ? 'Deactivate' : 'Activate'}
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuSeparator />
+                                                        <DropdownMenuItem
+                                                            className="text-destructive"
+                                                            onClick={() => {
+                                                                if (confirm('Are you sure you want to delete this user?')) {
+                                                                    deleteUserMutation.mutate(u.id);
+                                                                }
+                                                            }}
+                                                        >
+                                                            <Trash2 className="mr-2 h-4 w-4" />
+                                                            Delete User
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            )}
                                         </TableCell>
                                     </TableRow>
                                 );
@@ -248,6 +326,15 @@ export default function UsersPage() {
                     </Table>
                 </CardContent>
             </Card>
+
+            {/* Edit User Dialog */}
+            {editUser && (
+                <EditUserDialog
+                    user={editUser}
+                    open={!!editUser}
+                    onOpenChange={(open) => !open && setEditUser(null)}
+                />
+            )}
         </div>
     );
 }

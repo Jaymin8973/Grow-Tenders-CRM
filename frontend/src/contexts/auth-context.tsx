@@ -11,6 +11,7 @@ interface User {
     lastName: string;
     role: 'SUPER_ADMIN' | 'MANAGER' | 'EMPLOYEE';
     avatar?: string;
+    phone?: string;
 }
 
 interface AuthContextType {
@@ -20,6 +21,7 @@ interface AuthContextType {
     login: (email: string, password: string) => Promise<void>;
     logout: () => Promise<void>;
     checkRole: (allowedRoles: string[]) => boolean;
+    refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -83,6 +85,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return allowedRoles.includes(user.role);
     }, [user]);
 
+    const refreshUser = useCallback(async () => {
+        try {
+            const response = await apiClient.get('/users/profile');
+            const updatedUser = response.data;
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+            setUser(updatedUser);
+        } catch (error) {
+            console.error('Failed to refresh user:', error);
+        }
+    }, []);
+
     return (
         <AuthContext.Provider
             value={{
@@ -92,6 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 login,
                 logout,
                 checkRole,
+                refreshUser,
             }}
         >
             {children}

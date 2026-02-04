@@ -22,6 +22,7 @@ import { NotesModule } from './modules/notes/notes.module';
 import { AttachmentsModule } from './modules/attachments/attachments.module';
 import { BranchesModule } from './modules/branches/branches.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { FollowUpsModule } from './modules/follow-ups/follow-ups.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 
@@ -66,6 +67,7 @@ import { join } from 'path';
         NotesModule,
         AttachmentsModule,
         PaymentsModule,
+        FollowUpsModule,
     ],
     providers: [
         // Apply rate limiting globally

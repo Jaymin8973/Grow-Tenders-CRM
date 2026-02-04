@@ -37,6 +37,7 @@ import {
     Loader2,
     Pencil,
     Trash,
+    Lock,
 } from 'lucide-react';
 import { getInitials, cn } from '@/lib/utils';
 import {
@@ -251,7 +252,7 @@ export default function LeadsPage() {
                             )}
                         </div>
                         <div className="flex gap-2 flex-wrap">
-                            {Object.entries(statusConfig).slice(0, 5).map(([key, config]) => (
+                            {Object.entries(statusConfig).map(([key, config]) => (
                                 <Button
                                     key={key}
                                     variant={statusFilter === key ? 'default' : 'outline'}
@@ -276,8 +277,9 @@ export default function LeadsPage() {
                                 <TableHead className="w-[300px]">Lead</TableHead>
                                 <TableHead>Type</TableHead>
                                 <TableHead>Status</TableHead>
-                                <TableHead>Industry</TableHead>
+                                <TableHead>Assignee</TableHead>
                                 <TableHead>Source</TableHead>
+                                <TableHead>Next Follow-up</TableHead>
                                 <TableHead>Date</TableHead>
                                 <TableHead>Contact</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
@@ -299,11 +301,15 @@ export default function LeadsPage() {
                                 const status = statusConfig[lead.status] || statusConfig.NEW;
                                 const type = typeConfig[lead.type] || typeConfig.COLD;
                                 const TypeIcon = type.icon;
+                                const phoneNumber = lead.phone || lead.mobile;
 
                                 return (
                                     <TableRow
                                         key={lead.id}
-                                        className="table-row-hover cursor-pointer"
+                                        className={cn(
+                                            "table-row-hover cursor-pointer transition-colors",
+                                            user?.role === 'EMPLOYEE' && lead.assigneeId !== user?.id && "bg-slate-50/50 hover:bg-slate-50 opacity-90"
+                                        )}
                                         onClick={() => router.push(`/leads/${lead.id}`)}
                                     >
                                         <TableCell>
@@ -314,8 +320,14 @@ export default function LeadsPage() {
                                                     </AvatarFallback>
                                                 </Avatar>
                                                 <div>
-                                                    <p className="font-medium">
+                                                    <p className="font-medium flex items-center gap-2">
                                                         {lead.firstName} {lead.lastName}
+                                                        {user?.role === 'EMPLOYEE' && lead.assigneeId !== user?.id && (
+                                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-500 border border-slate-200">
+                                                                <Lock className="h-3 w-3 mr-1" />
+                                                                View Only
+                                                            </span>
+                                                        )}
                                                     </p>
                                                     <p className="text-sm text-muted-foreground">
                                                         {lead.company || 'No company'}
@@ -336,18 +348,43 @@ export default function LeadsPage() {
                                                 {status.label}
                                             </Badge>
                                         </TableCell>
-                                        <TableCell className="text-muted-foreground">
-                                            {lead.industry || '-'}
+                                        <TableCell>
+                                            {lead.assignee ? (
+                                                <div className="flex items-center gap-2">
+                                                    <Avatar className="h-6 w-6">
+                                                        <AvatarFallback className="text-[10px] bg-slate-100 text-slate-600">
+                                                            {getInitials(lead.assignee.firstName, lead.assignee.lastName)}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    <span className="truncate max-w-[120px] text-sm font-medium" title={`${lead.assignee.firstName} ${lead.assignee.lastName}`}>
+                                                        {lead.assignee.firstName} {lead.assignee.lastName}
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                <span className="text-muted-foreground italic text-sm">Unassigned</span>
+                                            )}
                                         </TableCell>
                                         <TableCell className="text-muted-foreground">
                                             {lead.source || '-'}
+                                        </TableCell>
+                                        <TableCell className="whitespace-nowrap">
+                                            {lead.nextFollowUp ? (
+                                                <span className={cn(
+                                                    'text-xs font-medium px-2 py-1 rounded-full border',
+                                                    new Date(lead.nextFollowUp) < new Date() ? 'bg-red-50 text-red-700 border-red-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                                )}>
+                                                    {new Date(lead.nextFollowUp).toLocaleDateString()}
+                                                </span>
+                                            ) : (
+                                                <span className="text-xs text-muted-foreground">Not set</span>
+                                            )}
                                         </TableCell>
                                         <TableCell className="text-muted-foreground whitespace-nowrap">
                                             {new Date(lead.createdAt).toLocaleDateString()}
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex items-center gap-2">
-                                                {lead.phone && (
+                                                {phoneNumber && (
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"

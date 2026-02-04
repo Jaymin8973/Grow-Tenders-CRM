@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
@@ -14,12 +14,27 @@ import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import {
     Dialog,
     DialogContent,
     DialogHeader,
     DialogTitle,
     DialogTrigger,
+    DialogFooter,
 } from '@/components/ui/dialog';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Label } from '@/components/ui/label';
 import {
     ArrowLeft,
     Mail,
@@ -27,7 +42,7 @@ import {
     Building2,
     MapPin,
     Globe,
-    Calendar,
+    Calendar as CalendarIcon,
     User,
     MessageSquare,
     Paperclip,
@@ -41,11 +56,11 @@ import {
     Edit,
     Trash2,
 } from 'lucide-react';
-import { CreateTaskDialog } from '@/components/tasks/create-task-dialog';
+// import { CreateTaskDialog } from '@/components/tasks/create-task-dialog';
 import { ComposeEmailDialog } from '@/components/mail/compose-email-dialog';
 import { AssignLeadDialog } from '@/components/leads/assign-lead-dialog';
 import { TransferLeadDialog } from '@/components/leads/transfer-lead-dialog';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 import { getInitials, cn, formatCurrency } from '@/lib/utils';
 
 const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
@@ -83,12 +98,34 @@ export default function LeadDetailPage() {
     const [dealValue, setDealValue] = useState('');
     const [expectedCloseDate, setExpectedCloseDate] = useState('');
 
+    const [followUpOpen, setFollowUpOpen] = useState(false);
+    const [followUpDate, setFollowUpDate] = useState<Date>();
+    const [followUpDescription, setFollowUpDescription] = useState('');
+
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
     // Fetch lead details
     const { data: lead, isLoading } = useQuery({
         queryKey: ['lead', leadId],
         queryFn: async () => {
             const response = await apiClient.get(`/leads/${leadId}`);
             return response.data;
+        },
+    });
+
+    const updateLeadMutation = useMutation({
+        mutationFn: async (payload: { status?: string; type?: string }) => {
+            const res = await apiClient.patch(`/leads/${leadId}`, payload);
+            return res.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['lead', leadId] });
+            queryClient.invalidateQueries({ queryKey: ['leads'] });
+            queryClient.invalidateQueries({ queryKey: ['lead-stats'] });
+            toast({ title: 'Lead updated' });
+        },
+        onError: (err: any) => {
+            toast({ title: err.response?.data?.message || 'Failed to update lead', variant: 'destructive' });
         },
     });
 
@@ -133,6 +170,22 @@ export default function LeadDetailPage() {
         }
     });
 
+    const updateStatusMutation = useMutation({
+        mutationFn: async (status: string) => {
+            const res = await apiClient.patch(`/leads/${leadId}/status`, { status });
+            return res.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['lead', leadId] });
+            queryClient.invalidateQueries({ queryKey: ['leads'] });
+            queryClient.invalidateQueries({ queryKey: ['lead-stats'] });
+            toast({ title: 'Lead status updated' });
+        },
+        onError: (err: any) => {
+            toast({ title: err.response?.data?.message || 'Failed to update status', variant: 'destructive' });
+        },
+    });
+
     // Fetch notes
     const { data: notes } = useQuery({
         queryKey: ['notes', 'lead', leadId],
@@ -142,11 +195,11 @@ export default function LeadDetailPage() {
         },
     });
 
-    // Fetch activities
-    const { data: activities } = useQuery({
-        queryKey: ['activities', 'lead', leadId],
+    // Fetch follow-ups for timeline
+    const { data: followUps } = useQuery({
+        queryKey: ['follow-ups', 'lead', leadId],
         queryFn: async () => {
-            const response = await apiClient.get(`/activities?leadId=${leadId}`);
+            const response = await apiClient.get(`/follow-ups/lead/${leadId}`);
             return response.data;
         },
     });
@@ -198,6 +251,69 @@ export default function LeadDetailPage() {
         },
     });
 
+    // Upload attachment mutation
+    const uploadAttachmentMutation = useMutation({
+        mutationFn: async (file: File) => {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('leadId', leadId);
+
+            return apiClient.post('/attachments/upload', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['attachments', 'lead', leadId] });
+            toast({ title: 'File uploaded successfully' });
+            // Reset file input
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
+        },
+        onError: (error: any) => {
+            toast({
+                title: 'Failed to upload file',
+                description: error.response?.data?.message || 'Something went wrong',
+                variant: 'destructive'
+            });
+        },
+    });
+
+    // Log Follow-up mutation
+    const logFollowUpMutation = useMutation({
+        mutationFn: async () => {
+            if (!followUpDate || !followUpDescription) return;
+
+            return apiClient.post('/follow-ups', {
+                description: followUpDescription,
+                scheduledAt: followUpDate.toISOString(),
+                leadId,
+            });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['follow-ups', 'lead', leadId] });
+            setFollowUpOpen(false);
+            setFollowUpDate(undefined);
+            setFollowUpDescription('');
+            toast({ title: 'Follow-up scheduled successfully' });
+        },
+        onError: (error: any) => {
+            toast({
+                title: 'Failed to schedule follow-up',
+                description: error.response?.data?.message || 'Something went wrong',
+                variant: 'destructive'
+            });
+        }
+    });
+
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            uploadAttachmentMutation.mutate(e.target.files[0]);
+        }
+    };
+
     if (isLoading) {
         return (
             <div className="flex h-full items-center justify-center">
@@ -218,6 +334,8 @@ export default function LeadDetailPage() {
     }
 
     const status = statusConfig[lead.status] || statusConfig.NEW;
+    const isClosed = lead.status === 'WON' || lead.status === 'LOST';
+    const canUpdateStatus = user?.role !== 'EMPLOYEE' || lead.assigneeId === user?.id;
 
     return (
         <div className="space-y-6 page-enter">
@@ -393,6 +511,92 @@ export default function LeadDetailPage() {
                         </CardContent>
                     </Card>
 
+                    {/* Lead Status & Type */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-lg">Lead Status & Type</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                                <Label>Status</Label>
+                                <Select
+                                    value={lead.status}
+                                    onValueChange={(value) => updateLeadMutation.mutate({ status: value })}
+                                    disabled={!canUpdateStatus || updateLeadMutation.isPending}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select status" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {['NEW', 'CONTACTED', 'QUALIFIED', 'PROPOSAL', 'NEGOTIATION', 'WON', 'LOST'].map((value) => (
+                                            <SelectItem key={value} value={value}>
+                                                {statusConfig[value]?.label || value}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Type</Label>
+                                <Select
+                                    value={lead.type || 'COLD'}
+                                    onValueChange={(value) => updateLeadMutation.mutate({ type: value })}
+                                    disabled={!canUpdateStatus || updateLeadMutation.isPending}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {['COLD', 'WARM', 'HOT'].map((value) => (
+                                            <SelectItem key={value} value={value}>
+                                                {value.charAt(0) + value.slice(1).toLowerCase()}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            {!canUpdateStatus && (
+                                <p className="text-xs text-muted-foreground">
+                                    You can update status only for leads assigned to you.
+                                </p>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    {/* Next Follow-up */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-lg">Next Follow-up</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium">
+                                        {lead.nextFollowUp ? format(new Date(lead.nextFollowUp), 'PPP') : 'Not scheduled'}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {lead.nextFollowUp
+                                            ? formatDistanceToNow(new Date(lead.nextFollowUp), { addSuffix: true })
+                                            : 'Add a follow-up so it appears in daily tasks.'}
+                                    </p>
+                                </div>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setFollowUpOpen(true)}
+                                    disabled={isClosed}
+                                >
+                                    Schedule
+                                </Button>
+                            </div>
+                            {isClosed && (
+                                <p className="text-xs text-muted-foreground">
+                                    Follow-ups are disabled after a lead is closed.
+                                </p>
+                            )}
+                        </CardContent>
+                    </Card>
+
                     {/* Lead Details Card */}
                     <Card>
                         <CardHeader>
@@ -472,18 +676,74 @@ export default function LeadDetailPage() {
                                 <CardHeader>
                                     <div className="flex items-center justify-between">
                                         <CardTitle className="text-lg">Activity Timeline</CardTitle>
-                                        <CreateTaskDialog leadId={leadId} />
+                                        <Dialog open={followUpOpen} onOpenChange={setFollowUpOpen}>
+                                            <DialogTrigger asChild>
+                                                <Button className="gap-2">
+                                                    <CalendarIcon className="h-4 w-4" />
+                                                    Log Follow-up
+                                                </Button>
+                                            </DialogTrigger>
+                                            <DialogContent>
+                                                <DialogHeader>
+                                                    <DialogTitle>Log Next Follow-up</DialogTitle>
+                                                </DialogHeader>
+                                                <div className="space-y-4 py-4">
+                                                    <div className="space-y-2">
+                                                        <Label>Date</Label>
+                                                        <Popover>
+                                                            <PopoverTrigger asChild>
+                                                                <Button
+                                                                    variant={"outline"}
+                                                                    className={cn(
+                                                                        "w-full justify-start text-left font-normal",
+                                                                        !followUpDate && "text-muted-foreground"
+                                                                    )}
+                                                                >
+                                                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                                                    {followUpDate ? format(followUpDate, "PPP") : <span>Pick a date</span>}
+                                                                </Button>
+                                                            </PopoverTrigger>
+                                                            <PopoverContent className="w-auto p-0" align="start">
+                                                                <Calendar
+                                                                    mode="single"
+                                                                    selected={followUpDate}
+                                                                    onSelect={setFollowUpDate}
+                                                                    initialFocus
+                                                                />
+                                                            </PopoverContent>
+                                                        </Popover>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label>Description</Label>
+                                                        <Textarea
+                                                            placeholder="What needs to be done?"
+                                                            value={followUpDescription}
+                                                            onChange={(e) => setFollowUpDescription(e.target.value)}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <DialogFooter>
+                                                    <Button variant="outline" onClick={() => setFollowUpOpen(false)}>Cancel</Button>
+                                                    <Button
+                                                        onClick={() => logFollowUpMutation.mutate()}
+                                                        disabled={!followUpDate || !followUpDescription || logFollowUpMutation.isPending}
+                                                    >
+                                                        {logFollowUpMutation.isPending ? 'Saving...' : 'Save Follow-up'}
+                                                    </Button>
+                                                </DialogFooter>
+                                            </DialogContent>
+                                        </Dialog>
                                     </div>
                                 </CardHeader>
                                 <CardContent>
                                     <div className="space-y-4">
-                                        {activities?.map((activity: any) => (
-                                            <div key={activity.id} className="flex gap-4 p-3 rounded-lg hover:bg-muted transition-colors">
+                                        {followUps?.map((followUp: any) => (
+                                            <div key={followUp.id} className="flex gap-4 p-3 rounded-lg hover:bg-muted transition-colors">
                                                 <div className={cn(
                                                     "p-2 rounded-full h-fit",
-                                                    activity.status === 'COMPLETED' ? 'bg-emerald-100' : 'bg-blue-100'
+                                                    followUp.status === 'COMPLETED' ? 'bg-emerald-100' : 'bg-blue-100'
                                                 )}>
-                                                    {activity.status === 'COMPLETED' ? (
+                                                    {followUp.status === 'COMPLETED' ? (
                                                         <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                                                     ) : (
                                                         <Clock className="h-4 w-4 text-blue-600" />
@@ -491,22 +751,22 @@ export default function LeadDetailPage() {
                                                 </div>
                                                 <div className="flex-1">
                                                     <div className="flex items-center justify-between">
-                                                        <p className="font-medium">{activity.title}</p>
+                                                        <p className="font-medium">Follow-up</p>
                                                         <span className="text-xs text-muted-foreground">
-                                                            {formatDistanceToNow(new Date(activity.scheduledAt), { addSuffix: true })}
+                                                            {formatDistanceToNow(new Date(followUp.scheduledAt), { addSuffix: true })}
                                                         </span>
                                                     </div>
-                                                    <p className="text-sm text-muted-foreground">{activity.type}</p>
-                                                    {activity.description && (
-                                                        <p className="text-sm mt-1">{activity.description}</p>
+                                                    <p className="text-sm text-muted-foreground">{followUp.status}</p>
+                                                    {followUp.description && (
+                                                        <p className="text-sm mt-1">{followUp.description}</p>
                                                     )}
                                                 </div>
                                             </div>
                                         ))}
-                                        {(!activities || activities.length === 0) && (
+                                        {(!followUps || followUps.length === 0) && (
                                             <div className="text-center py-8 text-muted-foreground">
-                                                <Calendar className="h-10 w-10 mx-auto mb-2 opacity-30" />
-                                                <p>No activities yet</p>
+                                                <CalendarIcon className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                                                <p>No follow-ups yet</p>
                                             </div>
                                         )}
                                     </div>
@@ -566,8 +826,24 @@ export default function LeadDetailPage() {
                             <Card>
                                 <CardHeader className="flex-row items-center justify-between">
                                     <CardTitle className="text-lg">Attachments</CardTitle>
-                                    <Button variant="outline" size="sm" className="gap-2">
-                                        <Paperclip className="h-4 w-4" />
+                                    <input
+                                        type="file"
+                                        className="hidden"
+                                        ref={fileInputRef}
+                                        onChange={handleFileSelect}
+                                    />
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="gap-2"
+                                        onClick={() => fileInputRef.current?.click()}
+                                        disabled={uploadAttachmentMutation.isPending}
+                                    >
+                                        {uploadAttachmentMutation.isPending ? (
+                                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                                        ) : (
+                                            <Paperclip className="h-4 w-4" />
+                                        )}
                                         Upload
                                     </Button>
                                 </CardHeader>
@@ -582,9 +858,15 @@ export default function LeadDetailPage() {
                                                         {(attachment.size / 1024).toFixed(1)} KB
                                                     </p>
                                                 </div>
-                                                <Button variant="ghost" size="sm">
-                                                    Download
-                                                </Button>
+                                                <a
+                                                    href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/attachments/${attachment.id}/download`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                >
+                                                    <Button variant="ghost" size="sm">
+                                                        Download
+                                                    </Button>
+                                                </a>
                                             </div>
                                         ))}
                                         {(!attachments || attachments.length === 0) && (

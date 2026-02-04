@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useForm } from 'react-hook-form';
@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Mail, Lock, ArrowRight } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const loginSchema = z.object({
     email: z.string().email('Please enter a valid email'),
@@ -23,6 +24,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false);
+    const [rememberMe, setRememberMe] = useState(false);
     const { login } = useAuth();
     const { toast } = useToast();
     const router = useRouter();
@@ -30,14 +32,40 @@ export default function LoginPage() {
     const {
         register,
         handleSubmit,
+        setValue,
         formState: { errors },
     } = useForm<LoginFormData>({
         resolver: zodResolver(loginSchema),
     });
 
+    // Load saved credentials on mount
+    useEffect(() => {
+        const savedCredentials = localStorage.getItem('rememberedCredentials');
+        if (savedCredentials) {
+            try {
+                const { email, password } = JSON.parse(savedCredentials);
+                setValue('email', email);
+                setValue('password', password);
+                setRememberMe(true);
+            } catch (e) {
+                localStorage.removeItem('rememberedCredentials');
+            }
+        }
+    }, [setValue]);
+
     const onSubmit = async (data: LoginFormData) => {
         setIsLoading(true);
         try {
+            // Save or remove credentials based on Remember Me
+            if (rememberMe) {
+                localStorage.setItem('rememberedCredentials', JSON.stringify({
+                    email: data.email,
+                    password: data.password,
+                }));
+            } else {
+                localStorage.removeItem('rememberedCredentials');
+            }
+
             await login(data.email, data.password);
             toast({
                 title: 'Welcome back!',
@@ -165,6 +193,21 @@ export default function LoginPage() {
                                     {errors.password && (
                                         <p className="text-sm text-destructive">{errors.password.message}</p>
                                     )}
+                                </div>
+
+                                {/* Remember Me Checkbox */}
+                                <div className="flex items-center space-x-2">
+                                    <Checkbox
+                                        id="rememberMe"
+                                        checked={rememberMe}
+                                        onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                                    />
+                                    <Label
+                                        htmlFor="rememberMe"
+                                        className="text-sm font-normal cursor-pointer text-muted-foreground"
+                                    >
+                                        Remember me
+                                    </Label>
                                 </div>
 
                                 <Button

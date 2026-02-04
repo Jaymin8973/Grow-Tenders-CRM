@@ -10,10 +10,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { LeadStatus, LeadSource, LeadType } from '@prisma/client';
 
 export class CreateLeadDto {
-    @ApiProperty({ example: 'New Business Opportunity', required: false })
-    @IsString()
-    @IsOptional()
-    title?: string;
+
 
     @ApiProperty({ example: 'John' })
     @IsString()
@@ -28,22 +25,15 @@ export class CreateLeadDto {
     @ApiProperty({ example: 'john.doe@company.com' })
     @IsEmail()
     @IsNotEmpty()
+    @IsNotEmpty()
     email: string;
-
-    @ApiPropertyOptional({ example: '+1234567890' })
-    @IsString()
-    @IsOptional()
-    phone?: string;
 
     @ApiPropertyOptional({ example: 'Acme Corp' })
     @IsString()
     @IsOptional()
     company?: string;
 
-    @ApiPropertyOptional({ example: 'CEO' })
-    @IsString()
-    @IsOptional()
-    position?: string;
+
 
     @ApiPropertyOptional({ enum: LeadStatus, default: LeadStatus.NEW })
     @IsEnum(LeadStatus)
@@ -67,27 +57,7 @@ export class CreateLeadDto {
     @IsOptional()
     description?: string;
 
-    @ApiPropertyOptional({ example: '123 Main St' })
-    @IsString()
-    @IsOptional()
-    address?: string;
 
-    @ApiPropertyOptional({ example: 'New York' })
-    @IsString()
-    @IsOptional()
-    city?: string;
-
-    @ApiPropertyOptional({ example: 'NY' })
-    @IsString()
-    @IsOptional()
-    state?: string;
-
-
-
-    @ApiPropertyOptional({ example: 'https://acmecorp.com' })
-    @IsString()
-    @IsOptional()
-    website?: string;
 
     @ApiPropertyOptional({ example: 'Some key notes about the lead' })
     @IsString()
@@ -119,13 +89,14 @@ export class CreateLeadDto {
     @IsOptional()
     department?: string;
 
-    @ApiPropertyOptional({ example: '12345' })
-    @IsString()
-    @IsOptional()
-    postalCode?: string;
+
 
     @ApiPropertyOptional({ example: 'Technology' })
     @IsString()
     @IsOptional()
     industry?: string;
+
+    @ApiPropertyOptional({ example: '2023-12-31T23:59:59Z' })
+    @IsOptional()
+    nextFollowUp?: Date;
 }

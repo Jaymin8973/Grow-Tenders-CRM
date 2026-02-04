@@ -67,24 +67,6 @@ export class InvoicesController {
         return this.invoicesService.getInvoiceStats();
     }
 
-    @Get('due')
-    @Roles(Role.SUPER_ADMIN, Role.MANAGER)
-    @ApiOperation({ summary: 'Get due invoices' })
-    @ApiQuery({ name: 'assigneeId', required: false })
-    @ApiQuery({ name: 'daysOverdue', required: false })
-    @ApiQuery({ name: 'search', required: false })
-    getDue(
-        @Query('assigneeId') assigneeId?: string,
-        @Query('daysOverdue') daysOverdue?: string,
-        @Query('search') search?: string,
-    ) {
-        return this.invoicesService.getDueInvoices({
-            assigneeId,
-            daysOverdue: daysOverdue ? parseInt(daysOverdue, 10) : undefined,
-            search,
-        });
-    }
-
     @Get(':id')
     @Roles(Role.SUPER_ADMIN, Role.MANAGER)
     @ApiOperation({ summary: 'Get invoice by ID' })

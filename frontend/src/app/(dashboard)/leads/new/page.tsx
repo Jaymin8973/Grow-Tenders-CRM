@@ -29,39 +29,34 @@ import {
     Database,
     BadgeCheck,
     Hash,
-    Mail
+    Mail,
+    CalendarIcon
 } from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+import { Calendar } from '@/components/ui/calendar';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
 
 // Schema
 const leadSchema = z.object({
     salutation: z.string().optional(),
     firstName: z.string().min(1, 'First name is required'),
     lastName: z.string().min(1, 'Last name is required'),
-    title: z.string().optional(),
-    position: z.string().optional(),
-    department: z.string().optional(),
-    company: z.string().optional(),
-    industry: z.string().optional(),
-
-    phone: z.string().optional(),
-    mobile: z.string().optional(),
-    fax: z.string().optional(),
     email: z.string().email('Invalid email address'),
-    website: z.string().optional(),
-
-    address: z.string().optional(),
-    city: z.string().optional(),
-    state: z.string().optional(),
-    postalCode: z.string().optional(),
-    country: z.string().optional(),
+    mobile: z.string().optional(),
+    company: z.string().optional(),
 
     description: z.string().optional(),
     status: z.enum(['NEW', 'CONTACTED', 'QUALIFIED', 'PROPOSAL', 'NEGOTIATION', 'WON', 'LOST']),
     source: z.string().optional(),
-    value: z.number().optional(),
     type: z.enum(['HOT', 'WARM', 'COLD']),
 
     assigneeId: z.string().optional(),
+    nextFollowUp: z.date().optional(),
 });
 
 type LeadFormData = z.infer<typeof leadSchema>;
@@ -76,6 +71,7 @@ export default function NewLeadPage() {
         register,
         handleSubmit,
         setValue,
+        watch,
         formState: { errors },
     } = useForm<LeadFormData>({
         resolver: zodResolver(leadSchema),
@@ -86,6 +82,11 @@ export default function NewLeadPage() {
             source: 'WEBSITE',
         },
     });
+
+
+
+
+    const activeFollowUpDate = watch('nextFollowUp');
 
     // Fetch team members for assignment
     const { data: teamMembers } = useQuery({
@@ -120,7 +121,6 @@ export default function NewLeadPage() {
     });
 
     const onSubmit = (data: LeadFormData) => {
-        if (data.value) data.value = Number(data.value);
         createLeadMutation.mutate(data);
     };
 
@@ -196,7 +196,7 @@ export default function NewLeadPage() {
                                 </div>
 
                                 {/* Email & Title */}
-                                <div className="grid grid-cols-2 gap-4 md:col-span-2">
+                                <div className="grid grid-cols-1 gap-4 md:col-span-2">
                                     <div>
                                         <Label className="text-xs text-muted-foreground">Email <span className="text-red-500">*</span></Label>
                                         <div className="relative">
@@ -205,20 +205,12 @@ export default function NewLeadPage() {
                                         </div>
                                         {errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}
                                     </div>
-                                    <div>
-                                        <Label className="text-xs text-muted-foreground">Job Title</Label>
-                                        <Input {...register('position')} placeholder="e.g. Manager" className="h-9" />
-                                    </div>
                                 </div>
 
                                 {/* Phone Numbers */}
                                 <div>
                                     <Label className="text-xs text-muted-foreground">Mobile</Label>
                                     <Input {...register('mobile')} placeholder="+XX XXXXX" className="h-9" />
-                                </div>
-                                <div>
-                                    <Label className="text-xs text-muted-foreground">Office Phone</Label>
-                                    <Input {...register('phone')} placeholder="+XX XXX..." className="h-9" />
                                 </div>
 
                                 {/* Business Details Section in same card */}
@@ -227,57 +219,27 @@ export default function NewLeadPage() {
                                         <Building2 className="h-3 w-3" />
                                         Organization
                                     </Label>
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 gap-4">
                                         <div>
                                             <Label className="text-xs text-muted-foreground">Company</Label>
                                             <Input {...register('company')} placeholder="Acme Inc" className="h-9" />
-                                        </div>
-                                        <div>
-                                            <Label className="text-xs text-muted-foreground">Website</Label>
-                                            <Input {...register('website')} placeholder="https://" className="h-9" />
                                         </div>
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
 
-                        {/* Address & Notes Combined */}
+                        {/* Notes Only */}
                         <Card>
                             <CardHeader className="pb-3 border-b">
                                 <CardTitle className="text-base flex items-center gap-2">
-                                    <MapPin className="h-4 w-4 text-primary" />
-                                    Location & Details
+                                    <Database className="h-4 w-4 text-primary" />
+                                    Notes
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="md:col-span-2">
-                                    <Label className="text-xs text-muted-foreground">Street Address</Label>
-                                    <Input {...register('address')} placeholder="123 Main St" className="h-9" />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4 md:col-span-2">
-                                    <div>
-                                        <Label className="text-xs text-muted-foreground">City</Label>
-                                        <Input {...register('city')} className="h-9" />
-                                    </div>
-                                    <div>
-                                        <Label className="text-xs text-muted-foreground">State</Label>
-                                        <Input {...register('state')} className="h-9" />
-                                    </div>
-                                    <div>
-                                        <Label className="text-xs text-muted-foreground">Zip Code</Label>
-                                        <Input {...register('postalCode')} className="h-9" />
-                                    </div>
-                                    <div>
-                                        <Label className="text-xs text-muted-foreground">Country</Label>
-                                        <Input {...register('country')} className="h-9" />
-                                    </div>
-                                </div>
-
-                                <div className="md:col-span-2 pt-2 border-t mt-2">
-                                    <Label className="text-sm font-semibold flex items-center gap-2 mb-2">
-                                        <Database className="h-3 w-3" />
-                                        Notes
-                                    </Label>
+                            <CardContent className="pt-6">
+                                <div className="w-full">
+                                    <Label className="text-xs text-muted-foreground mb-2 block">Additional Details</Label>
                                     <Textarea {...register('description')} placeholder="Internal notes..." className="min-h-[80px]" />
                                 </div>
                             </CardContent>
@@ -307,6 +269,7 @@ export default function NewLeadPage() {
                                             <SelectItem value="CONTACTED">Contacted</SelectItem>
                                             <SelectItem value="QUALIFIED">Qualified</SelectItem>
                                             <SelectItem value="PROPOSAL">Proposal</SelectItem>
+                                            <SelectItem value="NEGOTIATION">Negotiation</SelectItem>
                                             <SelectItem value="WON">Won</SelectItem>
                                             <SelectItem value="LOST">Lost</SelectItem>
                                         </SelectContent>
@@ -322,6 +285,9 @@ export default function NewLeadPage() {
                                             <SelectItem value="WEBSITE">Website</SelectItem>
                                             <SelectItem value="REFERRAL">Referral</SelectItem>
                                             <SelectItem value="COLD_CALL">Cold Call</SelectItem>
+                                            <SelectItem value="SOCIAL_MEDIA">Social Media</SelectItem>
+                                            <SelectItem value="ADVERTISEMENT">Advertisement</SelectItem>
+                                            <SelectItem value="TRADE_SHOW">Trade Show</SelectItem>
                                             <SelectItem value="OTHER">Other</SelectItem>
                                         </SelectContent>
                                     </Select>
@@ -339,6 +305,31 @@ export default function NewLeadPage() {
                                         </SelectContent>
                                     </Select>
                                 </div>
+                                <div className="flex flex-col space-y-2">
+                                    <Label className="text-xs text-muted-foreground">Next Follow-up</Label>
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button
+                                                variant={"outline"}
+                                                className={cn(
+                                                    "h-9 w-full justify-start text-left font-normal",
+                                                    !activeFollowUpDate && "text-muted-foreground"
+                                                )}
+                                            >
+                                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                                {activeFollowUpDate ? format(activeFollowUpDate, "PPP") : <span>Pick a date</span>}
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0" align="start">
+                                            <Calendar
+                                                mode="single"
+                                                selected={activeFollowUpDate}
+                                                onSelect={(date) => setValue('nextFollowUp', date)}
+                                                initialFocus
+                                            />
+                                        </PopoverContent>
+                                    </Popover>
+                                </div>
                             </CardContent>
                         </Card>
 
@@ -351,18 +342,7 @@ export default function NewLeadPage() {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="pt-6 space-y-4">
-                                <div>
-                                    <Label className="text-xs text-muted-foreground">Estimated Value</Label>
-                                    <div className="relative mt-1">
-                                        <span className="absolute left-3 top-2.5 text-muted-foreground text-sm">$</span>
-                                        <Input
-                                            type="number"
-                                            {...register('value')}
-                                            className="pl-7 h-9 font-medium"
-                                            placeholder="0.00"
-                                        />
-                                    </div>
-                                </div>
+                                {/* Value Logic Removed */}
 
                                 {(user?.role === 'SUPER_ADMIN' || user?.role === 'MANAGER') && (
                                     <div>

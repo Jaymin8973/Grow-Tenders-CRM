@@ -39,7 +39,8 @@ import {
     Mail,
     ChevronDown,
     XCircle,
-    FileText
+    FileText,
+    Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -79,6 +80,8 @@ export function ComposeEmailDialog({
 
     const { toast } = useToast();
     const [to, setTo] = useState(defaultTo);
+    const [cc, setCc] = useState('');
+    const [bcc, setBcc] = useState('');
     const [subject, setSubject] = useState(defaultSubject);
     const [body, setBody] = useState('');
     const [ccEnabled, setCcEnabled] = useState(false);
@@ -124,15 +127,57 @@ export function ComposeEmailDialog({
         setAttachments(prev => prev.filter((_, i) => i !== index));
     };
 
+    const sendEmailMutation = useMutation({
+        mutationFn: async (data: any) => {
+            return apiClient.post('/email/send', data);
+        },
+        onSuccess: () => {
+            toast({
+                title: 'Email sent successfully',
+                description: `Sent to ${to}.`,
+                className: "bg-emerald-500 text-white border-0"
+            });
+            setOpen(false);
+            setAttachments([]);
+            editor?.commands.clearContent();
+            setSubject('');
+            setBody('');
+            setCc('');
+            setBcc('');
+        },
+        onError: (error: any) => {
+            toast({
+                title: 'Failed to send email',
+                description: error.response?.data?.message || 'Something went wrong',
+                variant: 'destructive',
+            });
+        }
+    });
+
     const handleSend = () => {
-        toast({
-            title: 'Email sent successfully',
-            description: `Sent to ${to} with ${attachments.length} attachments.`,
-            className: "bg-emerald-500 text-white border-0"
-        });
-        setOpen(false);
-        setAttachments([]);
-        editor?.commands.clearContent();
+        if (!to) {
+            toast({
+                title: 'Validation Error',
+                description: 'Please add a recipient',
+                variant: 'destructive',
+            });
+            return;
+        }
+
+        const payload: any = {
+            to,
+            cc: cc ? cc.split(',').map(e => e.trim()) : undefined,
+            bcc: bcc ? bcc.split(',').map(e => e.trim()) : undefined,
+            subject,
+            body,
+        };
+
+        if (relatedTo) {
+            if (relatedTo.type === 'Lead') payload.leadId = relatedTo.id;
+            if (relatedTo.type === 'Customer') payload.customerId = relatedTo.id;
+        }
+
+        sendEmailMutation.mutate(payload);
     };
 
     const ToggleBtn = ({ isActive, onClick, icon: Icon }: any) => (
@@ -199,15 +244,9 @@ export function ComposeEmailDialog({
                     <div className="grid grid-cols-[80px_1fr_auto] items-center gap-2">
                         <Label className="text-xs font-bold text-gray-500 uppercase tracking-widest text-right mr-2">To</Label>
                         <div className="relative">
-                            {to && (
-                                <div className="absolute left-1 top-1 bottom-1 flex items-center bg-violet-100 text-violet-700 px-2 rounded border border-violet-200 text-sm">
-                                    <span className="mr-1">{to}</span>
-                                    <button onClick={() => setTo('')} className="hover:text-violet-900"><X className="h-3 w-3" /></button>
-                                </div>
-                            )}
                             <Input
-                                className={cn("h-9 bg-white border-gray-200", to && "pl-32 text-transparent caret-foreground")}
-                                placeholder={!to ? "Search contacts..." : ""}
+                                className="h-9 bg-white border-gray-200"
+                                placeholder="Recipient email..."
                                 value={to}
                                 onChange={(e) => setTo(e.target.value)}
                             />
@@ -217,6 +256,32 @@ export function ComposeEmailDialog({
                             <button onClick={() => setBccEnabled(!bccEnabled)} className={cn("hover:text-primary", bccEnabled && "text-primary")}>Bcc</button>
                         </div>
                     </div>
+
+                    {/* CC */}
+                    {ccEnabled && (
+                        <div className="grid grid-cols-[80px_1fr] items-center gap-2 animate-in fade-in slide-in-from-top-1">
+                            <Label className="text-xs font-bold text-gray-500 uppercase tracking-widest text-right mr-2">Cc</Label>
+                            <Input
+                                className="h-9 bg-white border-gray-200"
+                                placeholder="Cc recipients..."
+                                value={cc}
+                                onChange={(e) => setCc(e.target.value)}
+                            />
+                        </div>
+                    )}
+
+                    {/* BCC */}
+                    {bccEnabled && (
+                        <div className="grid grid-cols-[80px_1fr] items-center gap-2 animate-in fade-in slide-in-from-top-1">
+                            <Label className="text-xs font-bold text-gray-500 uppercase tracking-widest text-right mr-2">Bcc</Label>
+                            <Input
+                                className="h-9 bg-white border-gray-200"
+                                placeholder="Bcc recipients..."
+                                value={bcc}
+                                onChange={(e) => setBcc(e.target.value)}
+                            />
+                        </div>
+                    )}
 
                     {/* SUBJECT */}
                     <div className="grid grid-cols-[80px_1fr] items-center gap-2">
@@ -355,9 +420,19 @@ export function ComposeEmailDialog({
                             <FileText className="h-4 w-4" />
                             Insert Template
                         </Button>
-                        <Button onClick={handleSend} className="bg-[#4a4a6a] hover:bg-[#3b3b54] text-white min-w-[100px] gap-2 shadow-lg hover:shadow-xl transition-all">
-                            Send
-                            <Mail className="h-4 w-4" />
+                        <Button
+                            onClick={handleSend}
+                            disabled={sendEmailMutation.isPending}
+                            className="bg-[#4a4a6a] hover:bg-[#3b3b54] text-white min-w-[100px] gap-2 shadow-lg hover:shadow-xl transition-all"
+                        >
+                            {sendEmailMutation.isPending ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                                <>
+                                    Send
+                                    <Mail className="h-4 w-4" />
+                                </>
+                            )}
                         </Button>
                     </div>
                 </div>

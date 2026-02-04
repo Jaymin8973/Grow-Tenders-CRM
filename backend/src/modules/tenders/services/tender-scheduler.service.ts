@@ -13,8 +13,8 @@ export class TenderSchedulerService {
         private notificationService: TenderNotificationService,
     ) { }
 
-    // Run every 2 hours
-    @Cron(CronExpression.EVERY_5_MINUTES)
+    // Run every hour
+    @Cron(CronExpression.EVERY_4_HOURS)
     async handleCron() {
         if (this.isRunning) {
             this.logger.warn('Scraper already running, skipping...');
@@ -25,17 +25,20 @@ export class TenderSchedulerService {
         this.logger.log('Starting scheduled tender scraping...');
 
         try {
-            // Scrape all active tenders (todayOnly=true to fetch only latest daily uploads)
-            const result = await this.gemScraperService.scrapeTenders(5, true);
-            this.logger.log(`Scraping complete: ${result.added} added, ${result.skipped} duplicates, ${result.skippedOld} old tenders skipped`);
+            // Scrape from start of today
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const result = await this.gemScraperService.scrapeTenders(0, today);
+            this.logger.log(`Scraping complete: ${result.added} added, ${result.skipped} duplicates, ${result.skippedOld} old skipped, ${result.pagesScraped} pages scraped`);
 
             // Update expired tenders
             const expired = await this.gemScraperService.updateExpiredTenders();
             this.logger.log(`Marked ${expired} tenders as expired`);
 
             // Send notifications for new tenders
-            if (result.added > 0) {
-                await this.notificationService.sendNewTenderAlerts();
+            if (result.added > 0 && result.newTenders.length > 0) {
+                await this.notificationService.sendNewTenderAlerts(result.newTenders);
             }
         } catch (error) {
             this.logger.error(`Scheduled scraping failed: ${error.message}`);
@@ -56,12 +59,18 @@ export class TenderSchedulerService {
 
         this.isRunning = true;
         try {
-            const result = await this.gemScraperService.scrapeTenders(pages, todayOnly);
+            let fromDate: Date | undefined;
+            if (todayOnly) {
+                fromDate = new Date();
+                fromDate.setHours(0, 0, 0, 0);
+            }
+
+            const result = await this.gemScraperService.scrapeTenders(pages, fromDate);
             await this.gemScraperService.updateExpiredTenders();
 
             // Send notifications if any new tenders found
-            if (result.added > 0) {
-                await this.notificationService.sendNewTenderAlerts();
+            if (result.added > 0 && result.newTenders.length > 0) {
+                await this.notificationService.sendNewTenderAlerts(result.newTenders);
             }
 
             return result;

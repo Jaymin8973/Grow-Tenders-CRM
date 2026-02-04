@@ -22,20 +22,28 @@ interface ScrapedTenderData {
 @Injectable()
 export class GemScraperService {
     private readonly logger = new Logger(GemScraperService.name);
-    private readonly baseUrl = 'https://bidplus.gem.gov.in/bidlists';
+    // URL with sorting by bid start date (latest first)
+    private readonly baseUrl = 'https://bidplus.gem.gov.in/bidlists?bidlists&sorting=bid_start_date%7Cdesc';
 
     constructor(private prisma: PrismaService) { }
 
     /**
      * Scrape tenders from GeM portal
-     * @param pages Number of pages to scrape
+     * @param maxPages Maximum pages to scrape (0 = unlimited, scrape all pages)
      * @param todayOnly If true, only fetch tenders published today (best-effort based on start_date)
      */
     async scrapeTenders(
-        pages: number = 3,
-        todayOnly: boolean = false,
-    ): Promise<{ added: number; skipped: number; skippedOld: number }> {
-        this.logger.log(`Starting GeM tender scraping... (pages: ${pages}, todayOnly: ${todayOnly})`);
+        maxPages: number = 0,
+        fromDate?: Date,
+    ): Promise<{ added: number; skipped: number; skippedOld: number; pagesScraped: number; newTenders: any[] }> {
+        // Default to today 00:00:00 if not provided
+        if (!fromDate) {
+            fromDate = new Date();
+            fromDate.setHours(0, 0, 0, 0);
+        }
+
+        const pagesInfo = maxPages === 0 ? 'all pages' : `max ${maxPages} pages`;
+        this.logger.log(`Starting GeM tender scraping... (${pagesInfo}, fromDate: ${fromDate.toISOString()})`);
 
         // Create Scrape Job
         const job = await this.prisma.tenderScrapeJob.create({
@@ -48,49 +56,21 @@ export class GemScraperService {
         });
 
         let browser: any = null;
+        let page: any = null;
+        let currentUrl = this.baseUrl;
         let added = 0;
         let skipped = 0;
         let skippedOld = 0;
+        const newTenders: any[] = [];
         const errors: string[] = [];
 
         const maxRetries = 3;
 
-        // Today string: DD-MM-YYYY (local)
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const todayStr = `${today.getDate().toString().padStart(2, '0')}-${(today.getMonth() + 1)
-            .toString()
-            .padStart(2, '0')}-${today.getFullYear()}`;
-
         try {
-            browser = await puppeteer.launch({
-                headless: "new",
-                executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-                args: [
-                    '--no-sandbox',
-                    '--disable-setuid-sandbox',
-                    '--disable-dev-shm-usage',
-                    '--disable-blink-features=AutomationControlled',
-                    '--disable-web-security',
-                    '--window-size=1920,1080',
-                    '--start-maximized'
-                ],
-                defaultViewport: null,
-            });
+            browser = await this.launchBrowser();
 
-            const page = await browser.newPage();
-            // ... (headers setup same as before)
-            await page.setExtraHTTPHeaders({
-                'Accept-Language': 'en-US,en;q=0.9',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-                'Upgrade-Insecure-Requests': '1',
-                'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
-                'Sec-Ch-Ua-Mobile': '?0',
-                'Sec-Ch-Ua-Platform': '"Windows"',
-                'Referer': 'https://gem.gov.in/'
-            });
-            await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-            page.setDefaultNavigationTimeout(60000);
+            page = await browser.newPage();
+            await this.setupPage(page);
 
             // 1. Visit Home Page
             try {
@@ -114,13 +94,83 @@ export class GemScraperService {
 
             if (!pageLoaded) throw new Error('GeM bid list page not loaded.');
 
+            currentUrl = page.url();
+
+            const recoverPage = async () => {
+                const isConnected = typeof browser?.isConnected === 'function' ? browser.isConnected() : true;
+                if (!browser || !isConnected) {
+                    this.logger.warn('Browser disconnected. Relaunching...');
+                    browser = await this.launchBrowser();
+                }
+
+                this.logger.warn('Page closed unexpectedly. Reopening...');
+                page = await browser.newPage();
+                await this.setupPage(page);
+                await page.goto(currentUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
+                await page.waitForSelector('.card', { timeout: 30000 });
+                currentUrl = page.url();
+            };
+
+            // Apply filter for latest bid start date if not already sorted
+            let sortConfirmed = false;
+            try {
+                sortConfirmed = await this.applySortFilter(page);
+            } catch (err: any) {
+                if (this.isSessionClosedError(err)) {
+                    this.logger.warn('Page session closed while applying sort filter. Reopening and retrying...');
+                    await recoverPage();
+                    sortConfirmed = await this.applySortFilter(page);
+                } else {
+                    throw err;
+                }
+            }
+            this.logger.log('Applied sort filter: Bid Start Date (Latest First)');
+            if (!sortConfirmed) {
+                this.logger.warn('Sort filter not confirmed via UI. Scanning all pages until pagination ends.');
+            }
+            currentUrl = page.url();
+
             const now = new Date();
+            let pageNum = 0;
+            let hasMorePages = true;
+            const maxConsecutiveOldPages = 2;
+            let consecutiveOldPages = 0;
 
-            for (let pageNum = 1; pageNum <= pages; pageNum++) {
-                this.logger.log(`Scraping page ${pageNum}/${pages}...`);
-                const tenders = await this.extractTendersFromPage(page);
+            // Main Scraping Loop
+            while (hasMorePages) {
+                pageNum++;
 
-                // Bulk duplicate check
+                // Check max pages limit (0 = unlimited)
+                if (maxPages > 0 && pageNum > maxPages) {
+                    this.logger.log(`Reached max pages limit: ${maxPages}`);
+                    break;
+                }
+
+                this.logger.log(`Scraping page ${pageNum}...`);
+
+                if (!page || page.isClosed()) {
+                    await recoverPage();
+                }
+
+                let tenders: ScrapedTenderData[] = [];
+                try {
+                    tenders = await this.extractTendersFromPage(page);
+                } catch (err: any) {
+                    if (this.isSessionClosedError(err)) {
+                        this.logger.warn('Page session closed while extracting tenders. Reopening and retrying...');
+                        await recoverPage();
+                        tenders = await this.extractTendersFromPage(page);
+                    } else {
+                        throw err;
+                    }
+                }
+
+                if (tenders.length === 0) {
+                    this.logger.warn(`No tenders found on page ${pageNum}. Stopping.`);
+                    break;
+                }
+
+                // Gather Reference IDs for duplicate check
                 const referenceIds = tenders.map((t) => t.bidNo).filter(Boolean);
                 const existing = await this.prisma.tender.findMany({
                     where: { referenceId: { in: referenceIds } },
@@ -129,21 +179,33 @@ export class GemScraperService {
                 const existingSet = new Set(existing.map((e) => e.referenceId));
 
                 let addedThisPage = 0;
-                let foundOldTenderOnThisPage = false;
+                let pageFreshCount = 0;
+                let pageOldCount = 0;
+                let pageUnknownCount = 0;
 
                 for (const tender of tenders) {
                     try {
                         const startDateObj = this.parseGemdDate(tender.startDate);
                         const endDateObj = this.parseGemdDate(tender.endDate);
 
-                        if (endDateObj && endDateObj < now) continue;
-
-                        if (todayOnly && startDateObj && this.formatDate(startDateObj) !== todayStr) {
+                        // Skip tenders older than fromDate, but keep scanning the page.
+                        // We only stop after seeing consecutive pages with no fresh tenders.
+                        if (startDateObj && startDateObj < fromDate!) {
                             skippedOld++;
-                            foundOldTenderOnThisPage = true;
+                            pageOldCount++;
                             continue;
                         }
 
+                        if (startDateObj) {
+                            pageFreshCount++;
+                        } else {
+                            pageUnknownCount++;
+                        }
+
+                        // Skip closed/past tenders (redundant if using fromDate usually, but good for safety)
+                        if (endDateObj && endDateObj < now) continue;
+
+                        // Check duplicates
                         if (existingSet.has(tender.bidNo)) {
                             skipped++;
                             continue;
@@ -151,10 +213,10 @@ export class GemScraperService {
 
                         const state = this.extractState(tender.department);
 
-                        await this.prisma.tender.create({
+                        const newTender = await this.prisma.tender.create({
                             data: {
                                 title: tender.title,
-                                description: tender.department || '', // mapping department to description/requirements
+                                description: tender.department || '',
                                 status: 'PUBLISHED',
                                 source: 'GEM',
                                 referenceId: tender.bidNo,
@@ -163,12 +225,10 @@ export class GemScraperService {
                                 state: state,
                                 publishDate: startDateObj,
                                 closingDate: endDateObj,
-                                // Schema requires these or they are optional? 
-                                // Checked schema: requirements is optional. openDate/closeDate deprecated but fields exist?
-                                // I made them optional in schema update? Yes.
                             }
                         });
 
+                        newTenders.push(newTender);
                         added++;
                         addedThisPage++;
                         existingSet.add(tender.bidNo);
@@ -187,15 +247,52 @@ export class GemScraperService {
                     }
                 });
 
-                if (todayOnly && foundOldTenderOnThisPage && addedThisPage === 0) break;
+                if (sortConfirmed) {
+                    if (pageFreshCount > 0 || pageUnknownCount > 0) {
+                        consecutiveOldPages = 0;
+                    } else if (pageOldCount > 0) {
+                        consecutiveOldPages++;
+                    }
 
-                if (pageNum < pages) {
-                    const hasNext = await this.goToNextPage(page);
-                    if (!hasNext) break;
-                    await page.waitForSelector('.card', { timeout: 30000 });
-                    await this.delay(1500);
+                    if (consecutiveOldPages >= maxConsecutiveOldPages) {
+                        this.logger.log(`No tenders on/after ${fromDate!.toDateString()} for ${consecutiveOldPages} consecutive pages. Stopping.`);
+                        hasMorePages = false;
+                        break;
+                    }
+                }
+
+                // Try to go to next page
+                try {
+                    hasMorePages = await this.goToNextPage(page);
+                } catch (err: any) {
+                    if (this.isSessionClosedError(err)) {
+                        this.logger.warn('Page session closed while moving to next page. Reopening and retrying...');
+                        await recoverPage();
+                        hasMorePages = await this.goToNextPage(page);
+                    } else {
+                        throw err;
+                    }
+                }
+                if (hasMorePages) {
+                    try {
+                        await page.waitForSelector('.card', { timeout: 30000 });
+                        currentUrl = page.url();
+                        await this.delay(1500);
+                    } catch (err: any) {
+                        if (this.isSessionClosedError(err)) {
+                            this.logger.warn('Page session closed while waiting for next page. Reopening and retrying...');
+                            await recoverPage();
+                            await this.delay(1500);
+                        } else {
+                            throw err;
+                        }
+                    }
+                } else {
+                    this.logger.log(`No more pages available. Stopped at page ${pageNum}`);
                 }
             }
+
+            this.logger.log(`Scraping completed. Total pages scraped: ${pageNum}`);
 
             // Job Complete
             await this.prisma.tenderScrapeJob.update({
@@ -208,7 +305,7 @@ export class GemScraperService {
                 }
             });
 
-            return { added, skipped, skippedOld };
+            return { added, skipped, skippedOld, pagesScraped: pageNum, newTenders };
 
         } catch (error: any) {
             this.logger.error(`Scraping failed: ${error.message}`);
@@ -434,6 +531,87 @@ export class GemScraperService {
             }
         }
         return null;
+    }
+
+    private async launchBrowser() {
+        return puppeteer.launch({
+            headless: "new",
+            executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-blink-features=AutomationControlled',
+                '--disable-web-security',
+                '--window-size=1920,1080',
+                '--start-maximized'
+            ],
+            defaultViewport: null,
+        });
+    }
+
+    private async setupPage(page: any) {
+        await page.setExtraHTTPHeaders({
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+            'Upgrade-Insecure-Requests': '1',
+            'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+            'Sec-Ch-Ua-Mobile': '?0',
+            'Sec-Ch-Ua-Platform': '"Windows"',
+            'Referer': 'https://gem.gov.in/'
+        });
+        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+        page.setDefaultNavigationTimeout(60000);
+    }
+
+    private isSessionClosedError(error: any): boolean {
+        const message = error?.message?.toLowerCase() || '';
+        return (
+            message.includes('session closed') ||
+            message.includes('target closed') ||
+            message.includes('browser has disconnected')
+        );
+    }
+
+    /**
+     * Apply sort filter on GeM page for latest bid start date
+     */
+    private async applySortFilter(page: any): Promise<boolean> {
+        try {
+            // Try clicking on sort dropdown and selecting "Bid Start Date" with desc order
+            // GeM uses a dropdown for sorting - we'll try to click it and select the right option
+
+            // First, try to find and click sort dropdown
+            const sortDropdown = await page.$('select#sorting, select[name="sorting"], .sorting-dropdown');
+            if (sortDropdown) {
+                await page.select('select#sorting, select[name="sorting"]', 'bid_start_date|desc');
+                await this.delay(2000);
+                await page.waitForSelector('.card', { timeout: 15000 });
+                return true;
+            }
+
+            // Alternative: Click on sort link if it's a link-based sorter
+            const sortLinks = await page.$$('a[href*="sorting"], .sort-option');
+            for (const link of sortLinks) {
+                const text = await page.evaluate((el: any) => el.textContent?.toLowerCase() || '', link);
+                if (text.includes('start date') || text.includes('latest')) {
+                    await link.click();
+                    await this.delay(2000);
+                    await page.waitForSelector('.card', { timeout: 15000 });
+                    return true;
+                }
+            }
+
+            // If no UI elements found, the URL param should already handle sorting
+            this.logger.log('Sort filter applied via URL parameter');
+            return false;
+        } catch (error: any) {
+            if (this.isSessionClosedError(error)) {
+                throw error;
+            }
+            this.logger.warn(`Could not apply sort filter via UI: ${error.message}. Using URL param.`);
+            return false;
+        }
     }
 
     private delay(ms: number): Promise<void> {

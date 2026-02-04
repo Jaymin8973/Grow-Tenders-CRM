@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -35,9 +35,21 @@ import {
     Receipt,
     CreditCard,
     Banknote,
+    Eye,
+    Edit,
+    Trash2,
+    UserCircle,
 } from 'lucide-react';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { formatCurrency, cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/auth-context';
+import { useToast } from '@/hooks/use-toast';
 
 const paymentMethodConfig: Record<string, { label: string; icon: any; color: string }> = {
     CASH: { label: 'Cash', icon: Banknote, color: 'text-green-600' },
@@ -61,6 +73,8 @@ const referenceTypeConfig: Record<string, { label: string; bg: string; color: st
 export default function PaymentsPage() {
     const router = useRouter();
     const { user } = useAuth();
+    const { toast } = useToast();
+    const queryClient = useQueryClient();
     const [search, setSearch] = useState('');
     const [methodFilter, setMethodFilter] = useState<string | null>(null);
     const [referenceFilter, setReferenceFilter] = useState<string | null>(null);
@@ -85,11 +99,22 @@ export default function PaymentsPage() {
         },
     });
 
-    const { data: collectionsSummary } = useQuery({
-        queryKey: ['collections-summary'],
-        queryFn: async () => {
-            const res = await apiClient.get('/payments/collections/summary');
-            return res.data as Array<{ user: any; count: number; totalAmount: number }>;
+    // Delete payment mutation
+    const deletePaymentMutation = useMutation({
+        mutationFn: async (paymentId: string) => {
+            return apiClient.delete(`/payments/${paymentId}`);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['payments'] });
+            queryClient.invalidateQueries({ queryKey: ['payments-stats'] });
+            toast({ title: 'Payment deleted successfully' });
+        },
+        onError: (error: any) => {
+            toast({
+                title: 'Failed to delete payment',
+                description: error.response?.data?.message || 'Something went wrong',
+                variant: 'destructive',
+            });
         },
     });
 
@@ -120,6 +145,13 @@ export default function PaymentsPage() {
             return payment.customer.phone || '-';
         }
         return payment.phone || '-';
+    };
+
+    const getAssignedEmployee = (payment: any) => {
+        if (payment.referenceType === 'INTERNAL' && payment.customer?.assignee) {
+            return `${payment.customer.assignee.firstName} ${payment.customer.assignee.lastName}`;
+        }
+        return '-';
     };
 
     return (
@@ -250,11 +282,10 @@ export default function PaymentsPage() {
                                 <TableHead>Payment ID</TableHead>
                                 <TableHead>Customer / Company</TableHead>
                                 <TableHead>Phone</TableHead>
+                                <TableHead>Assigned To</TableHead>
                                 <TableHead>Type</TableHead>
                                 <TableHead>Amount</TableHead>
-                                <TableHead>GST</TableHead>
                                 <TableHead>Total</TableHead>
-                                <TableHead>Method</TableHead>
                                 <TableHead>Date</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
@@ -285,6 +316,12 @@ export default function PaymentsPage() {
                                             {getDisplayPhone(payment)}
                                         </TableCell>
                                         <TableCell>
+                                            <div className="flex items-center gap-2">
+                                                <UserCircle className="h-4 w-4 text-muted-foreground" />
+                                                <span className="text-sm">{getAssignedEmployee(payment)}</span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
                                             <Badge variant="outline" className={cn(refType.bg, refType.color, 'border')}>
                                                 {refType.label}
                                             </Badge>
@@ -292,26 +329,8 @@ export default function PaymentsPage() {
                                         <TableCell className="font-medium">
                                             {formatCurrency(payment.amount)}
                                         </TableCell>
-                                        <TableCell>
-                                            <div className="flex flex-col">
-                                                <Badge variant="outline" className={cn(gstType.bg, gstType.color, 'border text-xs')}>
-                                                    {gstType.label}
-                                                </Badge>
-                                                {payment.gstType === 'WITH_GST' && (
-                                                    <span className="text-xs text-muted-foreground mt-1">
-                                                        ₹{payment.gstAmount?.toFixed(2)} ({payment.gstPercentage}%)
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </TableCell>
                                         <TableCell className="font-bold text-emerald-600">
                                             {formatCurrency(payment.totalAmount)}
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center gap-2">
-                                                <MethodIcon className={cn("h-4 w-4", method.color)} />
-                                                <span className="text-sm">{method.label}</span>
-                                            </div>
                                         </TableCell>
                                         <TableCell className="text-muted-foreground">
                                             {new Date(payment.paymentDate).toLocaleDateString('en-IN', {
@@ -321,63 +340,55 @@ export default function PaymentsPage() {
                                             })}
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                <MoreHorizontal className="h-4 w-4" />
-                                            </Button>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem
+                                                        onClick={() => router.push(`/payments/${payment.id}`)}
+                                                    >
+                                                        <Eye className="mr-2 h-4 w-4" />
+                                                        View Details
+                                                    </DropdownMenuItem>
+                                                    {user?.role === 'SUPER_ADMIN' && (
+                                                        <>
+                                                            <DropdownMenuItem
+                                                                onClick={() => router.push(`/payments/${payment.id}/edit`)}
+                                                            >
+                                                                <Edit className="mr-2 h-4 w-4" />
+                                                                Edit Payment
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuSeparator />
+                                                            <DropdownMenuItem
+                                                                className="text-destructive"
+                                                                onClick={() => {
+                                                                    if (confirm('Are you sure you want to delete this payment?')) {
+                                                                        deletePaymentMutation.mutate(payment.id);
+                                                                    }
+                                                                }}
+                                                            >
+                                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                                Delete Payment
+                                                            </DropdownMenuItem>
+                                                        </>
+                                                    )}
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </TableCell>
                                     </TableRow>
                                 );
                             })}
                             {(!payments || payments.length === 0) && (
                                 <TableRow>
-                                    <TableCell colSpan={10} className="h-32 text-center">
+                                    <TableCell colSpan={9} className="h-32 text-center">
                                         <div className="flex flex-col items-center justify-center text-muted-foreground">
                                             <Wallet className="h-10 w-10 mb-2 opacity-50" />
                                             <p>No payments found</p>
                                             <p className="text-sm">Record your first payment to get started</p>
                                         </div>
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
-
-            {/* Collections Summary */}
-            <Card>
-                <CardContent className="p-5">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-xl font-semibold">Collections Summary</h2>
-                    </div>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Employee</TableHead>
-                                <TableHead>Payments</TableHead>
-                                <TableHead className="text-right">Total Collected</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {collectionsSummary?.map((row: any) => (
-                                <TableRow key={row.user?.id}>
-                                    <TableCell>
-                                        <div className="font-medium">
-                                            {row.user?.firstName} {row.user?.lastName}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant="secondary">{row.count}</Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right font-medium">
-                                        {formatCurrency(row.totalAmount || 0)}
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                            {(!collectionsSummary || collectionsSummary.length === 0) && (
-                                <TableRow>
-                                    <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
-                                        No collections data available
                                     </TableCell>
                                 </TableRow>
                             )}

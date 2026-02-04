@@ -12,17 +12,17 @@ export class TenderNotificationService {
         private emailService: EmailService,
     ) { }
 
-    async sendNewTenderAlerts(): Promise<number> {
+    async sendNewTenderAlerts(specificTenders?: any[]): Promise<number> {
         this.logger.log('Starting tender notification process...');
 
         // 1. Queue Generation
-        await this.generateDispatchQueue();
+        await this.generateDispatchQueue(specificTenders);
 
         // 2. Queue Processing
         return await this.processDispatchQueue();
     }
 
-    private async generateDispatchQueue() {
+    private async generateDispatchQueue(specificTenders?: any[]) {
         // Get all active subscriptions
         const subscriptions = await this.prisma.tenderSubscription.findMany({
             where: { isActive: true },
@@ -33,17 +33,22 @@ export class TenderNotificationService {
 
         if (subscriptions.length === 0) return;
 
-        // Get recent PUBLISHED tenders (last 24 hours to be safe, duplicates handled by queue unique check if we had one, but we rely on processed flag or similar. 
-        // Actually, we should check if we already queued this tender for this customer.
-        // For now, let's grab tenders created in last run window (e.g. 3 hours)
-        const lastRun = new Date(Date.now() - 3 * 60 * 60 * 1000);
-        const newTenders = await this.prisma.tender.findMany({
-            where: {
-                status: 'PUBLISHED',
-                createdAt: { gte: lastRun },
-                source: 'GEM',
-            },
-        });
+        let newTenders: any[] = [];
+
+        if (specificTenders && specificTenders.length > 0) {
+            newTenders = specificTenders;
+            this.logger.log(`Processing ${newTenders.length} specific tenders for notifications.`);
+        } else {
+            // Fallback: Get recent PUBLISHED tenders (last 3 hours)
+            const lastRun = new Date(Date.now() - 3 * 60 * 60 * 1000);
+            newTenders = await this.prisma.tender.findMany({
+                where: {
+                    status: 'PUBLISHED',
+                    createdAt: { gte: lastRun },
+                    source: 'GEM',
+                },
+            });
+        }
 
         if (newTenders.length === 0) return;
 

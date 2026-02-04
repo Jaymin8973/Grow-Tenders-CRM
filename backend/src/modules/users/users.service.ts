@@ -247,6 +247,34 @@ export class UsersService {
         });
     }
 
+    async changePassword(userId: string, currentPassword: string, newPassword: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+        });
+
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
+        const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+        if (!isPasswordValid) {
+            throw new BadRequestException('Current password is incorrect');
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        return this.prisma.user.update({
+            where: { id: userId },
+            data: { password: hashedPassword },
+            select: {
+                id: true,
+                email: true,
+                firstName: true,
+                lastName: true,
+            },
+        });
+    }
+
     async getManagers() {
         return this.prisma.user.findMany({
             where: {

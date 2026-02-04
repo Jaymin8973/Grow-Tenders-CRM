@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/auth-context';
 
 const iconMap: Record<string, any> = {
     LEAD_ASSIGNED: UserPlus,
@@ -47,6 +48,9 @@ const bgMap: Record<string, string> = {
 export function NotificationCenter() {
     const [open, setOpen] = useState(false);
     const queryClient = useQueryClient();
+    const { isAuthenticated } = useAuth();
+    const hasToken = typeof window !== 'undefined' && !!localStorage.getItem('accessToken');
+    const isEnabled = isAuthenticated && hasToken;
 
     // Fetch notifications
     const { data: notifications } = useQuery({
@@ -55,7 +59,8 @@ export function NotificationCenter() {
             const response = await apiClient.get('/notifications');
             return response.data;
         },
-        refetchInterval: 30000, // Refetch every 30 seconds
+        enabled: isEnabled,
+        refetchInterval: isEnabled ? 30000 : false, // Refetch every 30 seconds
     });
 
     // Fetch unread count
@@ -65,10 +70,11 @@ export function NotificationCenter() {
             const response = await apiClient.get('/notifications/unread-count');
             return response.data;
         },
-        refetchInterval: 30000,
+        enabled: isEnabled,
+        refetchInterval: isEnabled ? 30000 : false,
     });
 
-    const unreadCount = unreadData?.count || 0;
+    const unreadCount = typeof unreadData === 'number' ? unreadData : unreadData?.count || 0;
 
     // Mark as read mutation
     const markAsReadMutation = useMutation({

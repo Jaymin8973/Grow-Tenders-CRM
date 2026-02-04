@@ -9,6 +9,11 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata: Metadata = {
     title: 'Sales CRM',
     description: 'Enterprise Sales CRM Application',
+    icons: {
+        icon: '/favicon-16x16.png',
+        shortcut: '/favicon-16x16.png',
+        apple: '/apple-touch-icon.png',
+    },
 };
 
 export default function RootLayout({

@@ -184,7 +184,7 @@ export default function ReportsPage() {
                                             border: '1px solid hsl(var(--border))',
                                             borderRadius: '12px',
                                         }}
-                                        formatter={(value: number) => [formatCurrency(value), 'Revenue']}
+                                        formatter={(value: any) => [formatCurrency(value || 0), 'Revenue']}
                                     />
                                     <Area
                                         type="monotone"

@@ -79,10 +79,6 @@ export default function InvoicesPage() {
                     </p>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline" className="gap-2" onClick={() => router.push('/invoices/due')}>
-                        <AlertCircle className="h-4 w-4" />
-                        Due Invoices
-                    </Button>
                     <Button className="gap-2" onClick={() => router.push('/invoices/new')}>
                         <Plus className="h-4 w-4" />
                         Create Invoice
@@ -186,8 +182,7 @@ export default function InvoicesPage() {
                                 <TableHead>Invoice</TableHead>
                                 <TableHead>Customer</TableHead>
                                 <TableHead>Status</TableHead>
-                                <TableHead>Date</TableHead>
-                                <TableHead>Due Date</TableHead>
+                                <TableHead>Invoice Date</TableHead>
                                 <TableHead className="text-right">Amount</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
@@ -231,13 +226,6 @@ export default function InvoicesPage() {
                                                 year: 'numeric'
                                             })}
                                         </TableCell>
-                                        <TableCell className="text-muted-foreground">
-                                            {invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString('en-US', {
-                                                month: 'short',
-                                                day: 'numeric',
-                                                year: 'numeric'
-                                            }) : '-'}
-                                        </TableCell>
                                         <TableCell className="text-right font-bold">
                                             {formatCurrency(invoice.total || 0)}
                                         </TableCell>
@@ -256,7 +244,7 @@ export default function InvoicesPage() {
                             })}
                             {(!invoices || invoices.length === 0) && (
                                 <TableRow>
-                                    <TableCell colSpan={7} className="h-32 text-center">
+                                    <TableCell colSpan={6} className="h-32 text-center">
                                         <div className="flex flex-col items-center justify-center text-muted-foreground">
                                             <FileText className="h-10 w-10 mb-2 opacity-50" />
                                             <p>No invoices found</p>

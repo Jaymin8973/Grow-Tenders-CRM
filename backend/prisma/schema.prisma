@@ -207,26 +207,21 @@ model Lead {
   firstName     String
   lastName      String
   email         String
-  phone         String?
   company       String?
-  position      String?
+
   status        LeadStatus  @default(NEW)
   type          LeadType    @default(COLD)
   source        LeadSource  @default(OTHER)
   description   String?
-  address       String?
-  city          String?
-  state         String?
-  country       String?
-  website       String?
-  value         Float?
+
   
   // New fields
   salutation    String?
   mobile        String?
   fax           String?
   department    String?
-  postalCode    String?
+  nextFollowUp  DateTime?
+
   industry      String?
   
   assigneeId    String?     @db.ObjectId
@@ -251,8 +246,28 @@ model Lead {
   attachments   Attachment[]
   emailLogs     EmailLog[]
   transferRequests LeadTransferRequest[]
+  followUps     FollowUp[]
 
   @@map("leads")
+}
+
+// Separate FollowUp model for timeline
+model FollowUp {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  description   String
+  scheduledAt   DateTime
+  status        String    @default("SCHEDULED") // SCHEDULED, COMPLETED, CANCELLED
+  completedAt   DateTime?
+  
+  leadId        String    @db.ObjectId
+  lead          Lead      @relation(fields: [leadId], references: [id])
+  
+  createdById   String    @db.ObjectId
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("follow_ups")
 }
 
 model Customer {

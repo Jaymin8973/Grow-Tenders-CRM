@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { Role, LeadStatus, LeadSource, Prisma, LeadType } from '@prisma/client';
+import { Role, LeadStatus, LeadSource, Prisma, LeadType, ActivityType, ActivityStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
@@ -11,19 +11,47 @@ interface UserContext {
 }
 
 import { CustomersService } from '../customers/customers.service';
+import { ActivitiesService } from '../activities/activities.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class LeadsService {
     constructor(
         private prisma: PrismaService,
         private customersService: CustomersService,
+        private activitiesService: ActivitiesService,
+        private notificationsService: NotificationsService,
     ) { }
 
+    private async createFollowUpActivity(
+        lead: { id: string; firstName: string; lastName: string; assigneeId?: string | null },
+        nextFollowUp: Date,
+        userId: string,
+    ) {
+        const activity = await this.activitiesService.create(
+            {
+                title: `Follow-up with ${lead.firstName} ${lead.lastName}`,
+                type: ActivityType.FOLLOW_UP,
+                status: ActivityStatus.SCHEDULED,
+                scheduledAt: nextFollowUp.toISOString(),
+                leadId: lead.id,
+                assigneeId: lead.assigneeId || userId,
+            },
+            userId,
+        );
+
+        await this.notificationsService.notifyActivityReminder(
+            activity.assigneeId,
+            activity.title,
+            activity.id,
+        );
+    }
+
     async create(createLeadDto: CreateLeadDto, userId: string) {
-        return this.prisma.lead.create({
+        const lead = await this.prisma.lead.create({
             data: {
                 ...createLeadDto,
-                title: createLeadDto.title || `${createLeadDto.firstName} ${createLeadDto.lastName}`,
+                title: `${createLeadDto.firstName} ${createLeadDto.lastName}`,
                 notes: createLeadDto.notes ? {
                     create: {
                         content: createLeadDto.notes,
@@ -42,6 +70,16 @@ export class LeadsService {
                 },
             },
         });
+
+        if (createLeadDto.nextFollowUp && createLeadDto.status !== LeadStatus.WON && createLeadDto.status !== LeadStatus.LOST) {
+            await this.createFollowUpActivity(
+                lead,
+                new Date(createLeadDto.nextFollowUp),
+                userId,
+            );
+        }
+
+        return lead;
     }
 
     async findAll(user: UserContext, filters?: {
@@ -182,7 +220,7 @@ export class LeadsService {
             throw new ForbiddenException('You do not have access to update this lead');
         }
 
-        return this.prisma.lead.update({
+        const updatedLead = await this.prisma.lead.update({
             where: { id },
             data: updateLeadDto as Prisma.LeadUncheckedUpdateInput,
             include: {
@@ -191,6 +229,16 @@ export class LeadsService {
                 },
             },
         });
+
+        if (updateLeadDto.nextFollowUp && updatedLead.status !== LeadStatus.WON && updatedLead.status !== LeadStatus.LOST) {
+            await this.createFollowUpActivity(
+                updatedLead,
+                new Date(updateLeadDto.nextFollowUp),
+                user.id,
+            );
+        }
+
+        return updatedLead;
     }
 
     async delete(id: string, user: UserContext) {
@@ -249,7 +297,10 @@ export class LeadsService {
 
         const updatedLead = await this.prisma.lead.update({
             where: { id },
-            data: { status },
+            data: {
+                status,
+                nextFollowUp: status === LeadStatus.WON || status === LeadStatus.LOST ? null : undefined,
+            },
         });
 
         // Auto-convert to Customer if Status is WON
