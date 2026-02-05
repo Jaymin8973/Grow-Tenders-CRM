@@ -534,9 +534,12 @@ export class GemScraperService {
     }
 
     private async launchBrowser() {
+        const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH ||
+            (process.platform === 'win32' ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' : undefined);
+
         return puppeteer.launch({
             headless: "new",
-            executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+            executablePath,
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',

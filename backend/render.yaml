@@ -10,9 +10,7 @@ xservices:
       - key: NODE_VERSION
         value: 20.11.0
       - key: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
-        value: true
-      - key: PUPPETEER_EXECUTABLE_PATH
-        value: /usr/bin/chromium-browser
+        value: false
       - key: NODE_ENV
         value: production
     healthCheckPath: /api
