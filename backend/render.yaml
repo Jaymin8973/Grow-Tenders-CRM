@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: grow-tenders-backend
+    runtime: node
+    region: singapore
+    plan: free
+    buildCommand: npm ci --legacy-peer-deps && npx prisma generate && npm run build
+    startCommand: npm run start:prod
+    envVars:
+      - key: NODE_VERSION
+        value: 20.11.0
+      - key: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
+        value: true
+      - key: PUPPETEER_EXECUTABLE_PATH
+        value: /usr/bin/chromium-browser
+      - key: NODE_ENV
+        value: production
+    healthCheckPath: /api
