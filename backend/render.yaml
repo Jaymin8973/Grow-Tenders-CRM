@@ -1,4 +1,4 @@
-xservices:
+services:
   - type: web
     name: grow-tenders-backend
     runtime: node
