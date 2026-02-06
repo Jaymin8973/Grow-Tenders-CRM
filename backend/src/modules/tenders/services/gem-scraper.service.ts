@@ -538,18 +538,20 @@ export class GemScraperService {
             (process.platform === 'win32' ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' : undefined);
 
         return puppeteer.launch({
-            headless: "new",
+            headless: 'new',
             executablePath,
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
                 '--disable-dev-shm-usage',
+                '--disable-gpu',
                 '--disable-blink-features=AutomationControlled',
                 '--disable-web-security',
                 '--window-size=1920,1080',
                 '--start-maximized'
             ],
             defaultViewport: null,
+            ignoreHTTPSErrors: true,
         });
     }
 

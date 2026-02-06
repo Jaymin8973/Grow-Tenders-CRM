@@ -13,4 +13,6 @@ xservices:
         value: false
       - key: NODE_ENV
         value: production
+      - key: PUPPETEER_CACHE_DIR
+        value: /opt/render/project/.cache/puppeteer
     healthCheckPath: /api
