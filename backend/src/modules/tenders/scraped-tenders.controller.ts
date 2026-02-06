@@ -69,6 +69,20 @@ export class ScrapedTendersController {
         return this.scrapedTendersService.getCategories();
     }
 
+    @Get('logs')
+    @ApiOperation({ summary: 'Get scrape job logs' })
+    @ApiQuery({ name: 'page', required: false, description: 'Page number (default: 1)' })
+    @ApiQuery({ name: 'limit', required: false, description: 'Items per page (default: 20)' })
+    getScrapeLogs(
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
+    ) {
+        return this.scrapedTendersService.getScrapeLogs(
+            page ? parseInt(page, 10) : 1,
+            limit ? parseInt(limit, 10) : 20,
+        );
+    }
+
     @Get(':id')
     @ApiOperation({ summary: 'Get tender by ID' })
     findOne(@Param('id') id: string) {

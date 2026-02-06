@@ -79,7 +79,7 @@ export function NotificationCenter() {
     // Mark as read mutation
     const markAsReadMutation = useMutation({
         mutationFn: async (id: string) => {
-            return apiClient.put(`/notifications/${id}/read`);
+            return apiClient.patch(`/notifications/${id}/read`);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['notifications'] });
@@ -90,7 +90,7 @@ export function NotificationCenter() {
     // Mark all as read mutation
     const markAllAsReadMutation = useMutation({
         mutationFn: async () => {
-            return apiClient.put('/notifications/read-all');
+            return apiClient.patch('/notifications/read-all');
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['notifications'] });

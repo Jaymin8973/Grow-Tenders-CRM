@@ -72,6 +72,21 @@ export class LeaderboardController {
         return this.leaderboardService.getSelfStats(userId, period);
     }
 
+    @Get('me')
+    @ApiOperation({ summary: 'Get my stats (alias for self)' })
+    @ApiQuery({ name: 'startDate', required: false })
+    @ApiQuery({ name: 'endDate', required: false })
+    getMyStats(
+        @CurrentUser('id') userId: string,
+        @Query('startDate') startDate?: string,
+        @Query('endDate') endDate?: string,
+    ) {
+        const period = startDate && endDate
+            ? { startDate: new Date(startDate), endDate: new Date(endDate) }
+            : undefined;
+        return this.leaderboardService.getSelfStats(userId, period);
+    }
+
     @Get('monthly')
     @ApiOperation({ summary: 'Get current month stats' })
     getMonthlyStats(@CurrentUser('id') userId: string) {
