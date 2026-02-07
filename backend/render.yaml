@@ -4,15 +4,20 @@ services:
     runtime: node
     region: singapore
     plan: free
-    buildCommand: npm install --legacy-peer-deps --include=dev && node node_modules/puppeteer/install.mjs && node_modules/.bin/prisma generate && npm run build
+
+    buildCommand: npm ci && npx puppeteer browsers install chrome && npx prisma generate && npm run build
+
+
     startCommand: npm run start:prod
+
     envVars:
-      - key: NODE_VERSION
-        value: 20.11.0
-      - key: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
-        value: false
       - key: NODE_ENV
         value: production
+
       - key: PUPPETEER_CACHE_DIR
         value: /opt/render/project/src/.cache/puppeteer
+
+      - key: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
+        value: false
+
     healthCheckPath: /api
