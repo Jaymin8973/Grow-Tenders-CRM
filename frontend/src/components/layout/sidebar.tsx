@@ -40,6 +40,7 @@ const adminNav = [
     { name: 'Payments', href: '/payments', icon: Wallet, roles: ['SUPER_ADMIN', 'MANAGER'] },
     { name: 'Invoices', href: '/invoices', icon: FileText, roles: ['SUPER_ADMIN', 'MANAGER'] },
     { name: 'Reports', href: '/reports', icon: BarChart3, roles: ['SUPER_ADMIN', 'MANAGER'] },
+    { name: 'Transfer Requests', href: '/leads/transfer-requests', icon: UserPlus, roles: ['SUPER_ADMIN', 'MANAGER'] },
     { name: 'Users', href: '/users', icon: Building2, roles: ['SUPER_ADMIN', 'MANAGER'] },
     { name: 'Scraper Logs', href: '/scraper-logs', icon: FileSearch, roles: ['SUPER_ADMIN'] },
 ];
