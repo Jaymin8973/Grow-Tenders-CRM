@@ -55,9 +55,8 @@ const leadSchema = z.object({
     company: z.string().optional(),
 
     description: z.string().optional(),
-    status: z.enum(['NEW', 'CONTACTED', 'QUALIFIED', 'PROPOSAL', 'NEGOTIATION', 'WON', 'LOST']),
+    status: z.enum(['WARM_LEAD', 'HOT_LEAD', 'COLD_LEAD', 'CLOSED_LEAD', 'PROPOSAL_LEAD']),
     source: z.string().optional(),
-    type: z.enum(['HOT', 'WARM', 'COLD']),
 
     assigneeId: z.string().optional(),
     nextFollowUp: z.date().optional(),
@@ -84,8 +83,7 @@ export default function EditLeadPage() {
         resolver: zodResolver(leadSchema),
         defaultValues: {
             salutation: '',
-            status: 'NEW',
-            type: 'COLD',
+            status: 'COLD_LEAD',
             source: 'WEBSITE',
         },
     });
@@ -300,18 +298,16 @@ export default function EditLeadPage() {
                             <CardContent className="pt-6 space-y-4">
                                 <div>
                                     <Label className="text-xs text-muted-foreground">Lead Status</Label>
-                                    <Select onValueChange={(val) => setValue('status', val as any)} defaultValue={leadData?.status || 'NEW'}>
+                                    <Select onValueChange={(val) => setValue('status', val as any)} defaultValue={leadData?.status || 'COLD_LEAD'}>
                                         <SelectTrigger className="h-9">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="NEW">New</SelectItem>
-                                            <SelectItem value="CONTACTED">Contacted</SelectItem>
-                                            <SelectItem value="QUALIFIED">Qualified</SelectItem>
-                                            <SelectItem value="PROPOSAL">Proposal</SelectItem>
-                                            <SelectItem value="NEGOTIATION">Negotiation</SelectItem>
-                                            <SelectItem value="WON">Won</SelectItem>
-                                            <SelectItem value="LOST">Lost</SelectItem>
+                                            <SelectItem value="WARM_LEAD">Warm Lead</SelectItem>
+                                            <SelectItem value="HOT_LEAD">Hot Lead</SelectItem>
+                                            <SelectItem value="COLD_LEAD">Cold Lead</SelectItem>
+                                            <SelectItem value="CLOSED_LEAD">Closed Lead</SelectItem>
+                                            <SelectItem value="PROPOSAL_LEAD">Proposal Lead</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -332,19 +328,7 @@ export default function EditLeadPage() {
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                <div>
-                                    <Label className="text-xs text-muted-foreground">Type</Label>
-                                    <Select onValueChange={(val) => setValue('type', val as any)} defaultValue={leadData?.type || 'COLD'}>
-                                        <SelectTrigger className="h-9">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="HOT">Hot 🔥</SelectItem>
-                                            <SelectItem value="WARM">Warm ⚡</SelectItem>
-                                            <SelectItem value="COLD">Cold ❄️</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+
                                 <div className="flex flex-col space-y-2">
                                     <Label className="text-xs text-muted-foreground">Next Follow-up</Label>
                                     <Popover>

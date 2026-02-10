@@ -149,7 +149,7 @@ export class ReportsService {
                         where: { assigneeId: employee.id, ...dateFilter }
                     }),
                     this.prisma.lead.count({
-                        where: { assigneeId: employee.id, status: LeadStatus.WON, ...dateFilter }
+                        where: { assigneeId: employee.id, status: LeadStatus.CLOSED_LEAD, ...dateFilter }
                     }),
                     this.prisma.activity.count({
                         where: { assigneeId: employee.id, ...dateFilter }
@@ -246,7 +246,7 @@ export class ReportsService {
         const sourcesWithConversion = await Promise.all(
             analysis.map(async (item) => {
                 const converted = await this.prisma.lead.count({
-                    where: { source: item.source, status: LeadStatus.WON, ...dateFilter },
+                    where: { source: item.source, status: LeadStatus.CLOSED_LEAD, ...dateFilter },
                 });
                 return {
                     source: item.source,

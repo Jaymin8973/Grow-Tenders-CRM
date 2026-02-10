@@ -31,6 +31,7 @@ const navigation = [
     { name: 'Deals', href: '/deals', icon: Briefcase },
     { name: 'Teams', href: '/teams', icon: Users, roles: ['SUPER_ADMIN', 'MANAGER'] },
     { name: 'Tasks', href: '/tasks', icon: FileText },
+    { name: 'Daily Reports', href: '/daily-reports', icon: BarChart3 },
     { name: 'GeM Tenders', href: '/scraped-tenders', icon: FileSearch },
     { name: 'Leaderboard', href: '/leaderboard', icon: Trophy },
 ];

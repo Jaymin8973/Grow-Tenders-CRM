@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { Role, LeadStatus, LeadSource, Prisma, LeadType, ActivityType, ActivityStatus } from '@prisma/client';
+import { Role, LeadStatus, LeadSource, Prisma, ActivityType, ActivityStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
@@ -71,7 +71,7 @@ export class LeadsService {
             },
         });
 
-        if (createLeadDto.nextFollowUp && createLeadDto.status !== LeadStatus.WON && createLeadDto.status !== LeadStatus.LOST) {
+        if (createLeadDto.nextFollowUp && createLeadDto.status !== LeadStatus.CLOSED_LEAD) {
             await this.createFollowUpActivity(
                 lead,
                 new Date(createLeadDto.nextFollowUp),
@@ -87,6 +87,7 @@ export class LeadsService {
         source?: LeadSource;
         assigneeId?: string;
         search?: string;
+        excludeAssigneeId?: string;
     }) {
         let where: any = {};
 
@@ -111,20 +112,43 @@ export class LeadsService {
             where.source = filters.source;
         }
         // Allow filtering by assignee only if user has permission to see others
-        if (filters?.assigneeId && user.role !== Role.EMPLOYEE) {
+        if (filters?.assigneeId) {
             // If Manager, ensure the requested assignee is in their team
             if (user.role === Role.MANAGER) {
                 // We already restricted 'where.assigneeId' above. 
                 // If we overwrite it, we might break the restriction.
                 // Instead, we should check if the requested assigneeId is valid within the restricted set.
                 // Simplest way: The 'AND' of the restriction and the filter.
-                // Type safety note: where.assigneeId might be an object { in: [...] } or a string.
-                // To keep it simple, let's just use AND.
-                where.AND = [
-                    { assigneeId: filters.assigneeId }
-                ];
+
+                // If the manager filters by themselves, it's fine (user.id is in the list).
+                // If they filter by a team member, it's fine.
+                // If they filter by someone else, it should return empty (intersection).
+
+                // Existing `where.assigneeId` is `{ in: [...] }`
+                const allowedIds = (where.assigneeId as any)?.in as string[];
+
+                if (allowedIds && !allowedIds.includes(filters.assigneeId)) {
+                    // Requested assignee not in team -> return nothing
+                    // We can force a condition that is always false, or just empty array
+                    where.assigneeId = { in: [] };
+                } else {
+                    where.assigneeId = filters.assigneeId;
+                }
             } else {
+                // Admin and Employee can filter freely (Employee has global read)
                 where.assigneeId = filters.assigneeId;
+            }
+        }
+
+        if (filters?.excludeAssigneeId && !filters?.assigneeId) {
+            // Only apply exclusion if we are not specifically filtering by a single assignee
+            // For managers, we need to be careful not to break the `in` clause if it exists
+            if (where.assigneeId && typeof where.assigneeId === 'object' && where.assigneeId.in) {
+                // If we have an IN clause, we just filter the list
+                where.assigneeId.in = (where.assigneeId.in as string[]).filter(id => id !== filters.excludeAssigneeId);
+            } else {
+                // Standard exclusion
+                where.assigneeId = { not: filters.excludeAssigneeId };
             }
         }
 
@@ -230,7 +254,7 @@ export class LeadsService {
             },
         });
 
-        if (updateLeadDto.nextFollowUp && updatedLead.status !== LeadStatus.WON && updatedLead.status !== LeadStatus.LOST) {
+        if (updateLeadDto.nextFollowUp && updatedLead.status !== LeadStatus.CLOSED_LEAD) {
             await this.createFollowUpActivity(
                 updatedLead,
                 new Date(updateLeadDto.nextFollowUp),
@@ -299,12 +323,12 @@ export class LeadsService {
             where: { id },
             data: {
                 status,
-                nextFollowUp: status === LeadStatus.WON || status === LeadStatus.LOST ? null : undefined,
+                nextFollowUp: status === LeadStatus.CLOSED_LEAD ? null : undefined,
             },
         });
 
         // Auto-convert to Customer if Status is WON
-        if (status === LeadStatus.WON && !lead.convertedToCustomerId) {
+        if (status === LeadStatus.CLOSED_LEAD && !lead.convertedToCustomerId) {
             try {
                 await this.customersService.createFromLead(id, user.id);
             } catch (error) {
@@ -332,23 +356,17 @@ export class LeadsService {
             where.assigneeId = { in: [user.id, ...teamIds] };
         }
 
-        const [total, byStatus, hot, warm, converted] = await Promise.all([
+        const [total, byStatus] = await Promise.all([
             this.prisma.lead.count({ where }),
             this.prisma.lead.groupBy({
                 by: ['status'],
                 where,
                 _count: true,
             }),
-            this.prisma.lead.count({ where: { ...where, type: LeadType.HOT } }),
-            this.prisma.lead.count({ where: { ...where, type: LeadType.WARM } }),
-            this.prisma.lead.count({ where: { ...where, status: LeadStatus.WON } }),
         ]);
 
         return {
             total,
-            hot,
-            warm,
-            converted,
             byStatus: byStatus.reduce((acc, item) => {
                 acc[item.status] = item._count;
                 return acc;

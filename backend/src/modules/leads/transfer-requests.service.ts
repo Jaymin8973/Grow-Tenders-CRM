@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
-import { TransferStatus } from '@prisma/client';
+import { TransferStatus, LeadStatus } from '@prisma/client';
 
 @Injectable()
 export class TransferRequestsService {
@@ -24,6 +24,44 @@ export class TransferRequestsService {
                 leadId,
                 requesterId: userId,
                 targetUserId,
+                reason,
+                status: TransferStatus.PENDING,
+            },
+        });
+    }
+
+    async createClaimRequest(requesterId: string, leadId: string, reason?: string) {
+        const lead = await this.prisma.lead.findUnique({
+            where: { id: leadId },
+        });
+
+        if (!lead) {
+            throw new NotFoundException('Lead not found');
+        }
+
+        // Check if already assigned to requester
+        if (lead.assigneeId === requesterId) {
+            throw new BadRequestException('Lead is already assigned to you');
+        }
+
+        // Check for existing pending request
+        const existingRequest = await this.prisma.leadTransferRequest.findFirst({
+            where: {
+                leadId,
+                requesterId,
+                status: TransferStatus.PENDING,
+            }
+        });
+
+        if (existingRequest) {
+            throw new BadRequestException('You already have a pending request for this lead');
+        }
+
+        return this.prisma.leadTransferRequest.create({
+            data: {
+                leadId,
+                requesterId,
+                targetUserId: requesterId, // The requester wants to be the target
                 reason,
                 status: TransferStatus.PENDING,
             },
@@ -111,7 +149,7 @@ export class TransferRequestsService {
                         where: { id: request.leadId },
                         data: {
                             assigneeId: null,
-                            status: 'NEW', // Reset status? Maybe not.
+                            status: LeadStatus.COLD_LEAD, // Reset status
                         },
                     });
                 }

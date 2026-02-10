@@ -7,7 +7,7 @@ import {
     IsNumber,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { LeadStatus, LeadSource, LeadType } from '@prisma/client';
+import { LeadStatus, LeadSource } from '@prisma/client';
 
 export class CreateLeadDto {
 
@@ -35,7 +35,7 @@ export class CreateLeadDto {
 
 
 
-    @ApiPropertyOptional({ enum: LeadStatus, default: LeadStatus.NEW })
+    @ApiPropertyOptional({ enum: LeadStatus, default: LeadStatus.COLD_LEAD })
     @IsEnum(LeadStatus)
     @IsOptional()
     status?: LeadStatus;
@@ -44,11 +44,6 @@ export class CreateLeadDto {
     @IsEnum(LeadSource)
     @IsOptional()
     source?: LeadSource;
-
-    @ApiPropertyOptional({ enum: LeadType, default: LeadType.COLD })
-    @IsEnum(LeadType)
-    @IsOptional()
-    type?: LeadType;
 
 
 

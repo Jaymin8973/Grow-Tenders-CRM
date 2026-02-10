@@ -38,14 +38,16 @@ export class LeadsController {
     @ApiQuery({ name: 'source', required: false, enum: LeadSource })
     @ApiQuery({ name: 'assigneeId', required: false })
     @ApiQuery({ name: 'search', required: false })
+    @ApiQuery({ name: 'excludeAssigneeId', required: false })
     findAll(
         @CurrentUser() user: any,
         @Query('status') status?: LeadStatus,
         @Query('source') source?: LeadSource,
         @Query('assigneeId') assigneeId?: string,
         @Query('search') search?: string,
+        @Query('excludeAssigneeId') excludeAssigneeId?: string,
     ) {
-        return this.leadsService.findAll(user, { status, source, assigneeId, search });
+        return this.leadsService.findAll(user, { status, source, assigneeId, search, excludeAssigneeId });
     }
 
     @Get('stats')

@@ -58,21 +58,22 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+
 
 const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
-    NEW: { label: 'New', color: 'text-blue-700', bg: 'bg-blue-50 border-blue-200' },
-    CONTACTED: { label: 'Contacted', color: 'text-cyan-700', bg: 'bg-cyan-50 border-cyan-200' },
-    QUALIFIED: { label: 'Qualified', color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200' },
-    PROPOSAL: { label: 'Proposal', color: 'text-violet-700', bg: 'bg-violet-50 border-violet-200' },
-    NEGOTIATION: { label: 'Negotiation', color: 'text-amber-700', bg: 'bg-amber-50 border-amber-200' },
-    WON: { label: 'Won', color: 'text-green-700', bg: 'bg-green-50 border-green-200' },
-    LOST: { label: 'Lost', color: 'text-red-700', bg: 'bg-red-50 border-red-200' },
-};
-
-const typeConfig: Record<string, { icon: any; color: string; bg: string }> = {
-    HOT: { icon: Flame, color: 'text-red-500', bg: 'bg-red-50' },
-    WARM: { icon: Thermometer, color: 'text-amber-500', bg: 'bg-amber-50' },
-    COLD: { icon: Snowflake, color: 'text-blue-500', bg: 'bg-blue-50' },
+    WARM_LEAD: { label: 'Warm Lead', color: 'text-blue-700', bg: 'bg-blue-50 border-blue-200' },
+    HOT_LEAD: { label: 'Hot Lead', color: 'text-green-700', bg: 'bg-green-50 border-green-200' },
+    COLD_LEAD: { label: 'Cold Lead', color: 'text-red-700', bg: 'bg-red-50 border-red-200' },
+    CLOSED_LEAD: { label: 'Closed Lead', color: 'text-gray-700', bg: 'bg-gray-50 border-gray-200' },
+    PROPOSAL_LEAD: { label: 'Proposal Lead', color: 'text-purple-700', bg: 'bg-purple-50 border-purple-200' },
 };
 
 // Skeleton row component for loading state
@@ -88,7 +89,6 @@ function TableRowSkeleton() {
                     </div>
                 </div>
             </TableCell>
-            <TableCell><Skeleton className="h-6 w-16 rounded-full" /></TableCell>
             <TableCell><Skeleton className="h-6 w-20" /></TableCell>
             <TableCell><Skeleton className="h-4 w-16" /></TableCell>
             <TableCell><Skeleton className="h-4 w-24" /></TableCell>
@@ -98,13 +98,22 @@ function TableRowSkeleton() {
     );
 }
 
+import { TransferRequestDialog } from '@/components/leads/transfer-request-dialog';
+
+// ... existing imports
+
 export default function LeadsPage() {
     const router = useRouter();
     const { user } = useAuth();
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<string | null>(null);
+    const [activeTab, setActiveTab] = useState('all'); // 'all' or 'my'
     const [emailDialogOpen, setEmailDialogOpen] = useState(false);
     const [selectedLead, setSelectedLead] = useState<any>(null);
+
+    // Transfer Request State
+    const [transferDialogOpen, setTransferDialogOpen] = useState(false);
+    const [transferLead, setTransferLead] = useState<any>(null);
 
     const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -114,11 +123,20 @@ export default function LeadsPage() {
     const { toast } = useToast();
 
     const { data: leads, isLoading, isFetching } = useQuery({
-        queryKey: ['leads', debouncedSearch, statusFilter],
+        queryKey: ['leads', debouncedSearch, statusFilter, activeTab],
         queryFn: async () => {
             const params = new URLSearchParams();
             if (debouncedSearch) params.append('search', debouncedSearch);
             if (statusFilter) params.append('status', statusFilter);
+
+            // For employees (or anyone using "My Leads" tab), filter by assignee
+            if (activeTab === 'my') {
+                params.append('assigneeId', user?.id || '');
+            } else if (activeTab === 'all' && user?.role === 'EMPLOYEE') {
+                // For Employees in 'All Leads', exclude their own leads
+                params.append('excludeAssigneeId', user?.id || '');
+            }
+
             const response = await apiClient.get(`/leads?${params.toString()}`);
             return response.data;
         },
@@ -162,77 +180,21 @@ export default function LeadsPage() {
         }
     };
 
+
+
     return (
         <div className="space-y-6 page-enter">
-            {/* Page Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold">Leads</h1>
-                    <p className="text-muted-foreground mt-1">
-                        Manage and track your potential customers
-                    </p>
-                </div>
-                <Button className="gap-2" onClick={() => router.push('/leads/new')}>
-                    <Plus className="h-4 w-4" />
-                    Add Lead
-                </Button>
-            </div>
 
-            {/* Stats Cards */}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <Card className="card-hover">
-                    <CardContent className="p-5">
-                        <div className="flex items-center gap-4">
-                            <div className="stat-icon bg-blue-50">
-                                <UserPlus className="h-6 w-6 text-blue-500" />
-                            </div>
-                            <div>
-                                <p className="text-2xl font-bold">{stats?.total || leads?.length || 0}</p>
-                                <p className="text-sm text-muted-foreground">Total Leads</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card className="card-hover">
-                    <CardContent className="p-5">
-                        <div className="flex items-center gap-4">
-                            <div className="stat-icon bg-red-50">
-                                <Flame className="h-6 w-6 text-red-500" />
-                            </div>
-                            <div>
-                                <p className="text-2xl font-bold">{stats?.hot || 0}</p>
-                                <p className="text-sm text-muted-foreground">Hot Leads</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card className="card-hover">
-                    <CardContent className="p-5">
-                        <div className="flex items-center gap-4">
-                            <div className="stat-icon bg-amber-50">
-                                <Thermometer className="h-6 w-6 text-amber-500" />
-                            </div>
-                            <div>
-                                <p className="text-2xl font-bold">{stats?.warm || 0}</p>
-                                <p className="text-sm text-muted-foreground">Warm Leads</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card className="card-hover">
-                    <CardContent className="p-5">
-                        <div className="flex items-center gap-4">
-                            <div className="stat-icon bg-green-50">
-                                <ChevronRight className="h-6 w-6 text-green-500" />
-                            </div>
-                            <div>
-                                <p className="text-2xl font-bold">{stats?.converted || 0}</p>
-                                <p className="text-sm text-muted-foreground">Converted</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
+            {/* Tabs for Leads */}
+            {/* Tabs for Leads - Only for Employees */}
+            {user?.role === 'EMPLOYEE' && (
+                <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="w-full">
+                    <TabsList>
+                        <TabsTrigger value="all">All Leads</TabsTrigger>
+                        <TabsTrigger value="my">My Leads</TabsTrigger>
+                    </TabsList>
+                </Tabs>
+            )}
 
             {/* Filters & Search */}
             <Card>
@@ -251,18 +213,23 @@ export default function LeadsPage() {
                                 <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
                             )}
                         </div>
-                        <div className="flex gap-2 flex-wrap">
-                            {Object.entries(statusConfig).map(([key, config]) => (
-                                <Button
-                                    key={key}
-                                    variant={statusFilter === key ? 'default' : 'outline'}
-                                    size="sm"
-                                    onClick={() => setStatusFilter(statusFilter === key ? null : key)}
-                                    className="text-xs"
-                                >
-                                    {config.label}
-                                </Button>
-                            ))}
+                        <div className="w-full sm:w-[200px]">
+                            <Select
+                                value={statusFilter || 'ALL'}
+                                onValueChange={(val) => setStatusFilter(val === 'ALL' ? null : val)}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Filter by Status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="ALL">All Status</SelectItem>
+                                    {Object.entries(statusConfig).map(([key, config]) => (
+                                        <SelectItem key={key} value={key}>
+                                            {config.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
                 </CardContent>
@@ -275,14 +242,12 @@ export default function LeadsPage() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead className="w-[300px]">Lead</TableHead>
-                                <TableHead>Type</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead>Assignee</TableHead>
-                                <TableHead>Source</TableHead>
                                 <TableHead>Next Follow-up</TableHead>
                                 <TableHead>Date</TableHead>
-                                <TableHead>Contact</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
+                                {!(activeTab === 'all' && user?.role === 'EMPLOYEE') && <TableHead>Contact</TableHead>}
+                                {!(activeTab === 'all' && user?.role === 'EMPLOYEE') && <TableHead className="text-right">Actions</TableHead>}
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -298,19 +263,26 @@ export default function LeadsPage() {
                             )}
                             {/* Show actual data */}
                             {!isLoading && leads?.map((lead: any) => {
-                                const status = statusConfig[lead.status] || statusConfig.NEW;
-                                const type = typeConfig[lead.type] || typeConfig.COLD;
-                                const TypeIcon = type.icon;
+                                const status = statusConfig[lead.status] || statusConfig.COLD_LEAD;
                                 const phoneNumber = lead.phone || lead.mobile;
+
+                                const canViewLead = user?.role !== 'EMPLOYEE' || lead.assigneeId === user?.id;
 
                                 return (
                                     <TableRow
                                         key={lead.id}
                                         className={cn(
-                                            "table-row-hover cursor-pointer transition-colors",
-                                            user?.role === 'EMPLOYEE' && lead.assigneeId !== user?.id && "bg-slate-50/50 hover:bg-slate-50 opacity-90"
+                                            "transition-colors",
+                                            canViewLead ? "table-row-hover cursor-pointer" : "opacity-90 bg-slate-50/50"
                                         )}
-                                        onClick={() => router.push(`/leads/${lead.id}`)}
+                                        onClick={() => {
+                                            if (canViewLead) {
+                                                router.push(`/leads/${lead.id}`);
+                                            } else {
+                                                setTransferLead(lead);
+                                                setTransferDialogOpen(true);
+                                            }
+                                        }}
                                     >
                                         <TableCell>
                                             <div className="flex items-center gap-3">
@@ -320,27 +292,19 @@ export default function LeadsPage() {
                                                     </AvatarFallback>
                                                 </Avatar>
                                                 <div>
-                                                    <p className="font-medium flex items-center gap-2">
+                                                    <p className={cn("font-medium flex items-center gap-2", status.color)}>
                                                         {lead.firstName} {lead.lastName}
-                                                        {user?.role === 'EMPLOYEE' && lead.assigneeId !== user?.id && (
+                                                        {!canViewLead && (
                                                             <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-500 border border-slate-200">
                                                                 <Lock className="h-3 w-3 mr-1" />
-                                                                View Only
+                                                                Restricted
                                                             </span>
                                                         )}
                                                     </p>
                                                     <p className="text-sm text-muted-foreground">
-                                                        {lead.company || 'No company'}
+                                                        {lead.mobile || lead.phone || 'No mobile'}
                                                     </p>
                                                 </div>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className={cn("flex items-center gap-2 px-2.5 py-1 rounded-full w-fit", type.bg)}>
-                                                <TypeIcon className={cn("h-4 w-4", type.color)} />
-                                                <span className={cn("text-xs font-medium", type.color)}>
-                                                    {lead.type}
-                                                </span>
                                             </div>
                                         </TableCell>
                                         <TableCell>
@@ -364,9 +328,7 @@ export default function LeadsPage() {
                                                 <span className="text-muted-foreground italic text-sm">Unassigned</span>
                                             )}
                                         </TableCell>
-                                        <TableCell className="text-muted-foreground">
-                                            {lead.source || '-'}
-                                        </TableCell>
+
                                         <TableCell className="whitespace-nowrap">
                                             {lead.nextFollowUp ? (
                                                 <span className={cn(
@@ -382,82 +344,94 @@ export default function LeadsPage() {
                                         <TableCell className="text-muted-foreground whitespace-nowrap">
                                             {new Date(lead.createdAt).toLocaleDateString()}
                                         </TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center gap-2">
-                                                {phoneNumber && (
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-8 w-8"
-                                                        onClick={(e) => { e.stopPropagation(); }}
-                                                    >
-                                                        <Phone className="h-4 w-4" />
-                                                    </Button>
-                                                )}
-                                                {lead.email && (
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-8 w-8"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setSelectedLead(lead);
-                                                            setEmailDialogOpen(true);
-                                                        }}
-                                                    >
-                                                        <Mail className="h-4 w-4" />
-                                                    </Button>
-                                                )}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-8 w-8"
-                                                    >
-                                                        <MoreHorizontal className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        router.push(`/leads/${lead.id}`);
-                                                    }}>
-                                                        <Eye className="mr-2 h-4 w-4" />
-                                                        View Details
-                                                    </DropdownMenuItem>
-
-                                                    {/* Edit/Delete only for Owners or Managers/Admins */}
-                                                    {(user?.role !== 'EMPLOYEE' || lead.assigneeId === user?.id) && (
-                                                        <>
-                                                            <DropdownMenuItem onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                router.push(`/leads/${lead.id}/edit`);
-                                                            }}>
-                                                                <Pencil className="mr-2 h-4 w-4" />
-                                                                Edit
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem className="text-red-600" onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setDeleteId(lead.id);
-                                                            }}>
-                                                                <Trash className="mr-2 h-4 w-4" />
-                                                                Delete
-                                                            </DropdownMenuItem>
-                                                        </>
+                                        {!(activeTab === 'all' && user?.role === 'EMPLOYEE') && (
+                                            <TableCell>
+                                                <div className="flex items-center gap-2">
+                                                    {phoneNumber && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8"
+                                                            disabled={!canViewLead}
+                                                            onClick={(e) => { e.stopPropagation(); }}
+                                                        >
+                                                            <Phone className="h-4 w-4" />
+                                                        </Button>
                                                     )}
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </TableCell>
+                                                    {lead.email && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8"
+                                                            disabled={!canViewLead}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setSelectedLead(lead);
+                                                                setEmailDialogOpen(true);
+                                                            }}
+                                                        >
+                                                            <Mail className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+                                        )}
+                                        {!(activeTab === 'all' && user?.role === 'EMPLOYEE') && (
+                                            <TableCell className="text-right">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8"
+                                                            disabled={!canViewLead}
+                                                        >
+                                                            <MoreHorizontal className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        <DropdownMenuItem onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (canViewLead) {
+                                                                router.push(`/leads/${lead.id}`);
+                                                            } else {
+                                                                setTransferLead(lead);
+                                                                setTransferDialogOpen(true);
+                                                            }
+                                                        }}>
+                                                            <Eye className="mr-2 h-4 w-4" />
+                                                            View Details
+                                                        </DropdownMenuItem>
+
+                                                        {/* Edit/Delete only for Owners or Managers/Admins */}
+                                                        {(user?.role !== 'EMPLOYEE' || lead.assigneeId === user?.id) && (
+                                                            <>
+                                                                <DropdownMenuItem onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    router.push(`/leads/${lead.id}/edit`);
+                                                                }}>
+                                                                    <Pencil className="mr-2 h-4 w-4" />
+                                                                    Edit
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem className="text-red-600" onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setDeleteId(lead.id);
+                                                                }}>
+                                                                    <Trash className="mr-2 h-4 w-4" />
+                                                                    Delete
+                                                                </DropdownMenuItem>
+                                                            </>
+                                                        )}
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </TableCell>
+                                        )}
                                     </TableRow>
                                 );
                             })}
                             {!isLoading && (!leads || leads.length === 0) && (
                                 <TableRow>
-                                    <TableCell colSpan={7} className="h-32 text-center">
+                                    <TableCell colSpan={8} className="h-32 text-center">
                                         <div className="flex flex-col items-center justify-center text-muted-foreground">
                                             <UserPlus className="h-10 w-10 mb-2 opacity-50" />
                                             <p>No leads found</p>
@@ -499,6 +473,13 @@ export default function LeadsPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-        </div>
+
+            <TransferRequestDialog
+                isOpen={transferDialogOpen}
+                onClose={() => setTransferDialogOpen(false)}
+                leadId={transferLead?.id || null}
+                leadName={transferLead ? `${transferLead.firstName} ${transferLead.lastName}` : undefined}
+            />
+        </div >
     );
 }

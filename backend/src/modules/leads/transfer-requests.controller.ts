@@ -16,6 +16,12 @@ export class TransferRequestsController {
         return this.transferService.createRequest(req.user.id, body.leadId, body.reason, body.targetUserId);
     }
 
+    @Post('claim')
+    @Roles(Role.EMPLOYEE, Role.MANAGER, Role.SUPER_ADMIN)
+    createClaim(@Request() req: any, @Body() body: { leadId: string; reason?: string }) {
+        return this.transferService.createClaimRequest(req.user.id, body.leadId, body.reason);
+    }
+
     @Get()
     @Roles(Role.MANAGER, Role.SUPER_ADMIN)
     findAll(@Query('status') status?: TransferStatus) {

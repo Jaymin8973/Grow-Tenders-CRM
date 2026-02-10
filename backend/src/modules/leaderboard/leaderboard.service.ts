@@ -185,7 +185,7 @@ export class LeaderboardService {
         const leadsConverted = await this.prisma.lead.count({
             where: {
                 assigneeId: userId,
-                status: LeadStatus.WON,
+                status: LeadStatus.CLOSED_LEAD,
                 ...dateFilter,
             },
         });

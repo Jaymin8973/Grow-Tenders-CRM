@@ -17,20 +17,14 @@ enum Role {
   EMPLOYEE
 }
 
-enum LeadType {
-  HOT
-  WARM
-  COLD
-}
+
 
 enum LeadStatus {
-  NEW
-  CONTACTED
-  QUALIFIED
-  PROPOSAL
-  NEGOTIATION
-  WON
-  LOST
+  WARM_LEAD
+  HOT_LEAD
+  COLD_LEAD
+  CLOSED_LEAD
+  PROPOSAL_LEAD
 }
 
 enum LeadSource {
@@ -197,6 +191,7 @@ model User {
   transferRequestsMade     LeadTransferRequest[] @relation("TransferRequester")
   transferRequestsReceived LeadTransferRequest[] @relation("TransferTarget")
   leaderboardScores        LeaderboardScore[]
+  dailyReports             DailyReport[]  @relation("EmployeeReports")
 
   @@map("users")
 }
@@ -209,8 +204,7 @@ model Lead {
   email         String
   company       String?
 
-  status        LeadStatus  @default(NEW)
-  type          LeadType    @default(COLD)
+  status        LeadStatus  @default(COLD_LEAD)
   source        LeadSource  @default(OTHER)
   description   String?
 
@@ -223,6 +217,7 @@ model Lead {
   nextFollowUp  DateTime?
 
   industry      String?
+  
   
   assigneeId    String?     @db.ObjectId
   assignee      User?       @relation("LeadAssignee", fields: [assigneeId], references: [id])
@@ -320,6 +315,9 @@ model Customer {
   tenderSubscriptions TenderSubscription[]
   customerNotes      Note[]
   dispatchQueue      TenderDispatchQueue[]
+
+  paymentReceivedReportIds String[] @db.ObjectId
+  paymentReceivedReports   DailyReport[] @relation(fields: [paymentReceivedReportIds], references: [id])
 
   @@map("customers")
 }
@@ -772,4 +770,26 @@ model LeaderboardScore {
 
   @@unique([employeeId, month])
   @@map("leaderboard_scores")
+}
+
+model DailyReport {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  title       String?
+  content     String
+  date        DateTime @default(now())
+  
+  // New Fields
+  callCount       Int      @default(0)
+  avgTalkTime     Float    @default(0) // In minutes
+
+  paymentReceivedFromCustomerIds String[] @db.ObjectId
+  paymentReceivedFromCustomers   Customer[] @relation(fields: [paymentReceivedFromCustomerIds], references: [id])
+  
+  employeeId  String   @db.ObjectId
+  employee    User     @relation("EmployeeReports", fields: [employeeId], references: [id])
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("daily_reports")
 }

@@ -23,6 +23,7 @@ import { AttachmentsModule } from './modules/attachments/attachments.module';
 import { BranchesModule } from './modules/branches/branches.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { FollowUpsModule } from './modules/follow-ups/follow-ups.module';
+import { DailyReportsModule } from './modules/daily-reports/daily-reports.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 
@@ -68,6 +69,7 @@ import { join } from 'path';
         AttachmentsModule,
         PaymentsModule,
         FollowUpsModule,
+        DailyReportsModule,
     ],
     providers: [
         // Apply rate limiting globally

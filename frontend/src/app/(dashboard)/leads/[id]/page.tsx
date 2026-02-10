@@ -64,20 +64,14 @@ import { formatDistanceToNow, format } from 'date-fns';
 import { getInitials, cn, formatCurrency } from '@/lib/utils';
 
 const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
-    NEW: { label: 'New', color: 'text-blue-700', bg: 'bg-blue-100' },
-    CONTACTED: { label: 'Contacted', color: 'text-indigo-700', bg: 'bg-indigo-100' },
-    QUALIFIED: { label: 'Qualified', color: 'text-purple-700', bg: 'bg-purple-100' },
-    PROPOSAL: { label: 'Proposal', color: 'text-amber-700', bg: 'bg-amber-100' },
-    NEGOTIATION: { label: 'Negotiation', color: 'text-orange-700', bg: 'bg-orange-100' },
-    WON: { label: 'Won', color: 'text-emerald-700', bg: 'bg-emerald-100' },
-    LOST: { label: 'Lost', color: 'text-red-700', bg: 'bg-red-100' },
+    WARM_LEAD: { label: 'Warm Lead', color: 'text-blue-700', bg: 'bg-blue-50' },
+    HOT_LEAD: { label: 'Hot Lead', color: 'text-green-700', bg: 'bg-green-50' },
+    COLD_LEAD: { label: 'Cold Lead', color: 'text-red-700', bg: 'bg-red-50' },
+    CLOSED_LEAD: { label: 'Closed Lead', color: 'text-gray-700', bg: 'bg-gray-50' },
+    PROPOSAL_LEAD: { label: 'Proposal Lead', color: 'text-purple-700', bg: 'bg-purple-50' },
 };
 
-const sourceIcons: Record<string, any> = {
-    HOT: { icon: Flame, color: 'text-red-500' },
-    WARM: { icon: Thermometer, color: 'text-amber-500' },
-    COLD: { icon: Snowflake, color: 'text-blue-500' },
-};
+
 
 export default function LeadDetailPage() {
     const params = useParams();
@@ -114,7 +108,7 @@ export default function LeadDetailPage() {
     });
 
     const updateLeadMutation = useMutation({
-        mutationFn: async (payload: { status?: string; type?: string }) => {
+        mutationFn: async (payload: { status?: string }) => {
             const res = await apiClient.patch(`/leads/${leadId}`, payload);
             return res.data;
         },
@@ -333,8 +327,8 @@ export default function LeadDetailPage() {
         );
     }
 
-    const status = statusConfig[lead.status] || statusConfig.NEW;
-    const isClosed = lead.status === 'WON' || lead.status === 'LOST';
+    const status = statusConfig[lead.status] || statusConfig.COLD_LEAD;
+    const isClosed = lead.status === 'CLOSED_LEAD';
     const canUpdateStatus = user?.role !== 'EMPLOYEE' || lead.assigneeId === user?.id;
 
     return (
@@ -511,10 +505,10 @@ export default function LeadDetailPage() {
                         </CardContent>
                     </Card>
 
-                    {/* Lead Status & Type */}
+                    {/* Lead Status */}
                     <Card>
                         <CardHeader>
-                            <CardTitle className="text-lg">Lead Status & Type</CardTitle>
+                            <CardTitle className="text-lg">Lead Status</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="space-y-2">
@@ -528,30 +522,11 @@ export default function LeadDetailPage() {
                                         <SelectValue placeholder="Select status" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {['NEW', 'CONTACTED', 'QUALIFIED', 'PROPOSAL', 'NEGOTIATION', 'WON', 'LOST'].map((value) => (
-                                            <SelectItem key={value} value={value}>
-                                                {statusConfig[value]?.label || value}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Type</Label>
-                                <Select
-                                    value={lead.type || 'COLD'}
-                                    onValueChange={(value) => updateLeadMutation.mutate({ type: value })}
-                                    disabled={!canUpdateStatus || updateLeadMutation.isPending}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select type" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {['COLD', 'WARM', 'HOT'].map((value) => (
-                                            <SelectItem key={value} value={value}>
-                                                {value.charAt(0) + value.slice(1).toLowerCase()}
-                                            </SelectItem>
-                                        ))}
+                                        <SelectItem value="WARM_LEAD">Warm Lead</SelectItem>
+                                        <SelectItem value="HOT_LEAD">Hot Lead</SelectItem>
+                                        <SelectItem value="COLD_LEAD">Cold Lead</SelectItem>
+                                        <SelectItem value="CLOSED_LEAD">Closed Lead</SelectItem>
+                                        <SelectItem value="PROPOSAL_LEAD">Proposal Lead</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -638,16 +613,7 @@ export default function LeadDetailPage() {
                                             <Edit className="h-3 w-3" />
                                         </Button>
                                     )}
-                                    {user?.role === 'EMPLOYEE' && lead.assignee?.id === user.id && (
-                                        <Button
-                                            variant="link"
-                                            size="sm"
-                                            className="h-auto p-0 text-xs text-muted-foreground"
-                                            onClick={() => setTransferDialogOpen(true)}
-                                        >
-                                            Request Transfer
-                                        </Button>
-                                    )}
+
                                 </div>
                             </div>
                             <div className="flex justify-between text-sm">
