@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Role, DealStage, ActivityStatus, LeadStatus } from '@prisma/client';
+import { Role, ActivityStatus, LeadStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
 interface UserContext {
@@ -16,7 +16,6 @@ export interface LeaderboardEntry {
     avatar?: string;
     metrics: {
         revenueClosed: number;
-        dealsWon: number;
         activitiesCompleted: number;
         followUpCompletionRate: number;
         leadConversionRate: number;
@@ -57,12 +56,12 @@ export class LeaderboardService {
             }),
         );
 
-        // Sort by revenue closed, then by deals won
+        // Sort by activities completed, then by lead conversion rate
         leaderboard.sort((a, b) => {
             if (b.metrics.revenueClosed !== a.metrics.revenueClosed) {
                 return b.metrics.revenueClosed - a.metrics.revenueClosed;
             }
-            return b.metrics.dealsWon - a.metrics.dealsWon;
+            return b.metrics.activitiesCompleted - a.metrics.activitiesCompleted;
         });
 
         // Assign ranks
@@ -143,22 +142,6 @@ export class LeaderboardService {
             createdAt: { gte: period.startDate, lte: period.endDate },
         } : {};
 
-        // Revenue closed (from won deals)
-        const wonDeals = await this.prisma.deal.aggregate({
-            where: {
-                ownerId: userId,
-                stage: DealStage.CLOSED_WON,
-                ...dateFilter,
-            },
-            _sum: { value: true },
-            _count: true,
-        });
-
-        // Total deals by user
-        const totalDeals = await this.prisma.deal.count({
-            where: { ownerId: userId, ...dateFilter },
-        });
-
         // Activities completed
         const activitiesCompleted = await this.prisma.activity.count({
             where: {
@@ -181,7 +164,7 @@ export class LeaderboardService {
             where: { assigneeId: userId, ...dateFilter },
         });
 
-        // Leads converted (to won)
+        // Leads converted (to closed)
         const leadsConverted = await this.prisma.lead.count({
             where: {
                 assigneeId: userId,
@@ -191,8 +174,7 @@ export class LeaderboardService {
         });
 
         return {
-            revenueClosed: wonDeals._sum.value || 0,
-            dealsWon: wonDeals._count,
+            revenueClosed: 0,
             activitiesCompleted,
             followUpCompletionRate: totalActivities > 0
                 ? Math.round((activitiesCompleted / totalActivities) * 100)
@@ -251,7 +233,6 @@ export class LeaderboardService {
                         role: manager.role,
                         metrics: {
                             revenueClosed: 0,
-                            dealsWon: 0,
                             teamSize: 0,
                         },
                         rank: 0,
@@ -263,14 +244,12 @@ export class LeaderboardService {
                     createdAt: { gte: period.startDate, lte: period.endDate },
                 } : {};
 
-                const wonDeals = await this.prisma.deal.aggregate({
+                const leadsConverted = await this.prisma.lead.count({
                     where: {
-                        ownerId: { in: teamIds },
-                        stage: DealStage.CLOSED_WON,
+                        assigneeId: { in: teamIds },
+                        status: LeadStatus.CLOSED_LEAD,
                         ...dateFilter,
                     },
-                    _sum: { value: true },
-                    _count: true,
                 });
 
                 return {
@@ -281,8 +260,8 @@ export class LeaderboardService {
                     avatar: manager.avatar,
                     role: manager.role,
                     metrics: {
-                        revenueClosed: wonDeals._sum.value || 0,
-                        dealsWon: wonDeals._count,
+                        revenueClosed: 0,
+                        leadsConverted,
                         teamSize: teamIds.length,
                     },
                     rank: 0,
@@ -290,9 +269,8 @@ export class LeaderboardService {
             })
         );
 
-        // Filter out managers with 0 revenue if you want, or just sort
-        // Sort by revenue
-        leaderboard.sort((a, b) => b.metrics.revenueClosed - a.metrics.revenueClosed);
+        // Sort by leads converted
+        leaderboard.sort((a, b) => (b.metrics as any).leadsConverted - (a.metrics as any).leadsConverted);
 
         // Assign ranks
         leaderboard.forEach((entry, index) => {

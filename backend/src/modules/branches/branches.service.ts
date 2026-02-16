@@ -35,7 +35,6 @@ export class BranchesService {
                         users: true,
                         leads: true,
                         customers: true,
-                        deals: true,
                     },
                 },
             },
@@ -52,7 +51,6 @@ export class BranchesService {
                         users: true,
                         leads: true,
                         customers: true,
-                        deals: true,
                     },
                 },
             },
@@ -98,7 +96,7 @@ export class BranchesService {
     async remove(id: string) {
         await this.findOne(id); // Verify exists
 
-        // Check if branch has any users, leads, customers, or deals
+        // Check if branch has any users, leads, or customers
         const counts = await this.prisma.branch.findUnique({
             where: { id },
             include: {
@@ -107,7 +105,6 @@ export class BranchesService {
                         users: true,
                         leads: true,
                         customers: true,
-                        deals: true,
                     },
                 },
             },
@@ -116,8 +113,7 @@ export class BranchesService {
         const totalLinked =
             (counts?._count?.users || 0) +
             (counts?._count?.leads || 0) +
-            (counts?._count?.customers || 0) +
-            (counts?._count?.deals || 0);
+            (counts?._count?.customers || 0);
 
         if (totalLinked > 0) {
             throw new ConflictException('Cannot delete branch with linked records. Deactivate instead.');
@@ -129,23 +125,16 @@ export class BranchesService {
     }
 
     async getBranchStats(branchId: string) {
-        const [usersCount, leadsCount, customersCount, dealsCount, dealsValue] = await Promise.all([
+        const [usersCount, leadsCount, customersCount] = await Promise.all([
             this.prisma.user.count({ where: { branchId } }),
             this.prisma.lead.count({ where: { branchId } }),
             this.prisma.customer.count({ where: { branchId } }),
-            this.prisma.deal.count({ where: { branchId } }),
-            this.prisma.deal.aggregate({
-                where: { branchId },
-                _sum: { value: true },
-            }),
         ]);
 
         return {
             users: usersCount,
             leads: leadsCount,
             customers: customersCount,
-            deals: dealsCount,
-            totalDealValue: dealsValue._sum.value || 0,
         };
     }
 }

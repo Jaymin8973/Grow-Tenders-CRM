@@ -57,7 +57,7 @@ async function bootstrap() {
             .addTag('Users', 'User management endpoints')
             .addTag('Leads', 'Lead management endpoints')
             .addTag('Customers', 'Customer management endpoints')
-            .addTag('Deals', 'Deal management endpoints')
+
             .addTag('Activities', 'Activity management endpoints')
             .addTag('Invoices', 'Invoice management endpoints')
             .addTag('Tenders', 'Tender management endpoints')

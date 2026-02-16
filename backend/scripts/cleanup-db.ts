@@ -62,8 +62,7 @@ async function main() {
         console.log('Deleting Attachments...');
         await prisma.attachment.deleteMany({});
 
-        console.log('Deleting Deals...');
-        await prisma.deal.deleteMany({});
+
 
         console.log('Deleting Subscriptions...');
         await prisma.tenderSubscription.deleteMany({});

@@ -35,7 +35,7 @@ import {
     CheckCircle2,
     DollarSign,
     FileText,
-    TrendingUp,
+
     Bell,
     Save,
     X,
@@ -86,14 +86,7 @@ export default function CustomerDetailPage() {
         },
     });
 
-    // Fetch deals
-    const { data: deals } = useQuery({
-        queryKey: ['deals', 'customer', customerId],
-        queryFn: async () => {
-            const response = await apiClient.get(`/deals?customerId=${customerId}`);
-            return response.data;
-        },
-    });
+
 
     // Fetch activities
     const { data: activities } = useQuery({
@@ -226,8 +219,8 @@ export default function CustomerDetailPage() {
     }
 
     const lifecycle = lifecycleConfig[customer.lifecycle] || lifecycleConfig.LEAD;
-    const totalRevenue = deals?.filter((d: any) => d.stage === 'CLOSED_WON')
-        .reduce((sum: number, d: any) => sum + d.value, 0) || 0;
+    const totalRevenue = invoices?.filter((inv: any) => inv.status === 'PAID')
+        .reduce((sum: number, inv: any) => sum + (inv.total || 0), 0) || 0;
 
     return (
         <div className="space-y-6 page-enter">
@@ -261,7 +254,7 @@ export default function CustomerDetailPage() {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid gap-4 sm:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-3">
                 <Card className="card-hover">
                     <CardContent className="p-5">
                         <div className="flex items-center gap-4">
@@ -275,19 +268,7 @@ export default function CustomerDetailPage() {
                         </div>
                     </CardContent>
                 </Card>
-                <Card className="card-hover">
-                    <CardContent className="p-5">
-                        <div className="flex items-center gap-4">
-                            <div className="stat-icon bg-blue-50">
-                                <TrendingUp className="h-6 w-6 text-blue-500" />
-                            </div>
-                            <div>
-                                <p className="text-2xl font-bold">{deals?.length || 0}</p>
-                                <p className="text-sm text-muted-foreground">Total Deals</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+
                 <Card className="card-hover">
                     <CardContent className="p-5">
                         <div className="flex items-center gap-4">
@@ -410,9 +391,8 @@ export default function CustomerDetailPage() {
 
                 {/* Right Column - Tabs */}
                 <div className="lg:col-span-2">
-                    <Tabs defaultValue="deals" className="space-y-4">
+                    <Tabs defaultValue="invoices" className="space-y-4">
                         <TabsList>
-                            <TabsTrigger value="deals">Deals</TabsTrigger>
                             <TabsTrigger value="invoices">Invoices</TabsTrigger>
                             <TabsTrigger value="subscription">Tender Subscription</TabsTrigger>
                             <TabsTrigger value="notes">Notes</TabsTrigger>

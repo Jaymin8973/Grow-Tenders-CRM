@@ -40,11 +40,7 @@ export class NotesController {
         return this.notesService.findByCustomer(customerId);
     }
 
-    @Get('deal/:dealId')
-    @ApiOperation({ summary: 'Get notes by deal' })
-    findByDeal(@Param('dealId') dealId: string) {
-        return this.notesService.findByDeal(dealId);
-    }
+
 
     @Put(':id')
     @ApiOperation({ summary: 'Update a note' })

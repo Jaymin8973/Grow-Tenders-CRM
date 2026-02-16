@@ -68,15 +68,7 @@ export class NotificationsService {
         });
     }
 
-    async notifyDealUpdate(userId: string, dealTitle: string, dealId: string, stage: string) {
-        return this.create({
-            userId,
-            type: NotificationType.DEAL_UPDATE,
-            title: 'Deal Status Updated',
-            message: `Deal "${dealTitle}" moved to ${stage}`,
-            link: `/deals/${dealId}`,
-        });
-    }
+
 
     async notifyActivityReminder(userId: string, activityTitle: string, activityId: string) {
         return this.create({

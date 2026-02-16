@@ -397,7 +397,6 @@ export function ComposeEmailDialog({
                                 <SelectContent>
                                     <SelectItem value="Lead">Lead</SelectItem>
                                     <SelectItem value="Customer">Customer</SelectItem>
-                                    <SelectItem value="Deal">Deal</SelectItem>
                                 </SelectContent>
                             </Select>
                             <div className="relative flex-1 max-w-sm">

@@ -9,7 +9,6 @@ import {
     LayoutDashboard,
     Users,
     UserPlus,
-    Briefcase,
     CalendarDays,
     Trophy,
     FileText,
@@ -19,6 +18,7 @@ import {
     LogOut,
     Wallet,
     FileSearch,
+    Target,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -28,7 +28,7 @@ const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Leads', href: '/leads', icon: UserPlus },
     { name: 'Customers', href: '/customers', icon: Users },
-    { name: 'Deals', href: '/deals', icon: Briefcase },
+
     { name: 'Teams', href: '/teams', icon: Users, roles: ['SUPER_ADMIN', 'MANAGER'] },
     { name: 'Tasks', href: '/tasks', icon: FileText },
     { name: 'Daily Reports', href: '/daily-reports', icon: BarChart3 },
@@ -42,6 +42,7 @@ const adminNav = [
     { name: 'Reports', href: '/reports', icon: BarChart3, roles: ['SUPER_ADMIN', 'MANAGER'] },
     { name: 'Transfer Requests', href: '/leads/transfer-requests', icon: UserPlus, roles: ['SUPER_ADMIN', 'MANAGER'] },
     { name: 'Users', href: '/users', icon: Building2, roles: ['SUPER_ADMIN', 'MANAGER'] },
+    { name: 'Targets', href: '/targets', icon: Target, roles: ['SUPER_ADMIN', 'MANAGER'] },
     { name: 'Scraper Logs', href: '/scraper-logs', icon: FileSearch, roles: ['SUPER_ADMIN'] },
 ];
 

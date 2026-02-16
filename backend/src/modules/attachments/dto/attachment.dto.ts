@@ -12,10 +12,7 @@ export class UploadAttachmentDto {
     @IsOptional()
     customerId?: string;
 
-    @ApiPropertyOptional({ description: 'Deal ID' })
-    @IsMongoId()
-    @IsOptional()
-    dealId?: string;
+
 
     @ApiPropertyOptional({ description: 'Tender ID' })
     @IsMongoId()

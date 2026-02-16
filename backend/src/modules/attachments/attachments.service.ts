@@ -41,7 +41,7 @@ export class AttachmentsService {
                 url: `/uploads/${filename}`,
                 leadId: options?.leadId,
                 customerId: options?.customerId,
-                dealId: options?.dealId,
+
                 tenderId: options?.tenderId,
             },
         });
@@ -61,9 +61,9 @@ export class AttachmentsService {
         });
     }
 
-    async findByDeal(dealId: string) {
+    async findByDeal(leadId: string) {
         return this.prisma.attachment.findMany({
-            where: { dealId },
+            where: { leadId },
             orderBy: { createdAt: 'desc' },
         });
     }

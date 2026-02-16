@@ -14,7 +14,7 @@ import {
     TrendingUp,
     Target,
     Users,
-    Briefcase,
+
     DollarSign,
     Star
 } from 'lucide-react';
@@ -103,9 +103,9 @@ export default function LeaderboardPage() {
                         <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg">
                             {type === 'employee' ? (
                                 <>
-                                    <p className="text-[10px] text-muted-foreground uppercase font-bold">Deals</p>
+                                    <p className="text-[10px] text-muted-foreground uppercase font-bold">Activities</p>
                                     <p className="text-sm font-bold text-blue-600">
-                                        {entry.metrics?.dealsWon || 0}
+                                        {entry.metrics?.activitiesCompleted || 0}
                                     </p>
                                 </>
                             ) : (

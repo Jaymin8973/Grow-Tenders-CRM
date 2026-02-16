@@ -1,4 +1,4 @@
-import { PrismaClient, Role, LeadStatus, LeadSource, CustomerLifecycle, DealStage, ActivityType, ActivityStatus } from '@prisma/client';
+import { PrismaClient, Role, LeadStatus, LeadSource, CustomerLifecycle, ActivityType, ActivityStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -15,7 +15,7 @@ async function main() {
     await prisma.activity.deleteMany();
     await prisma.note.deleteMany();
     await prisma.attachment.deleteMany();
-    await prisma.deal.deleteMany();
+
     await prisma.customer.deleteMany();
     await prisma.lead.deleteMany();
     await prisma.tenderSubscription.deleteMany();
@@ -146,12 +146,12 @@ async function main() {
     const leads = await Promise.all([
         prisma.lead.create({
             data: {
-                title: 'Enterprise Software Deal',
+                title: 'Enterprise Software Opportunity',
                 firstName: 'Michael',
                 lastName: 'Johnson',
                 email: 'michael.johnson@techcorp.com',
                 company: 'TechCorp Inc',
-                status: LeadStatus.QUALIFIED,
+                status: LeadStatus.HOT_LEAD,
                 source: LeadSource.WEBSITE,
                 description: 'Interested in enterprise software solution',
                 assigneeId: employee1.id,
@@ -165,7 +165,7 @@ async function main() {
                 lastName: 'Williams',
                 email: 'sarah@innovate.io',
                 company: 'Innovate.io',
-                status: LeadStatus.CONTACTED,
+                status: LeadStatus.WARM_LEAD,
                 source: LeadSource.REFERRAL,
                 description: 'Looking for consulting services',
                 assigneeId: employee1.id,
@@ -179,7 +179,7 @@ async function main() {
                 lastName: 'Brown',
                 email: 'dbrown@globaltech.com',
                 company: 'Global Tech Solutions',
-                status: LeadStatus.PROPOSAL,
+                status: LeadStatus.PROPOSAL_LEAD,
                 source: LeadSource.COLD_CALL,
                 description: 'Need help with cloud migration',
                 assigneeId: employee2.id,
@@ -193,7 +193,7 @@ async function main() {
                 lastName: 'Davis',
                 email: 'emily@marketingpro.com',
                 company: 'Marketing Pro',
-                status: LeadStatus.NEW,
+                status: LeadStatus.COLD_LEAD,
                 source: LeadSource.SOCIAL_MEDIA,
                 description: 'Seeking marketing automation solution',
                 assigneeId: employee2.id,
@@ -261,60 +261,7 @@ async function main() {
 
     console.log('👥 Created customers');
 
-    // Create deals
-    const deals = await Promise.all([
-        prisma.deal.create({
-            data: {
-                title: 'Enterprise License Agreement',
-                value: 150000,
-                stage: DealStage.NEGOTIATION,
-                probability: 75,
-                expectedCloseDate: new Date('2024-03-15'),
-                description: 'Annual enterprise license for 500 users',
-                customerId: customers[0].id,
-                ownerId: employee1.id,
-            },
-        }),
-        prisma.deal.create({
-            data: {
-                title: 'Consulting Engagement',
-                value: 80000,
-                stage: DealStage.PROPOSAL,
-                probability: 50,
-                expectedCloseDate: new Date('2024-04-01'),
-                description: 'Digital transformation consulting',
-                customerId: customers[1].id,
-                ownerId: employee1.id,
-            },
-        }),
-        prisma.deal.create({
-            data: {
-                title: 'Support Contract Renewal',
-                value: 45000,
-                stage: DealStage.CLOSED_WON,
-                probability: 100,
-                expectedCloseDate: new Date('2024-02-01'),
-                actualCloseDate: new Date('2024-01-28'),
-                description: 'Annual support contract renewal',
-                customerId: customers[0].id,
-                ownerId: employee2.id,
-            },
-        }),
-        prisma.deal.create({
-            data: {
-                title: 'New Product Implementation',
-                value: 200000,
-                stage: DealStage.QUALIFICATION,
-                probability: 10,
-                expectedCloseDate: new Date('2024-06-30'),
-                description: 'Implementation of new product suite',
-                leadId: leads[2].id,
-                ownerId: employee2.id,
-            },
-        }),
-    ]);
 
-    console.log('💰 Created deals');
 
     // Create activities
     const now = new Date();
@@ -359,7 +306,7 @@ async function main() {
                 duration: 45,
                 assigneeId: employee1.id,
                 createdById: employee1.id,
-                dealId: deals[0].id,
+                customerId: customers[0].id,
             },
         }),
         prisma.activity.create({

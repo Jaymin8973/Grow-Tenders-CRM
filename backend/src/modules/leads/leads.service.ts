@@ -161,7 +161,7 @@ export class LeadsService {
             ];
         }
 
-        return this.prisma.lead.findMany({
+        const leads = await this.prisma.lead.findMany({
             where,
             include: {
                 assignee: {
@@ -171,11 +171,34 @@ export class LeadsService {
                     select: { id: true, firstName: true, lastName: true },
                 },
                 _count: {
-                    select: { activities: true, deals: true },
+                    select: { activities: true },
                 },
             },
             orderBy: { createdAt: 'desc' },
         });
+
+        if (user.role === Role.EMPLOYEE) {
+            return leads.map(lead => {
+                if (lead.assigneeId !== user.id && lead.mobile) {
+                    // Mask mobile number details
+                    // Keep last 4 digits, hide the rest
+                    const last4 = lead.mobile.slice(-4);
+                    const masked = '*'.repeat(Math.max(0, lead.mobile.length - 4)) + last4;
+                    // Or simply '******' + last4 for consistent length? 
+                    // User said: "baki * se masking hona chahiye" -> implies masking specific characters.
+                    // Let's use generic masking to avoid leaking length if that's a concern, 
+                    // but typically reusing length is fine. User said "baki * se".
+                    // Let's us '******' + last4 to be safe and clean.
+                    return {
+                        ...lead,
+                        mobile: '******' + last4,
+                    };
+                }
+                return lead;
+            });
+        }
+
+        return leads;
     }
 
     async findOne(id: string, user: UserContext) {
@@ -192,9 +215,7 @@ export class LeadsService {
                     orderBy: { scheduledAt: 'desc' },
                     take: 10,
                 },
-                deals: {
-                    orderBy: { createdAt: 'desc' },
-                },
+
                 notes: {
                     orderBy: { createdAt: 'desc' },
                 },
@@ -227,6 +248,11 @@ export class LeadsService {
                     throw new ForbiddenException('You do not have access to this lead');
                 }
             }
+        }
+
+        if (user.role === Role.EMPLOYEE && lead.assigneeId !== user.id && lead.mobile) {
+            const last4 = lead.mobile.slice(-4);
+            (lead as any).mobile = '******' + last4;
         }
 
         return lead;

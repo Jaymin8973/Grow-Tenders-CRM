@@ -321,7 +321,7 @@ export default function NewLeadPage() {
                             <CardHeader className="pb-3 border-b">
                                 <CardTitle className="text-base flex items-center gap-2">
                                     <Hash className="h-4 w-4 text-primary" />
-                                    Deal Intelligence
+                                    Assignment
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="pt-6 space-y-4">

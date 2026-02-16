@@ -87,10 +87,7 @@ export default function LeadDetailPage() {
     const [emailBody, setEmailBody] = useState('');
     const [assignDialogOpen, setAssignDialogOpen] = useState(false);
     const [transferDialogOpen, setTransferDialogOpen] = useState(false);
-    const [createDealOpen, setCreateDealOpen] = useState(false);
-    const [dealTitle, setDealTitle] = useState('');
-    const [dealValue, setDealValue] = useState('');
-    const [expectedCloseDate, setExpectedCloseDate] = useState('');
+
 
     const [followUpOpen, setFollowUpOpen] = useState(false);
     const [followUpDate, setFollowUpDate] = useState<Date>();
@@ -123,30 +120,7 @@ export default function LeadDetailPage() {
         },
     });
 
-    // Create deal from lead
-    const createDealMutation = useMutation({
-        mutationFn: async () => {
-            const payload: any = {
-                title: dealTitle || `${lead?.firstName || ''} ${lead?.lastName || ''}`.trim() || 'New Deal',
-                value: Number(dealValue) || 0,
-                expectedCloseDate: expectedCloseDate || undefined,
-            };
-            const res = await apiClient.post(`/deals/from-lead/${leadId}`, payload);
-            return res.data;
-        },
-        onSuccess: (deal) => {
-            queryClient.invalidateQueries({ queryKey: ['deals'] });
-            setCreateDealOpen(false);
-            setDealTitle('');
-            setDealValue('');
-            setExpectedCloseDate('');
-            toast({ title: 'Deal created from lead' });
-            router.push(`/deals/${deal.id}`);
-        },
-        onError: (err: any) => {
-            toast({ title: err.response?.data?.message || 'Failed to create deal', variant: 'destructive' });
-        }
-    });
+
 
     // Convert to customer from lead (Managers/Admins)
     const convertToCustomerMutation = useMutation({
@@ -366,40 +340,6 @@ export default function LeadDetailPage() {
                     </Button>
                 </ComposeEmailDialog>
 
-                <Dialog open={createDealOpen} onOpenChange={setCreateDealOpen}>
-                    <DialogTrigger asChild>
-                        <Button variant="outline" className="gap-2">
-                            <Plus className="h-4 w-4" />
-                            Create Deal
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Create Deal from Lead</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-3">
-                            <div className="space-y-1">
-                                <label className="text-sm">Title</label>
-                                <Input value={dealTitle} onChange={(e) => setDealTitle(e.target.value)} placeholder="Deal title" />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-sm">Value</label>
-                                <Input type="number" value={dealValue} onChange={(e) => setDealValue(e.target.value)} placeholder="Amount" />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-sm">Expected Close Date</label>
-                                <Input type="date" value={expectedCloseDate} onChange={(e) => setExpectedCloseDate(e.target.value)} />
-                            </div>
-                            <div className="flex justify-end gap-2 pt-2">
-                                <Button variant="outline" onClick={() => setCreateDealOpen(false)}>Cancel</Button>
-                                <Button onClick={() => createDealMutation.mutate()} disabled={createDealMutation.isPending} className="gap-2">
-                                    {createDealMutation.isPending ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" /> : null}
-                                    Create
-                                </Button>
-                            </div>
-                        </div>
-                    </DialogContent>
-                </Dialog>
 
                 {(user?.role === 'SUPER_ADMIN' || user?.role === 'MANAGER') && (
                     <Button
@@ -719,7 +659,7 @@ export default function LeadDetailPage() {
                                                     <div className="flex items-center justify-between">
                                                         <p className="font-medium">Follow-up</p>
                                                         <span className="text-xs text-muted-foreground">
-                                                            {formatDistanceToNow(new Date(followUp.scheduledAt), { addSuffix: true })}
+                                                            {format(new Date(followUp.scheduledAt), 'PPP')}
                                                         </span>
                                                     </div>
                                                     <p className="text-sm text-muted-foreground">{followUp.status}</p>
@@ -770,7 +710,7 @@ export default function LeadDetailPage() {
                                             <div key={note.id} className="p-3 rounded-lg bg-muted">
                                                 <div className="flex items-center justify-between mb-2">
                                                     <span className="text-xs text-muted-foreground">
-                                                        {formatDistanceToNow(new Date(note.createdAt), { addSuffix: true })}
+                                                        {format(new Date(note.createdAt), 'PPP')}
                                                     </span>
                                                 </div>
                                                 <p className="text-sm whitespace-pre-wrap">{note.content}</p>

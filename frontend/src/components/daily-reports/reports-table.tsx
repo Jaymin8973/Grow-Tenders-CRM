@@ -19,6 +19,7 @@ interface DailyReport {
     content: string;
     callCount: number;
     avgTalkTime: number;
+    leadsGenerated: number;
     date: string;
     createdAt: string;
     employee: {
@@ -52,8 +53,10 @@ export function ReportsTable({ reports }: ReportsTableProps) {
                     <TableRow>
                         <TableHead>Date</TableHead>
                         <TableHead>Employee</TableHead>
-                        <TableHead>Summary</TableHead>
-                        <TableHead>Metrics</TableHead>
+                        {/* Summary column removed */}
+                        <TableHead>Calls</TableHead>
+                        <TableHead>Talk Time</TableHead>
+                        <TableHead>Leads</TableHead>
                         <TableHead>Payments From</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -88,27 +91,15 @@ export function ReportsTable({ reports }: ReportsTableProps) {
                                     </div>
                                 </div>
                             </TableCell>
-                            <TableCell className="align-top max-w-[400px]">
-                                <div className="space-y-1">
-                                    {report.title && (
-                                        <div className="font-semibold">{report.title}</div>
-                                    )}
-                                    <p className="text-sm whitespace-pre-wrap line-clamp-3">
-                                        {report.content}
-                                    </p>
-                                </div>
+                            {/* Summary cell removed */}
+                            <TableCell className="align-top">
+                                <span className="font-medium">{report.callCount}</span>
                             </TableCell>
-                            <TableCell className="align-top whitespace-nowrap">
-                                <div className="flex gap-4">
-                                    <div className="flex flex-col">
-                                        <span className="text-xs text-muted-foreground">Calls</span>
-                                        <span className="font-medium">{report.callCount}</span>
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <span className="text-xs text-muted-foreground">Talk Time</span>
-                                        <span className="font-medium">{report.avgTalkTime}m</span>
-                                    </div>
-                                </div>
+                            <TableCell className="align-top">
+                                <span className="font-medium">{report.avgTalkTime}m</span>
+                            </TableCell>
+                            <TableCell className="align-top">
+                                <span className="font-medium">{report.leadsGenerated}</span>
                             </TableCell>
                             <TableCell className="align-top">
                                 {report.paymentReceivedFromCustomers && report.paymentReceivedFromCustomers.length > 0 ? (

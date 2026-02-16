@@ -12,7 +12,6 @@ export class NotesService {
                 content: dto.content,
                 leadId: dto.leadId,
                 customerId: dto.customerId,
-                dealId: dto.dealId,
                 createdById: userId,
             },
         });
@@ -32,9 +31,9 @@ export class NotesService {
         });
     }
 
-    async findByDeal(dealId: string) {
+    async findByDeal(leadId: string) {
         return this.prisma.note.findMany({
-            where: { dealId },
+            where: { leadId },
             orderBy: { createdAt: 'desc' },
         });
     }

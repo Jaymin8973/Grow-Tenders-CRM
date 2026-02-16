@@ -109,7 +109,7 @@ export class CustomersService {
                     select: { id: true, firstName: true, lastName: true, email: true },
                 },
                 _count: {
-                    select: { deals: true, invoices: true, activities: true },
+                    select: { invoices: true, activities: true },
                 },
             },
             orderBy: { createdAt: 'desc' },
@@ -122,9 +122,6 @@ export class CustomersService {
             include: {
                 assignee: {
                     select: { id: true, firstName: true, lastName: true, email: true, phone: true },
-                },
-                deals: {
-                    orderBy: { createdAt: 'desc' },
                 },
                 activities: {
                     orderBy: { scheduledAt: 'desc' },

@@ -106,7 +106,7 @@ export default function LoginPage() {
                             Sales Team
                         </h1>
                         <p className="text-xl text-white/80 max-w-md">
-                            Track leads, manage deals, and close more sales with our powerful CRM platform.
+                            Track leads, manage customers, and close more sales with our powerful CRM platform.
                         </p>
 
                         <div className="flex gap-8 pt-8">
@@ -116,7 +116,7 @@ export default function LoginPage() {
                             </div>
                             <div>
                                 <p className="text-4xl font-bold">$2M+</p>
-                                <p className="text-white/70">Deals Closed</p>
+                                <p className="text-white/70">Sales Closed</p>
                             </div>
                             <div>
                                 <p className="text-4xl font-bold">98%</p>

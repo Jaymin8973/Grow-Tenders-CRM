@@ -1,12 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 
-
 // puppeteer-extra for stealth
+/* eslint-disable @typescript-eslint/no-var-requires */
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 
 puppeteer.use(StealthPlugin());
+
+
+
 
 interface ScrapedTenderData {
     bidNo: string;
@@ -176,7 +179,7 @@ export class GemScraperService {
                     where: { referenceId: { in: referenceIds } },
                     select: { referenceId: true },
                 });
-                const existingSet = new Set(existing.map((e) => e.referenceId));
+                const existingSet = new Set(existing.map((e: any) => e.referenceId));
 
                 let addedThisPage = 0;
                 let pageFreshCount = 0;
@@ -538,7 +541,7 @@ export class GemScraperService {
             (process.platform === 'win32' ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' : undefined);
 
         return puppeteer.launch({
-            headless: "new",
+            headless: "new" as any,
             executablePath,
             args: [
                 '--no-sandbox',

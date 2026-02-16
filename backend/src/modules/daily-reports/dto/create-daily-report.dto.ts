@@ -7,10 +7,10 @@ export class CreateDailyReportDto {
     @IsOptional()
     title?: string;
 
-    @ApiProperty()
+    @ApiProperty({ required: false })
     @IsString()
-    @IsNotEmpty()
-    content: string;
+    @IsOptional()
+    content?: string;
 
     @ApiProperty({ required: false })
     @IsOptional()
@@ -19,6 +19,10 @@ export class CreateDailyReportDto {
     @ApiProperty({ required: false })
     @IsOptional()
     avgTalkTime?: number;
+
+    @ApiProperty({ required: false })
+    @IsOptional()
+    leadsGenerated?: number;
 
     @ApiProperty({ required: false })
     @IsOptional()

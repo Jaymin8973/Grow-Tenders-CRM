@@ -15,7 +15,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Search, Settings, User, LogOut, Moon, Sun, Loader2, Users, Building2, Briefcase } from 'lucide-react';
+import { Search, Settings, User, LogOut, Moon, Sun, Loader2, Users, Building2 } from 'lucide-react';
 import { getInitials, formatCurrency } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -24,7 +24,7 @@ import { cn } from '@/lib/utils';
 
 interface SearchResult {
     id: string;
-    type: 'lead' | 'customer' | 'deal';
+    type: 'lead' | 'customer';
     title: string;
     subtitle?: string;
     company?: string;
@@ -64,18 +64,9 @@ export function Header() {
         enabled: searchQuery.trim().length > 0,
     });
 
-    // Search deals
-    const { data: dealsData, isLoading: isLoadingDeals } = useQuery({
-        queryKey: ['search-deals', searchQuery],
-        queryFn: async () => {
-            if (!searchQuery.trim()) return [];
-            const response = await apiClient.get(`/deals?search=${encodeURIComponent(searchQuery)}`);
-            return response.data;
-        },
-        enabled: searchQuery.trim().length > 0,
-    });
 
-    const isLoading = isLoadingLeads || isLoadingCustomers || isLoadingDeals;
+
+    const isLoading = isLoadingLeads || isLoadingCustomers;
 
     const getSearchResults = (): SearchResult[] => {
         const results: SearchResult[] = [];
@@ -105,18 +96,7 @@ export function Header() {
             });
         });
 
-        // Add deals
-        dealsData?.forEach((deal: any) => {
-            results.push({
-                id: deal.id,
-                type: 'deal',
-                title: deal.dealName,
-                subtitle: deal.customer?.firstName ? `${deal.customer.firstName} ${deal.customer.lastName}` : undefined,
-                amount: deal.value,
-                status: deal.stage,
-                url: `/deals/${deal.id}`,
-            });
-        });
+
 
         return results;
     };
@@ -133,8 +113,6 @@ export function Header() {
                 return <Users className="h-3 w-3 text-blue-500" />;
             case 'customer':
                 return <Building2 className="h-3 w-3 text-emerald-500" />;
-            case 'deal':
-                return <Briefcase className="h-3 w-3 text-violet-500" />;
             default:
                 return null;
         }
@@ -152,7 +130,7 @@ export function Header() {
                         <Input
                             ref={inputRef}
                             type="search"
-                            placeholder="Search leads, customers, deals..."
+                            placeholder="Search leads, customers..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             onFocus={() => setSearchOpen(true)}

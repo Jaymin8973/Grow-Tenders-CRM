@@ -16,10 +16,7 @@ export class CreateNoteDto {
     @IsOptional()
     customerId?: string;
 
-    @ApiPropertyOptional({ description: 'Deal ID' })
-    @IsMongoId()
-    @IsOptional()
-    dealId?: string;
+
 }
 
 export class UpdateNoteDto {

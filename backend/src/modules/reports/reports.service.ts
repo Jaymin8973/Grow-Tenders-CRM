@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Role, DealStage, LeadStatus, ActivityStatus } from '@prisma/client';
+import { Role, LeadStatus, ActivityStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
 interface DateRange {
@@ -18,55 +18,44 @@ export class ReportsService {
 
         let userFilter: any = {};
         if (role === Role.EMPLOYEE) {
-            userFilter = { ownerId: userId };
+            userFilter = { assigneeId: userId };
         } else if (role === Role.MANAGER) {
             const teamMembers = await this.prisma.user.findMany({
                 where: { managerId: userId },
                 select: { id: true },
             });
             const teamIds = [userId, ...teamMembers.map(m => m.id)];
-            userFilter = { ownerId: { in: teamIds } };
+            userFilter = { assigneeId: { in: teamIds } };
         }
 
         const [
-            totalRevenue,
-            wonDeals,
-            lostDeals,
-            avgDealSize,
-            monthlyRevenue,
+            totalLeads,
+            closedLeads,
+            monthlyData,
         ] = await Promise.all([
-            this.prisma.deal.aggregate({
-                where: { stage: DealStage.CLOSED_WON, ...dateFilter, ...userFilter },
-                _sum: { value: true },
+            this.prisma.lead.count({
+                where: { ...dateFilter, ...userFilter },
             }),
-            this.prisma.deal.count({
-                where: { stage: DealStage.CLOSED_WON, ...dateFilter, ...userFilter },
+            this.prisma.lead.count({
+                where: { status: LeadStatus.CLOSED_LEAD, ...dateFilter, ...userFilter },
             }),
-            this.prisma.deal.count({
-                where: { stage: DealStage.CLOSED_LOST, ...dateFilter, ...userFilter },
-            }),
-            this.prisma.deal.aggregate({
-                where: { stage: DealStage.CLOSED_WON, ...dateFilter, ...userFilter },
-                _avg: { value: true },
-            }),
-            this.getMonthlyRevenue(userFilter),
+            this.getMonthlyLeadData(userFilter),
         ]);
 
-        const winRate = wonDeals + lostDeals > 0
-            ? Math.round((wonDeals / (wonDeals + lostDeals)) * 100)
+        const conversionRate = totalLeads > 0
+            ? Math.round((closedLeads / totalLeads) * 100)
             : 0;
 
         return {
-            totalRevenue: totalRevenue._sum.value || 0,
-            wonDeals,
-            lostDeals,
-            winRate,
-            avgDealSize: avgDealSize._avg.value || 0,
-            monthlyRevenue,
+            totalRevenue: 0,
+            totalLeads,
+            closedLeads,
+            conversionRate,
+            monthlyRevenue: monthlyData,
         };
     }
 
-    private async getMonthlyRevenue(userFilter: any) {
+    private async getMonthlyLeadData(userFilter: any) {
         const now = new Date();
         const months = [];
 
@@ -74,18 +63,18 @@ export class ReportsService {
             const startDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
             const endDate = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59);
 
-            const revenue = await this.prisma.deal.aggregate({
+            const leadsCount = await this.prisma.lead.count({
                 where: {
-                    stage: DealStage.CLOSED_WON,
-                    actualCloseDate: { gte: startDate, lte: endDate },
+                    status: LeadStatus.CLOSED_LEAD,
+                    createdAt: { gte: startDate, lte: endDate },
                     ...userFilter,
                 },
-                _sum: { value: true },
             });
 
             months.push({
                 month: startDate.toLocaleString('default', { month: 'short', year: 'numeric' }),
-                revenue: revenue._sum.value || 0,
+                revenue: 0,
+                closedLeads: leadsCount,
             });
         }
 
@@ -93,31 +82,29 @@ export class ReportsService {
     }
 
     async getPipelineBreakdown(userId: string, role: Role) {
-        const stages = Object.values(DealStage);
+        const stages = Object.values(LeadStatus);
 
         let userFilter: any = {};
         if (role === Role.EMPLOYEE) {
-            userFilter = { ownerId: userId };
+            userFilter = { assigneeId: userId };
         } else if (role === Role.MANAGER) {
             const teamMembers = await this.prisma.user.findMany({
                 where: { managerId: userId },
                 select: { id: true },
             });
             const teamIds = [userId, ...teamMembers.map(m => m.id)];
-            userFilter = { ownerId: { in: teamIds } };
+            userFilter = { assigneeId: { in: teamIds } };
         }
 
         const breakdown = await Promise.all(
-            stages.map(async (stage) => {
-                const result = await this.prisma.deal.aggregate({
-                    where: { stage, ...userFilter },
-                    _count: true,
-                    _sum: { value: true },
+            stages.map(async (status) => {
+                const count = await this.prisma.lead.count({
+                    where: { status, ...userFilter },
                 });
                 return {
-                    stage,
-                    count: result._count,
-                    value: result._sum.value || 0,
+                    stage: status,
+                    count,
+                    value: 0,
                 };
             }),
         );
@@ -142,8 +129,6 @@ export class ReportsService {
                     leadsConverted,
                     activitiesTotal,
                     activitiesCompleted,
-                    dealsWon,
-                    revenue,
                 ] = await Promise.all([
                     this.prisma.lead.count({
                         where: { assigneeId: employee.id, ...dateFilter }
@@ -156,13 +141,6 @@ export class ReportsService {
                     }),
                     this.prisma.activity.count({
                         where: { assigneeId: employee.id, status: ActivityStatus.COMPLETED, ...dateFilter }
-                    }),
-                    this.prisma.deal.count({
-                        where: { ownerId: employee.id, stage: DealStage.CLOSED_WON, ...dateFilter }
-                    }),
-                    this.prisma.deal.aggregate({
-                        where: { ownerId: employee.id, stage: DealStage.CLOSED_WON, ...dateFilter },
-                        _sum: { value: true },
                     }),
                 ]);
 
@@ -179,13 +157,11 @@ export class ReportsService {
                     activityCompletionRate: activitiesTotal > 0
                         ? Math.round((activitiesCompleted / activitiesTotal) * 100)
                         : 0,
-                    dealsWon,
-                    revenue: revenue._sum.value || 0,
                 };
             }),
         );
 
-        return productivity.sort((a, b) => b.revenue - a.revenue);
+        return productivity.sort((a, b) => b.leadsConverted - a.leadsConverted);
     }
 
     async getFollowUpOverdueReport() {
@@ -266,14 +242,14 @@ export class ReportsService {
         let userFilter: any = {};
 
         if (role === Role.EMPLOYEE) {
-            userFilter = { OR: [{ assigneeId: userId }, { ownerId: userId }] };
+            userFilter = { assigneeId: userId };
         } else if (role === Role.MANAGER) {
             const teamMembers = await this.prisma.user.findMany({
                 where: { managerId: userId },
                 select: { id: true },
             });
             const teamIds = [userId, ...teamMembers.map(m => m.id)];
-            userFilter = { OR: [{ assigneeId: { in: teamIds } }, { ownerId: { in: teamIds } }] };
+            userFilter = { assigneeId: { in: teamIds } };
         }
 
         const today = new Date();
@@ -284,10 +260,6 @@ export class ReportsService {
             totalLeads,
             newLeadsThisMonth,
             totalCustomers,
-            totalDeals,
-            openDeals,
-            wonDealsThisMonth,
-            revenueThisMonth,
             activitiesToday,
             overdueActivities,
         ] = await Promise.all([
@@ -299,28 +271,6 @@ export class ReportsService {
                 },
             }),
             this.prisma.customer.count({ where: role !== Role.SUPER_ADMIN ? { assigneeId: userId } : {} }),
-            this.prisma.deal.count({ where: role !== Role.SUPER_ADMIN ? { ownerId: userId } : {} }),
-            this.prisma.deal.count({
-                where: {
-                    stage: { notIn: [DealStage.CLOSED_WON, DealStage.CLOSED_LOST] },
-                    ...(role !== Role.SUPER_ADMIN ? { ownerId: userId } : {}),
-                },
-            }),
-            this.prisma.deal.count({
-                where: {
-                    stage: DealStage.CLOSED_WON,
-                    actualCloseDate: { gte: thisMonth },
-                    ...(role !== Role.SUPER_ADMIN ? { ownerId: userId } : {}),
-                },
-            }),
-            this.prisma.deal.aggregate({
-                where: {
-                    stage: DealStage.CLOSED_WON,
-                    actualCloseDate: { gte: thisMonth },
-                    ...(role !== Role.SUPER_ADMIN ? { ownerId: userId } : {}),
-                },
-                _sum: { value: true },
-            }),
             this.prisma.activity.count({
                 where: {
                     scheduledAt: { gte: today, lt: new Date(today.getTime() + 24 * 60 * 60 * 1000) },
@@ -340,10 +290,6 @@ export class ReportsService {
             totalLeads,
             newLeadsThisMonth,
             totalCustomers,
-            totalDeals,
-            openDeals,
-            wonDealsThisMonth,
-            revenueThisMonth: revenueThisMonth._sum.value || 0,
             activitiesToday,
             overdueActivities,
         };

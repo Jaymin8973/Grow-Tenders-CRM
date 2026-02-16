@@ -196,6 +196,14 @@ export default function LeadsPage() {
                 </Tabs>
             )}
 
+            <div className="flex items-center justify-between">
+                <h1 className="text-2xl font-bold tracking-tight">Leads</h1>
+                <Button onClick={() => router.push('/leads/new')}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Lead
+                </Button>
+            </div>
+
             {/* Filters & Search */}
             <Card>
                 <CardContent className="p-4">
@@ -246,7 +254,7 @@ export default function LeadsPage() {
                                 <TableHead>Assignee</TableHead>
                                 <TableHead>Next Follow-up</TableHead>
                                 <TableHead>Date</TableHead>
-                                {!(activeTab === 'all' && user?.role === 'EMPLOYEE') && <TableHead>Contact</TableHead>}
+
                                 {!(activeTab === 'all' && user?.role === 'EMPLOYEE') && <TableHead className="text-right">Actions</TableHead>}
                             </TableRow>
                         </TableHeader>
@@ -344,38 +352,7 @@ export default function LeadsPage() {
                                         <TableCell className="text-muted-foreground whitespace-nowrap">
                                             {new Date(lead.createdAt).toLocaleDateString()}
                                         </TableCell>
-                                        {!(activeTab === 'all' && user?.role === 'EMPLOYEE') && (
-                                            <TableCell>
-                                                <div className="flex items-center gap-2">
-                                                    {phoneNumber && (
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="h-8 w-8"
-                                                            disabled={!canViewLead}
-                                                            onClick={(e) => { e.stopPropagation(); }}
-                                                        >
-                                                            <Phone className="h-4 w-4" />
-                                                        </Button>
-                                                    )}
-                                                    {lead.email && (
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="h-8 w-8"
-                                                            disabled={!canViewLead}
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setSelectedLead(lead);
-                                                                setEmailDialogOpen(true);
-                                                            }}
-                                                        >
-                                                            <Mail className="h-4 w-4" />
-                                                        </Button>
-                                                    )}
-                                                </div>
-                                            </TableCell>
-                                        )}
+
                                         {!(activeTab === 'all' && user?.role === 'EMPLOYEE') && (
                                             <TableCell className="text-right">
                                                 <DropdownMenu>

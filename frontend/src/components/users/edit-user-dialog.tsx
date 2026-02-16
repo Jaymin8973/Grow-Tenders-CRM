@@ -63,12 +63,14 @@ export function EditUserDialog({ user: userData, open, onOpenChange }: EditUserD
         managerId: 'none',
     });
 
+    const MOCK_PASSWORD = '••••••••';
+
     // Initialize form data when user changes
     useEffect(() => {
         if (userData) {
             setFormData({
                 email: userData.email || '',
-                password: '',
+                password: MOCK_PASSWORD,
                 firstName: userData.firstName || '',
                 lastName: userData.lastName || '',
                 phone: userData.phone || '',
@@ -91,8 +93,8 @@ export function EditUserDialog({ user: userData, open, onOpenChange }: EditUserD
     const updateUserMutation = useMutation({
         mutationFn: async (data: any) => {
             const payload = { ...data };
-            // Remove empty password
-            if (!payload.password) {
+            // Remove empty password or mock password
+            if (!payload.password || payload.password === MOCK_PASSWORD) {
                 delete payload.password;
             }
             // Remove managerId if it's 'none' or empty

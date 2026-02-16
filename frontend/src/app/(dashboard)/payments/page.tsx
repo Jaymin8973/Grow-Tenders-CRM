@@ -23,6 +23,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PaymentApprovalList } from '@/components/targets/PaymentApprovalList';
 import {
     Search,
     Plus,
@@ -228,174 +230,192 @@ export default function PaymentsPage() {
                 </Card>
             </div>
 
-            {/* Filters & Search */}
-            <Card>
-                <CardContent className="p-4">
-                    <div className="flex flex-col sm:flex-row gap-4">
-                        <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                type="search"
-                                placeholder="Search by payment ID, customer, company..."
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                className="pl-10"
-                            />
-                        </div>
-                        <Select
-                            value={methodFilter || 'all'}
-                            onValueChange={(value) => setMethodFilter(value === 'all' ? null : value)}
-                        >
-                            <SelectTrigger className="w-[180px]">
-                                <SelectValue placeholder="Payment Method" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Methods</SelectItem>
-                                {Object.entries(paymentMethodConfig).map(([key, config]) => (
-                                    <SelectItem key={key} value={key}>{config.label}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <Select
-                            value={referenceFilter || 'all'}
-                            onValueChange={(value) => setReferenceFilter(value === 'all' ? null : value)}
-                        >
-                            <SelectTrigger className="w-[150px]">
-                                <SelectValue placeholder="Reference Type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Types</SelectItem>
-                                <SelectItem value="INTERNAL">Internal</SelectItem>
-                                <SelectItem value="EXTERNAL">External</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </CardContent>
-            </Card>
+            {/* Payments Tabs */}
+            <Tabs defaultValue="payments" className="w-full">
+                <div className="flex items-center justify-between mb-4">
+                    <TabsList>
+                        <TabsTrigger value="payments">All Payments</TabsTrigger>
+                        {(user?.role === 'SUPER_ADMIN' || user?.role === 'MANAGER') && (
+                            <TabsTrigger value="requests">Approval Requests</TabsTrigger>
+                        )}
+                    </TabsList>
+                </div>
 
-            {/* Payments Table */}
-            <Card>
-                <CardContent className="p-0">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Payment ID</TableHead>
-                                <TableHead>Customer / Company</TableHead>
-                                <TableHead>Phone</TableHead>
-                                <TableHead>Assigned To</TableHead>
-                                <TableHead>Type</TableHead>
-                                <TableHead>Amount</TableHead>
-                                <TableHead>Total</TableHead>
-                                <TableHead>Date</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {payments?.map((payment: any) => {
-                                const method = paymentMethodConfig[payment.paymentMethod] || paymentMethodConfig.OTHER;
-                                const gstType = gstTypeConfig[payment.gstType] || gstTypeConfig.WITHOUT_GST;
-                                const refType = referenceTypeConfig[payment.referenceType] || referenceTypeConfig.INTERNAL;
-                                const MethodIcon = method.icon;
+                <TabsContent value="payments" className="space-y-6">
+                    {/* Filters & Search */}
+                    <Card>
+                        <CardContent className="p-4">
+                            <div className="flex flex-col sm:flex-row gap-4">
+                                <div className="relative flex-1">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        type="search"
+                                        placeholder="Search by payment ID, customer, company..."
+                                        value={search}
+                                        onChange={(e) => setSearch(e.target.value)}
+                                        className="pl-10"
+                                    />
+                                </div>
+                                <Select
+                                    value={methodFilter || 'all'}
+                                    onValueChange={(value) => setMethodFilter(value === 'all' ? null : value)}
+                                >
+                                    <SelectTrigger className="w-[180px]">
+                                        <SelectValue placeholder="Payment Method" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Methods</SelectItem>
+                                        {Object.entries(paymentMethodConfig).map(([key, config]) => (
+                                            <SelectItem key={key} value={key}>{config.label}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <Select
+                                    value={referenceFilter || 'all'}
+                                    onValueChange={(value) => setReferenceFilter(value === 'all' ? null : value)}
+                                >
+                                    <SelectTrigger className="w-[150px]">
+                                        <SelectValue placeholder="Reference Type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Types</SelectItem>
+                                        <SelectItem value="INTERNAL">Internal</SelectItem>
+                                        <SelectItem value="EXTERNAL">External</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </CardContent>
+                    </Card>
 
-                                return (
-                                    <TableRow key={payment.id} className="table-row-hover">
-                                        <TableCell>
-                                            <p className="font-medium font-mono text-primary">
-                                                {payment.paymentNumber}
-                                            </p>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div>
-                                                <p className="font-medium">{getDisplayName(payment)}</p>
-                                                <p className="text-sm text-muted-foreground">
-                                                    {getDisplayCompany(payment)}
-                                                </p>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-muted-foreground">
-                                            {getDisplayPhone(payment)}
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center gap-2">
-                                                <UserCircle className="h-4 w-4 text-muted-foreground" />
-                                                <span className="text-sm">{getAssignedEmployee(payment)}</span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge variant="outline" className={cn(refType.bg, refType.color, 'border')}>
-                                                {refType.label}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="font-medium">
-                                            {formatCurrency(payment.amount)}
-                                        </TableCell>
-                                        <TableCell className="font-bold text-emerald-600">
-                                            {formatCurrency(payment.totalAmount)}
-                                        </TableCell>
-                                        <TableCell className="text-muted-foreground">
-                                            {new Date(payment.paymentDate).toLocaleDateString('en-IN', {
-                                                day: 'numeric',
-                                                month: 'short',
-                                                year: 'numeric'
-                                            })}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                        <MoreHorizontal className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem
-                                                        onClick={() => router.push(`/payments/${payment.id}`)}
-                                                    >
-                                                        <Eye className="mr-2 h-4 w-4" />
-                                                        View Details
-                                                    </DropdownMenuItem>
-                                                    {user?.role === 'SUPER_ADMIN' && (
-                                                        <>
-                                                            <DropdownMenuItem
-                                                                onClick={() => router.push(`/payments/${payment.id}/edit`)}
-                                                            >
-                                                                <Edit className="mr-2 h-4 w-4" />
-                                                                Edit Payment
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuSeparator />
-                                                            <DropdownMenuItem
-                                                                className="text-destructive"
-                                                                onClick={() => {
-                                                                    if (confirm('Are you sure you want to delete this payment?')) {
-                                                                        deletePaymentMutation.mutate(payment.id);
-                                                                    }
-                                                                }}
-                                                            >
-                                                                <Trash2 className="mr-2 h-4 w-4" />
-                                                                Delete Payment
-                                                            </DropdownMenuItem>
-                                                        </>
-                                                    )}
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </TableCell>
+                    {/* Payments Table */}
+                    <Card>
+                        <CardContent className="p-0">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Payment ID</TableHead>
+                                        <TableHead>Customer / Company</TableHead>
+                                        <TableHead>Phone</TableHead>
+                                        <TableHead>Assigned To</TableHead>
+                                        <TableHead>Type</TableHead>
+                                        <TableHead>Amount</TableHead>
+                                        <TableHead>Total</TableHead>
+                                        <TableHead>Date</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
-                                );
-                            })}
-                            {(!payments || payments.length === 0) && (
-                                <TableRow>
-                                    <TableCell colSpan={9} className="h-32 text-center">
-                                        <div className="flex flex-col items-center justify-center text-muted-foreground">
-                                            <Wallet className="h-10 w-10 mb-2 opacity-50" />
-                                            <p>No payments found</p>
-                                            <p className="text-sm">Record your first payment to get started</p>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
+                                </TableHeader>
+                                <TableBody>
+                                    {payments?.map((payment: any) => {
+                                        const method = paymentMethodConfig[payment.paymentMethod] || paymentMethodConfig.OTHER;
+                                        const gstType = gstTypeConfig[payment.gstType] || gstTypeConfig.WITHOUT_GST;
+                                        const refType = referenceTypeConfig[payment.referenceType] || referenceTypeConfig.INTERNAL;
+                                        const MethodIcon = method.icon;
+
+                                        return (
+                                            <TableRow key={payment.id} className="table-row-hover">
+                                                <TableCell>
+                                                    <p className="font-medium font-mono text-primary">
+                                                        {payment.paymentNumber}
+                                                    </p>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div>
+                                                        <p className="font-medium">{getDisplayName(payment)}</p>
+                                                        <p className="text-sm text-muted-foreground">
+                                                            {getDisplayCompany(payment)}
+                                                        </p>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="text-muted-foreground">
+                                                    {getDisplayPhone(payment)}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex items-center gap-2">
+                                                        <UserCircle className="h-4 w-4 text-muted-foreground" />
+                                                        <span className="text-sm">{getAssignedEmployee(payment)}</span>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Badge variant="outline" className={cn(refType.bg, refType.color, 'border')}>
+                                                        {refType.label}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell className="font-medium">
+                                                    {formatCurrency(payment.amount)}
+                                                </TableCell>
+                                                <TableCell className="font-bold text-emerald-600">
+                                                    {formatCurrency(payment.totalAmount)}
+                                                </TableCell>
+                                                <TableCell className="text-muted-foreground">
+                                                    {new Date(payment.paymentDate).toLocaleDateString('en-IN', {
+                                                        day: 'numeric',
+                                                        month: 'short',
+                                                        year: 'numeric'
+                                                    })}
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                                <MoreHorizontal className="h-4 w-4" />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end">
+                                                            <DropdownMenuItem
+                                                                onClick={() => router.push(`/payments/${payment.id}`)}
+                                                            >
+                                                                <Eye className="mr-2 h-4 w-4" />
+                                                                View Details
+                                                            </DropdownMenuItem>
+                                                            {user?.role === 'SUPER_ADMIN' && (
+                                                                <>
+                                                                    <DropdownMenuItem
+                                                                        onClick={() => router.push(`/payments/${payment.id}/edit`)}
+                                                                    >
+                                                                        <Edit className="mr-2 h-4 w-4" />
+                                                                        Edit Payment
+                                                                    </DropdownMenuItem>
+                                                                    <DropdownMenuSeparator />
+                                                                    <DropdownMenuItem
+                                                                        className="text-destructive"
+                                                                        onClick={() => {
+                                                                            if (confirm('Are you sure you want to delete this payment?')) {
+                                                                                deletePaymentMutation.mutate(payment.id);
+                                                                            }
+                                                                        }}
+                                                                    >
+                                                                        <Trash2 className="mr-2 h-4 w-4" />
+                                                                        Delete Payment
+                                                                    </DropdownMenuItem>
+                                                                </>
+                                                            )}
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </TableCell>
+                                            </TableRow>
+                                        );
+                                    })}
+                                    {(!payments || payments.length === 0) && (
+                                        <TableRow>
+                                            <TableCell colSpan={9} className="h-32 text-center">
+                                                <div className="flex flex-col items-center justify-center text-muted-foreground">
+                                                    <Wallet className="h-10 w-10 mb-2 opacity-50" />
+                                                    <p>No payments found</p>
+                                                    <p className="text-sm">Record your first payment to get started</p>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="requests">
+                    <PaymentApprovalList />
+                </TabsContent>
+            </Tabs>
         </div>
     );
 }

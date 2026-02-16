@@ -21,7 +21,7 @@ import {
     TrendingUp,
     Target,
     Award,
-    Briefcase,
+
     ChevronDown,
     ChevronUp,
     DollarSign,
@@ -72,7 +72,7 @@ export default function TeamsPage() {
 
     users?.forEach((u: any) => {
         if (u.role === 'MANAGER') {
-            managersMap.set(u.id, { ...u, team: [], totalRevenue: 0, totalLeadsConverted: 0, totalDeals: 0 });
+            managersMap.set(u.id, { ...u, team: [], totalRevenue: 0, totalLeadsConverted: 0 });
         }
     });
 
@@ -82,7 +82,7 @@ export default function TeamsPage() {
                 leadsAssigned: 0,
                 leadsConverted: 0,
                 leadConversionRate: 0,
-                dealsWon: 0,
+
                 revenue: 0
             };
 
@@ -93,7 +93,7 @@ export default function TeamsPage() {
                 manager.team.push(employeeWithStats);
                 manager.totalRevenue += stats.revenue;
                 manager.totalLeadsConverted += stats.leadsConverted;
-                manager.totalDeals += stats.dealsWon;
+
             } else {
                 unassignedEmployees.push(employeeWithStats);
             }
@@ -162,12 +162,7 @@ export default function TeamsPage() {
                                                 {formatCurrency(manager.totalRevenue)}
                                             </p>
                                         </div>
-                                        <div className="space-y-1">
-                                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Deals Won</p>
-                                            <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                                                {manager.totalDeals}
-                                            </p>
-                                        </div>
+
                                         <div className="space-y-1">
                                             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Conversions</p>
                                             <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
@@ -241,9 +236,7 @@ export default function TeamsPage() {
                                                                             />
                                                                         </div>
                                                                     </div>
-                                                                    <div className="text-xs">
-                                                                        <span className="font-semibold">{employee.stats.dealsWon}</span> Deals
-                                                                    </div>
+
                                                                 </div>
                                                             </TableCell>
                                                             <TableCell>

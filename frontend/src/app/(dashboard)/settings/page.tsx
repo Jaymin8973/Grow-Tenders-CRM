@@ -294,7 +294,7 @@ export default function SettingsPage() {
                                     <div>
                                         <p className="font-medium">Email Notifications</p>
                                         <p className="text-sm text-muted-foreground">
-                                            Receive email updates about your leads and deals
+                                            Receive email updates about your leads and activities
                                         </p>
                                     </div>
                                     <Button variant="outline" disabled>

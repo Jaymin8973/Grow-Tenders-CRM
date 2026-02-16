@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import * as Handlebars from 'handlebars';
-import puppeteer from 'puppeteer';
+import * as puppeteer from 'puppeteer';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as numberToWords from 'number-to-words';
 
 @Injectable()
 export class PdfService {
@@ -11,16 +12,34 @@ export class PdfService {
   constructor() {
     // Load logo as base64
     try {
-      const logoPath = path.join(__dirname, '../../assets/logo.jpg');
-      const logoBuffer = fs.readFileSync(logoPath);
-      this.logoBase64 = `data:image/jpeg;base64,${logoBuffer.toString('base64')}`;
+      // Try resolving relative to the compiled file location
+      let logoPath = path.join(__dirname, '../../assets/logo.jpg');
+      console.log('Attempting to load logo from:', logoPath);
+
+      if (!fs.existsSync(logoPath)) {
+        console.warn('Logo not found at relative path. Trying project root assets...');
+        // Fallback: Try project root (useful for dev mode if dist structure differs)
+        logoPath = path.join(process.cwd(), 'src/assets/logo.jpg');
+        console.log('Attempting to load logo from root:', logoPath);
+      }
+
+      if (fs.existsSync(logoPath)) {
+        console.log('Logo found at:', logoPath);
+        const logoBuffer = fs.readFileSync(logoPath);
+        this.logoBase64 = `data:image/jpeg;base64,${logoBuffer.toString('base64')}`;
+      } else {
+        console.error('Logo file NOT found at any checked path.');
+        this.logoBase64 = '';
+      }
     } catch (error) {
+      console.error('Error loading logo:', error);
       this.logoBase64 = '';
     }
 
     // Register Handlebars helpers
     Handlebars.registerHelper('formatDate', (date: Date) => {
-      return new Date(date).toLocaleDateString('en-IN', {
+      if (!date) return '';
+      return new Date(date).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
@@ -29,14 +48,20 @@ export class PdfService {
 
     Handlebars.registerHelper('formatCurrency', (amount: number) => {
       return new Intl.NumberFormat('en-IN', {
-        style: 'currency',
-        currency: 'INR',
         minimumFractionDigits: 2,
-      }).format(amount);
+        maximumFractionDigits: 2,
+      }).format(amount || 0);
     });
 
-    Handlebars.registerHelper('lowercase', (str: string) => {
-      return str?.toLowerCase() || '';
+    Handlebars.registerHelper('amountInWords', (amount: number) => {
+      if (!amount) return 'Zero Only';
+      const words = numberToWords.toWords(amount);
+      // Capitalize first letter of each word
+      return words.replace(/\b\w/g, l => l.toUpperCase()) + ' Only';
+    });
+
+    Handlebars.registerHelper('increment', (index: number) => {
+      return index + 1;
     });
   }
 
@@ -46,554 +71,329 @@ export class PdfService {
 <head>
   <meta charset="utf-8">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Times+New+Roman:wght@400;700&display=swap');
     
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     @page {
       size: A4;
-      margin: 12mm;
+      margin: 15mm;
     }
     
     body { 
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-      font-size: 12px; 
-      color: #111827; 
+      font-family: 'Times New Roman', serif;
+      font-size: 11pt; 
+      color: #000; 
       background: #ffffff;
-      margin: 0;
-      padding: 0;
+      line-height: 1.3;
     }
     
-    .invoice-container {
+    .container {
       width: 100%;
       margin: 0 auto;
-      background: #fff;
-      border: 1px solid #e5e7eb;
-      border-radius: 0;
+      position: relative; /* For watermark positioning */
+    }
+
+    .watermark-container {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 400px;
+      height: 400px;
+      opacity: 0.1; /* Reduced opacity for better readability */
+      z-index: -100;
+      pointer-events: none;
+      display: flex;
+      justify-content: center;
+      align-items: center;
       overflow: hidden;
     }
-    
-    /* Header Section */
+
+    .watermark-img {
+      height: 100%;
+      width: auto;
+      /* Assuming logo is on the left, crop the right side (text) */
+      /* Scale up slightly if needed to fill the square */
+      object-fit: cover; 
+      object-position: left center;
+      /* Increase width virtually to push text out if it's a wide banner */
+      max-width: none; 
+      width: 250%; /* Heuristic: Assume text takes up ~60% of width */
+    }
+
     .header {
-      background: #ffffff;
-      color: #0f172a;
-      padding: 24px 28px;
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
-      border-bottom: 1px solid #e5e7eb;
-    }
-    
-    .company-info {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-    
-    .company-logo {
-      width: 64px;
-      height: 64px;
-      border-radius: 8px;
-      background: #ffffff;
-      border: 1px solid #e5e7eb;
-      padding: 6px;
-      object-fit: contain;
-    }
-    
-    .company-details h1 {
-      font-size: 22px;
-      font-weight: 700;
-      margin-bottom: 4px;
-      color: #0f172a;
-    }
-    
-    .company-details p {
-      font-size: 12px;
-      color: #475569;
-      line-height: 1.5;
-    }
-    
-    .invoice-info {
-      text-align: right;
-    }
-    
-    .invoice-title {
-      font-size: 24px;
-      font-weight: 700;
-      color: #0f172a;
-      letter-spacing: 1px;
-      margin-bottom: 6px;
-    }
-    
-    .invoice-number {
-      font-size: 14px;
-      font-weight: 600;
-      color: #2563eb;
-      display: inline-block;
-    }
-    
-    .invoice-meta {
-      margin-top: 16px;
-    }
-    
-    .invoice-meta-row {
-      display: flex;
-      justify-content: flex-end;
-      gap: 12px;
-      margin-bottom: 4px;
-      font-size: 12px;
-    }
-    
-    .invoice-meta-label {
-      color: #64748b;
-    }
-    
-    .invoice-meta-value {
-      font-weight: 600;
-      color: #0f172a;
-    }
-    
-    /* Status Badge */
-    .status-badge {
-      display: inline-block;
-      padding: 4px 12px;
-      border-radius: 12px;
-      font-size: 10px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      border: 1px solid #e2e8f0;
-    }
-    
-    .status-draft { background: #fef3c7; color: #92400e; }
-    .status-sent { background: #dbeafe; color: #1e40af; }
-    .status-paid { background: #d1fae5; color: #065f46; }
-    .status-overdue { background: #fee2e2; color: #991b1b; }
-    .status-cancelled { background: #f3f4f6; color: #4b5563; }
-
-    /* Content Section */
-    .content {
-      padding: 24px 28px;
-    }
-    
-    /* Bill To Section */
-    .billing-section {
-      display: flex;
-      justify-content: space-between;
-      gap: 24px;
-      margin-bottom: 24px;
-      background: #ffffff;
-      padding: 16px;
-      border-radius: 8px;
-      border: 1px solid #e2e8f0;
-    }
-    
-    .bill-to {
-      flex: 1;
-    }
-    
-    .bill-to-title {
-      font-size: 11px;
-      font-weight: 600;
-      color: #64748b;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 6px;
-    }
-    
-    .bill-to-name {
-      font-size: 14px;
-      font-weight: 600;
-      color: #0f172a;
-      margin-bottom: 4px;
-    }
-    
-    .bill-to-details {
-      font-size: 12px;
-      color: #475569;
-      line-height: 1.5;
-    }
-    
-    /* Info Cards */
-    .info-cards {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 8px;
-    }
-    
-    .info-card {
-      background: transparent;
-      border: none;
-      border-radius: 0;
-      padding: 0;
-      text-align: right;
-      min-width: 0;
-    }
-    
-    .info-card-label {
-      font-size: 10px;
-      font-weight: 600;
-      color: #64748b;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 2px;
-    }
-    
-    .info-card-value {
-      font-size: 12px;
-      font-weight: 600;
-      color: #0f172a;
+      margin-bottom: 20px;
     }
 
-    /* Items Table */
-    .items-table {
+    .company-name {
+      font-size: 16pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .invoice-label {
+      font-size: 20pt;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    .company-details {
+      margin-bottom: 20px;
+      font-size: 10pt;
+    }
+
+    .invoice-details {
+      text-align: right;
+      font-size: 10pt;
+    }
+
+    .recipient-section {
+      margin-top: 20px;
+      margin-bottom: 30px;
+    }
+
+    .to-label {
+      font-weight: bold;
+      text-decoration: underline;
+      margin-bottom: 5px;
+    }
+
+    .recipient-details {
+      font-size: 10pt;
+    }
+
+    table {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 24px;
-      border-radius: 0;
-      overflow: hidden;
-      border: 1px solid #e2e8f0;
+      margin-bottom: 10px;
     }
 
-    .items-table thead {
-      display: table-header-group;
+    th, td {
+      border: 1px solid #000;
+      padding: 8px;
+      vertical-align: top;
     }
 
-    .items-table tr {
-      page-break-inside: avoid;
-    }
-    
-    .items-table th {
-      background: #f8fafc;
-      color: #334155;
-      padding: 10px 12px;
-      text-align: left;
-      font-size: 10px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      border: 1px solid #e2e8f0;
-    }
-    
-    .items-table th:last-child,
-    .items-table td:last-child {
-      text-align: right;
-    }
-    
-    .items-table td {
-      padding: 10px 12px;
-      border: 1px solid #e2e8f0;
-      font-size: 12px;
-    }
-    
-    .items-table tbody tr:nth-child(even) {
-      background: #f9fafb;
-    }
-    
-    .items-table tbody tr:last-child td {
-      border-bottom: none;
-    }
-    
-    .items-table .qty { text-align: right; width: 60px; }
-    .items-table .price { text-align: right; width: 110px; }
-    .items-table .total { text-align: right; width: 110px; font-weight: 600; }
-    
-    .item-description {
-      font-weight: 500;
-      color: #0f172a;
-    }
-
-    /* Totals Section */
-    .totals {
-      display: flex;
-      justify-content: flex-end;
-      margin-bottom: 24px;
-    }
-    
-    .totals-table {
-      width: 280px;
-      background: #ffffff;
-      border-radius: 8px;
-      border: 1px solid #e2e8f0;
-      overflow: hidden;
-    }
-    
-    .totals-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 8px 12px;
-      font-size: 12px;
-      border-bottom: 1px solid #e2e8f0;
-    }
-    
-    .totals-row:last-child {
-      border-bottom: none;
-    }
-    
-    .totals-row.grand-total {
-      background: #0f172a;
-      color: white;
-      font-size: 14px;
-      font-weight: 700;
-    }
-    
-    .totals-row .label {
-      color: #64748b;
-    }
-    
-    .totals-row .value {
-      font-weight: 600;
-      color: #0f172a;
-    }
-    
-    .grand-total .label,
-    .grand-total .value {
-      color: white !important;
-    }
-
-    /* Notes Section */
-    .notes {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      padding: 12px 16px;
-      margin-bottom: 12px;
-    }
-    
-    .notes-title {
-      font-size: 12px;
-      font-weight: 600;
-      color: #0f172a;
-      margin-bottom: 6px;
-    }
-    
-    .notes-content {
-      font-size: 12px;
-      color: #475569;
-      line-height: 1.6;
-    }
-    
-    /* Terms Section */
-    .terms {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      padding: 12px 16px;
-      margin-bottom: 12px;
-    }
-    
-    .terms-title {
-      font-size: 12px;
-      font-weight: 600;
-      color: #0f172a;
-      margin-bottom: 6px;
-    }
-    
-    .terms-content {
-      font-size: 12px;
-      color: #475569;
-      line-height: 1.6;
-    }
-    
-    /* Payment Terms */
-    .payment-terms {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      padding: 12px 16px;
-      margin-bottom: 12px;
-    }
-    
-    .payment-terms-title {
-      font-size: 12px;
-      font-weight: 600;
-      color: #0f172a;
-      margin-bottom: 6px;
-    }
-    
-    .payment-terms-content {
-      font-size: 12px;
-      color: #475569;
-      line-height: 1.6;
-    }
-
-    /* Footer */
-    .footer {
-      background: #ffffff;
-      color: #475569;
-      padding: 16px 28px;
+    th {
+      font-weight: bold;
       text-align: center;
-      border-top: 1px solid #e5e7eb;
+      background-color: #fff; /* Ensure clean background */
+      text-transform: uppercase;
+      font-size: 9pt;
     }
-    
-    .footer-thanks {
-      font-size: 13px;
-      font-weight: 600;
+
+    .col-no { width: 5%; text-align: center; }
+    .col-desc { width: 45%; text-align: left; }
+    .col-qty { width: 10%; text-align: center; }
+    .col-rate { width: 20%; text-align: right; }
+    .col-amount { width: 20%; text-align: right; }
+
+    .totals-row td {
+      border: 1px solid #000;
+      text-align: right;
+      font-weight: bold;
+    }
+
+    .amount-words {
+      margin-top: 10px;
+      margin-bottom: 20px;
+      font-style: italic;
+    }
+
+    .bank-details {
+      margin-top: 20px;
+      border: 1px solid #000;
+      padding: 10px;
+      width: 60%;
+    }
+
+    .bank-header {
+      font-weight: bold;
+      font-size: 12pt;
+      margin-bottom: 8px;
+      text-decoration: underline;
+    }
+
+    .bank-row {
+      display: flex;
       margin-bottom: 4px;
-      color: #0f172a;
     }
-    
-    .footer-tagline {
-      font-size: 11px;
-      color: #64748b;
+
+    .bank-label {
+      width: 120px;
+      font-weight: bold;
     }
-    
-    .footer-contact {
-      margin-top: 8px;
-      font-size: 11px;
-      color: #94a3b8;
-    }
+
   </style>
 </head>
 <body>
-  <div class="invoice-container">
+  <div class="container">
+    {{#if logo}}
+    <div class="watermark-container">
+      <img src="{{logo}}" class="watermark-img" alt="Watermark">
+    </div>
+    {{/if}}
+
     <div class="header">
-      <div class="company-info">
-        {{#if logo}}
-        <img src="{{logo}}" alt="Company Logo" class="company-logo">
+      <div class="company-name">GROW TENDER</div>
+      <div class="invoice-label">INVOICE</div>
+    </div>
+
+    <div style="display: flex; justify-content: space-between;">
+      <div class="company-details">
+        <div>GSTIN: {{companyGst}}</div>
+        <div style="max-width: 300px;">{{companyAddress}}</div>
+        <div>State Name : {{companyState}}, Code : {{companyStateCode}}</div>
+        <div>Phone {{companyPhone}}</div>
+      </div>
+
+      <div class="invoice-details">
+        <div>INVOICE NO : {{invoiceNumber}}</div>
+        <div>DATE: {{formatDate createdAt}}</div>
+      </div>
+    </div>
+
+    <div class="recipient-section">
+      <div class="to-label">TO:</div>
+      <div class="recipient-details">
+        <div style="font-weight: bold;">{{customer.firstName}} {{customer.lastName}}</div>
+        {{#if customer.company}}<div style="font-weight: bold;">{{customer.company}}</div>{{/if}}
+        {{#if customer.gstin}}<div>GSTIN: {{customer.gstin}}</div>{{/if}}
+        <div style="max-width: 350px;">
+          {{#if customer.address}}{{customer.address}}{{/if}}
+        </div>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th class="col-no">Number</th>
+          <th class="col-desc">DESCRIPTION</th>
+          <th class="col-qty">QTY</th>
+          <th class="col-rate">RATE</th>
+          <th class="col-amount">AMOUNT</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each lineItems}}
+        <tr style="height: 50px;"> <!-- Minimum height for rows -->
+          <td class="col-no">{{increment @index}}</td>
+          <td class="col-desc">{{description}}</td>
+          <td class="col-qty">{{quantity}}</td>
+          <td class="col-rate">{{formatCurrency unitPrice}}</td>
+          <td class="col-amount">{{formatCurrency total}}</td>
+        </tr>
+        {{/each}}
+        
+        <!-- Empty rows filler if needed, or simple padding -->
+        <!-- Subtotals -->
+        <tr class="totals-row">
+          <td colspan="4" style="text-align: right;">Sub total</td>
+          <td style="text-align: right;">{{formatCurrency subtotal}}</td>
+        </tr>
+        {{#if taxRate}}
+        <tr class="totals-row">
+          <td colspan="4" style="text-align: right;">CGST@{{halfTaxRate}}%</td>
+          <td style="text-align: right;">{{formatCurrency halfTaxAmount}}</td>
+        </tr>
+        <tr class="totals-row">
+          <td colspan="4" style="text-align: right;">SGST@{{halfTaxRate}}%</td>
+          <td style="text-align: right;">{{formatCurrency halfTaxAmount}}</td>
+        </tr>
         {{/if}}
-        <div class="company-details">
-          <h1>{{companyName}}</h1>
-          {{#if companyAddress}}<p>{{companyAddress}}</p>{{/if}}
-          {{#if companyPhone}}<p>Phone: {{companyPhone}}</p>{{/if}}
-          {{#if companyEmail}}<p>Email: {{companyEmail}}</p>{{/if}}
-        </div>
+        <tr class="totals-row">
+          <td colspan="4" style="text-align: right;">TOTAL</td>
+          <td style="text-align: right;">{{formatCurrency total}}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="amount-words">
+      Amount In Words : {{amountInWords total}}
+    </div>
+
+    <div class="bank-details">
+      <div class="bank-header">Bank Details</div>
+      <div class="bank-row">
+        <span class="bank-label">Account number:</span>
+        <span>{{bankDetails.accountNumber}}</span>
       </div>
-      <div class="invoice-info">
-        <div class="invoice-title">INVOICE</div>
-        <div class="invoice-number">{{invoiceNumber}}</div>
-        <div class="invoice-meta">
-          <div class="invoice-meta-row">
-            <span class="invoice-meta-label">Invoice Date:</span>
-            <span class="invoice-meta-value">{{formatDate createdAt}}</span>
-          </div>
-          <div class="invoice-meta-row">
-            <span class="status-badge status-{{lowercase status}}">{{status}}</span>
-          </div>
-        </div>
+      <div class="bank-row">
+        <span class="bank-label">IFSC:</span>
+        <span>{{bankDetails.ifsc}}</span>
+      </div>
+      <div class="bank-row">
+        <span class="bank-label">SWIFT code:</span>
+        <span>{{bankDetails.swift}}</span>
+      </div>
+      <div class="bank-row">
+        <span class="bank-label">Bank name:</span>
+        <span>{{bankDetails.bankName}}</span>
+      </div>
+      <div class="bank-row">
+        <span class="bank-label">Branch:</span>
+        <span>{{bankDetails.branch}}</span>
       </div>
     </div>
 
-    <div class="content">
-      <div class="billing-section">
-        <div class="bill-to">
-          <div class="bill-to-title">Bill To</div>
-          <div class="bill-to-name">{{customer.firstName}} {{customer.lastName}}</div>
-          <div class="bill-to-details">
-            {{#if customer.company}}{{customer.company}}<br>{{/if}}
-            {{#if customer.email}}{{customer.email}}<br>{{/if}}
-            {{#if customer.phone}}{{customer.phone}}{{/if}}
-          </div>
-        </div>
-        <div class="info-cards">
-          <div class="info-card">
-            <div class="info-card-label">Invoice No.</div>
-            <div class="info-card-value">{{invoiceNumber}}</div>
-          </div>
-          <div class="info-card">
-            <div class="info-card-label">Date</div>
-            <div class="info-card-value">{{formatDate createdAt}}</div>
-          </div>
-        </div>
-      </div>
-
-      <table class="items-table">
-        <thead>
-          <tr>
-            <th>Description</th>
-            <th class="qty">Qty</th>
-            <th class="price">Unit Price</th>
-            <th class="total">Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          {{#each lineItems}}
-          <tr>
-            <td class="item-description">{{description}}</td>
-            <td class="qty">{{quantity}}</td>
-            <td class="price">{{formatCurrency unitPrice}}</td>
-            <td class="total">{{formatCurrency total}}</td>
-          </tr>
-          {{/each}}
-        </tbody>
-      </table>
-
-      <div class="totals">
-        <div class="totals-table">
-          <div class="totals-row">
-            <span class="label">Subtotal</span>
-            <span class="value">{{formatCurrency subtotal}}</span>
-          </div>
-          {{#if taxRate}}
-          <div class="totals-row">
-            <span class="label">GST ({{taxRate}}%)</span>
-            <span class="value">{{formatCurrency taxAmount}}</span>
-          </div>
-          {{/if}}
-          {{#if discount}}
-          <div class="totals-row">
-            <span class="label">Discount</span>
-            <span class="value">-{{formatCurrency discount}}</span>
-          </div>
-          {{/if}}
-          <div class="totals-row grand-total">
-            <span class="label">Total Amount</span>
-            <span class="value">{{formatCurrency total}}</span>
-          </div>
-        </div>
-      </div>
-
-      {{#if paymentTerms}}
-      <div class="payment-terms">
-        <div class="payment-terms-title">Payment Terms</div>
-        <div class="payment-terms-content">{{paymentTerms}}</div>
-      </div>
-      {{/if}}
-
-      {{#if notes}}
-      <div class="notes">
-        <div class="notes-title">Notes</div>
-        <div class="notes-content">{{notes}}</div>
-      </div>
-      {{/if}}
-
-      {{#if termsConditions}}
-      <div class="terms">
-        <div class="terms-title">Terms & Conditions</div>
-        <div class="terms-content">{{termsConditions}}</div>
-      </div>
-      {{/if}}
-    </div>
-
-    <div class="footer">
-      <div class="footer-thanks">Thank you for your business!</div>
-      <div class="footer-tagline">We appreciate your trust in {{companyName}}</div>
-      {{#if companyPhone}}
-      <div class="footer-contact">
-        For any queries, please contact us at {{companyPhone}} | {{companyEmail}}
-      </div>
-      {{/if}}
-    </div>
   </div>
 </body>
 </html>
   `;
 
   async generateInvoicePdf(invoice: any): Promise<Buffer> {
-    // Add logo to invoice data
-    const invoiceWithLogo = {
+    // Hardcoded defaults matching the screenshot
+    const companyGst = '24SMEPS3027M1ZE';
+    const companyAddress = 'FF-108, NIRMAL SAROVAR, OPP. RADHE GOWSHALA, S.P.RING ROAD, VATVA, Ahmedabad, Ahmedabad, Gujarat, 382440';
+    const companyState = 'Gujarat';
+    const companyStateCode = '24';
+    const companyPhone = '8866502216';
+
+    const bankDetails = {
+      accountNumber: '88665022162',
+      ifsc: 'IDFB0040303',
+      swift: 'IDFBINBBMUM',
+      bankName: 'IDFC FIRST',
+      branch: 'Maninagar Branch',
+    };
+
+    // Calculate split tax for CGST/SGST display
+    const taxRate = invoice.taxRate || 0;
+    const taxAmount = invoice.taxAmount || 0;
+    const halfTaxRate = taxRate / 2;
+    const halfTaxAmount = taxAmount / 2;
+
+    const invoiceData = {
       ...invoice,
       logo: this.logoBase64,
+      companyGst,
+      companyAddress,
+      companyState,
+      companyStateCode,
+      companyPhone,
+      bankDetails,
+      halfTaxRate,
+      halfTaxAmount,
     };
 
     const template = Handlebars.compile(this.invoiceTemplate);
-    const html = template(invoiceWithLogo);
+    const html = template(invoiceData);
 
     try {
+      const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH ||
+        (process.platform === 'win32' ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' : undefined);
+
       const browser = await puppeteer.launch({
+        headless: true,
+        executablePath,
         args: ['--no-sandbox', '--disable-setuid-sandbox'],
       });
+
       const page = await browser.newPage();
       await page.setContent(html, { waitUntil: 'networkidle0' });
       const pdf = await page.pdf({
@@ -609,16 +409,46 @@ export class PdfService {
       await browser.close();
       return pdf;
     } catch (err) {
+      console.error('PDF Generation Error:', err);
       return Buffer.from(html);
     }
   }
 
   getInvoiceHtml(invoice: any): string {
-    const invoiceWithLogo = {
+    // Hardcoded defaults matching the screenshot
+    const companyGst = '24SMEPS3027M1ZE';
+    const companyAddress = 'FF-108, NIRMAL SAROVAR, OPP. RADHE GOWSHALA, S.P.RING ROAD, VATVA, Ahmedabad, Ahmedabad, Gujarat, 382440';
+    const companyState = 'Gujarat';
+    const companyStateCode = '24';
+    const companyPhone = '8866502216';
+
+    const bankDetails = {
+      accountNumber: '88665022162',
+      ifsc: 'IDFB0040303',
+      swift: 'IDFBINBBMUM',
+      bankName: 'IDFC FIRST',
+      branch: 'Maninagar Branch',
+    };
+
+    // Calculate split tax for CGST/SGST display
+    const taxRate = invoice.taxRate || 0;
+    const taxAmount = invoice.taxAmount || 0;
+    const halfTaxRate = taxRate / 2;
+    const halfTaxAmount = taxAmount / 2;
+
+    const invoiceData = {
       ...invoice,
       logo: this.logoBase64,
+      companyGst,
+      companyAddress,
+      companyState,
+      companyStateCode,
+      companyPhone,
+      bankDetails,
+      halfTaxRate,
+      halfTaxAmount,
     };
     const template = Handlebars.compile(this.invoiceTemplate);
-    return template(invoiceWithLogo);
+    return template(invoiceData);
   }
 }

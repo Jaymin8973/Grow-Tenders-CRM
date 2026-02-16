@@ -34,6 +34,7 @@ interface DailyReport {
     content: string;
     callCount: number;
     avgTalkTime: number;
+    leadsGenerated: number;
     date: string;
     createdAt: string;
     employee: {
@@ -121,7 +122,7 @@ export default function DailyReportsPage() {
         }
     }, [user, selectedDate, selectedEmployee, activeTab]); // Added activeTab dependency
 
-    const canCreateReport = user?.role === 'EMPLOYEE';
+    const canCreateReport = user?.role === 'EMPLOYEE' || user?.role === 'SUPER_ADMIN' || user?.role === 'MANAGER';
     const canViewAllObject = user?.role === 'MANAGER' || user?.role === 'SUPER_ADMIN';
 
     return (

@@ -8,7 +8,6 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { LeadsModule } from './modules/leads/leads.module';
 import { CustomersModule } from './modules/customers/customers.module';
-import { DealsModule } from './modules/deals/deals.module';
 import { ActivitiesModule } from './modules/activities/activities.module';
 import { InvoicesModule } from './modules/invoices/invoices.module';
 import { TendersModule } from './modules/tenders/tenders.module';
@@ -24,6 +23,8 @@ import { BranchesModule } from './modules/branches/branches.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { FollowUpsModule } from './modules/follow-ups/follow-ups.module';
 import { DailyReportsModule } from './modules/daily-reports/daily-reports.module';
+import { TargetsModule } from './modules/targets/targets.module';
+import { PaymentRequestsModule } from './modules/payment-requests/payment-requests.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 
@@ -55,7 +56,6 @@ import { join } from 'path';
         BranchesModule,
         LeadsModule,
         CustomersModule,
-        DealsModule,
         ActivitiesModule,
         InvoicesModule,
         TendersModule,
@@ -70,6 +70,8 @@ import { join } from 'path';
         PaymentsModule,
         FollowUpsModule,
         DailyReportsModule,
+        TargetsModule,
+        PaymentRequestsModule,
     ],
     providers: [
         // Apply rate limiting globally

@@ -20,7 +20,7 @@ import {
     CalendarCheck,
     FileText,
     AlertTriangle,
-    TrendingUp,
+
     X,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -29,7 +29,7 @@ import { useAuth } from '@/contexts/auth-context';
 
 const iconMap: Record<string, any> = {
     LEAD_ASSIGNED: UserPlus,
-    DEAL_UPDATE: TrendingUp,
+
     ACTIVITY_REMINDER: CalendarCheck,
     INVOICE_CREATED: FileText,
     INVOICE_PAID: DollarSign,
@@ -38,7 +38,7 @@ const iconMap: Record<string, any> = {
 
 const bgMap: Record<string, string> = {
     LEAD_ASSIGNED: 'bg-blue-100 text-blue-600',
-    DEAL_UPDATE: 'bg-emerald-100 text-emerald-600',
+
     ACTIVITY_REMINDER: 'bg-amber-100 text-amber-600',
     INVOICE_CREATED: 'bg-violet-100 text-violet-600',
     INVOICE_PAID: 'bg-green-100 text-green-600',

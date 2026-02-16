@@ -7,7 +7,7 @@ generator client {
 
 datasource db {
   provider = "mongodb"
-  url      = env("DATABASE_URL")
+  url      = "mongodb+srv://growtendersdevops_db_user:w4BKvxnZkazfoQPi@grow-tenders.qnbysvt.mongodb.net/salescrm?appName=grow-tenders"
 }
 
 // Enums
@@ -44,14 +44,7 @@ enum CustomerLifecycle {
   CHURNED
 }
 
-enum DealStage {
-  QUALIFICATION
-  NEEDS_ANALYSIS
-  PROPOSAL
-  NEGOTIATION
-  CLOSED_WON
-  CLOSED_LOST
-}
+
 
 enum ActivityType {
   CALL
@@ -90,7 +83,7 @@ enum TenderStatus {
 
 enum NotificationType {
   LEAD_ASSIGNED
-  DEAL_UPDATE
+
   ACTIVITY_REMINDER
   INVOICE_CREATED
   TENDER_PUBLISHED
@@ -147,7 +140,7 @@ model Branch {
   users       User[]
   leads       Lead[]
   customers   Customer[]
-  deals       Deal[]
+
 
   @@map("branches")
 }
@@ -180,7 +173,7 @@ model User {
   leadsAssigned         Lead[]         @relation("LeadAssignee")
   leadsCreated          Lead[]         @relation("LeadCreator")
   customersAssigned     Customer[]     @relation("CustomerAssignee")
-  dealsOwned            Deal[]         @relation("DealOwner")
+
   activitiesAssigned    Activity[]     @relation("ActivityAssignee")
   activitiesCreated     Activity[]     @relation("ActivityCreator")
   invoicesCreated       Invoice[]      @relation("InvoiceCreator")
@@ -192,6 +185,9 @@ model User {
   transferRequestsReceived LeadTransferRequest[] @relation("TransferTarget")
   leaderboardScores        LeaderboardScore[]
   dailyReports             DailyReport[]  @relation("EmployeeReports")
+  targets                  Target[]
+  paymentRequestsMade      PaymentRequest[] @relation("PaymentRequestRequester")
+  paymentRequestsActioned  PaymentRequest[] @relation("PaymentRequestApprover")
 
   @@map("users")
 }
@@ -236,11 +232,12 @@ model Lead {
 
   // Relations
   activities    Activity[]
-  deals         Deal[]
+
   notes         Note[]
   attachments   Attachment[]
   emailLogs     EmailLog[]
   transferRequests LeadTransferRequest[]
+  paymentRequests  PaymentRequest[]
   followUps     FollowUp[]
 
   @@map("leads")
@@ -306,7 +303,7 @@ model Customer {
   updatedAt     DateTime          @updatedAt
 
   // Relations
-  deals              Deal[]
+
   activities         Activity[]
   invoices           Invoice[]
   payments           Payment[]
@@ -318,44 +315,12 @@ model Customer {
 
   paymentReceivedReportIds String[] @db.ObjectId
   paymentReceivedReports   DailyReport[] @relation(fields: [paymentReceivedReportIds], references: [id])
+  paymentRequests          PaymentRequest[]
 
   @@map("customers")
 }
 
-model Deal {
-  id              String      @id @default(auto()) @map("_id") @db.ObjectId
-  title           String
-  value           Float
-  stage           DealStage   @default(QUALIFICATION)
-  probability     Int         @default(10)
-  expectedCloseDate DateTime?
-  actualCloseDate DateTime?
-  description     String?
-  
-  leadId          String?     @db.ObjectId
-  lead            Lead?       @relation(fields: [leadId], references: [id])
-  
-  customerId      String?     @db.ObjectId
-  customer        Customer?   @relation(fields: [customerId], references: [id])
-  
-  ownerId         String      @db.ObjectId
-  owner           User        @relation("DealOwner", fields: [ownerId], references: [id])
-  
-  // Branch relation
-  branchId        String?     @db.ObjectId
-  branch          Branch?     @relation(fields: [branchId], references: [id])
-  
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
 
-  // Relations
-  activities      Activity[]
-  invoices        Invoice[]
-  notes           Note[]
-  attachments     Attachment[]
-
-  @@map("deals")
-}
 
 model Activity {
   id            String         @id @default(auto()) @map("_id") @db.ObjectId
@@ -381,8 +346,7 @@ model Activity {
   customerId    String?        @db.ObjectId
   customer      Customer?      @relation(fields: [customerId], references: [id])
   
-  dealId        String?        @db.ObjectId
-  deal          Deal?          @relation(fields: [dealId], references: [id])
+
   
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
@@ -406,9 +370,8 @@ model Invoice {
   customerId      String         @db.ObjectId
   customer        Customer       @relation(fields: [customerId], references: [id])
   
-  // Deal reference
-  dealId          String?        @db.ObjectId
-  deal            Deal?          @relation(fields: [dealId], references: [id])
+
+
   
   // Financial
   subtotal        Float
@@ -598,7 +561,7 @@ model AuditLog {
   user        User      @relation(fields: [userId], references: [id])
   
   action      String    // CREATE, UPDATE, DELETE
-  module      String    // leads, customers, deals, etc.
+  module      String    // leads, customers, activities, etc.
   entityId    String?
   oldValues   Json?
   newValues   Json?
@@ -620,8 +583,7 @@ model Note {
   customerId  String?   @db.ObjectId
   customer    Customer? @relation(fields: [customerId], references: [id])
   
-  dealId      String?   @db.ObjectId
-  deal        Deal?     @relation(fields: [dealId], references: [id])
+
   
   createdById String    @db.ObjectId
   
@@ -646,8 +608,7 @@ model Attachment {
   customerId  String?   @db.ObjectId
   customer    Customer? @relation(fields: [customerId], references: [id])
   
-  dealId      String?   @db.ObjectId
-  deal        Deal?     @relation(fields: [dealId], references: [id])
+
   
   tenderId    String?   @db.ObjectId
   tender      Tender?   @relation(fields: [tenderId], references: [id])
@@ -692,6 +653,7 @@ model Payment {
   
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
+  paymentRequests PaymentRequest[]
 
   @@map("payments")
 }
@@ -775,12 +737,13 @@ model LeaderboardScore {
 model DailyReport {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   title       String?
-  content     String
+  content     String?
   date        DateTime @default(now())
   
   // New Fields
   callCount       Int      @default(0)
   avgTalkTime     Float    @default(0) // In minutes
+  leadsGenerated  Int      @default(0)
 
   paymentReceivedFromCustomerIds String[] @db.ObjectId
   paymentReceivedFromCustomers   Customer[] @relation(fields: [paymentReceivedFromCustomerIds], references: [id])
@@ -793,3 +756,56 @@ model DailyReport {
 
   @@map("daily_reports")
 }
+model Target {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String    @db.ObjectId
+  user        User      @relation(fields: [userId], references: [id])
+  
+  month       DateTime  // First day of the month
+  amount      Float     @default(0)
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([userId, month])
+  @@map("targets")
+}
+
+enum PaymentRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model PaymentRequest {
+  id              String               @id @default(auto()) @map("_id") @db.ObjectId
+  amount          Float
+  screenshotUrl   String?
+  status          PaymentRequestStatus @default(PENDING)
+  notes           String?
+  rejectionReason String?
+  
+  // Relations
+  requesterId     String    @db.ObjectId
+  requester       User      @relation("PaymentRequestRequester", fields: [requesterId], references: [id])
+  
+  approverId      String?   @db.ObjectId
+  approver        User?     @relation("PaymentRequestApprover", fields: [approverId], references: [id])
+  
+  leadId          String?   @db.ObjectId
+  lead            Lead?     @relation(fields: [leadId], references: [id])
+  
+  customerId      String?   @db.ObjectId
+  customer        Customer? @relation(fields: [customerId], references: [id])
+  
+  // Link to created Payment when approved
+  paymentId       String?   @db.ObjectId
+  payment         Payment?  @relation(fields: [paymentId], references: [id])
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("payment_requests")
+}
+
+

@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     Users,
     UserPlus,
-    Briefcase,
+    CheckCircle2,
     DollarSign,
     TrendingUp,
     CalendarDays,
@@ -31,6 +31,10 @@ import {
     AreaChart,
     Area,
 } from 'recharts';
+
+import { TargetStatsCard } from '@/components/targets/TargetStatsCard';
+import { PaymentRequestForm } from '@/components/targets/PaymentRequestForm';
+
 
 const COLORS = ['#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
@@ -93,12 +97,12 @@ export default function DashboardPage() {
             iconColor: 'text-emerald-500',
         },
         {
-            title: 'Open Deals',
-            value: stats?.openDeals || 0,
-            change: stats?.wonDealsThisMonth || 0,
-            changeLabel: 'won this month',
+            title: 'Pending Activities',
+            value: stats?.pendingActivities || 0,
+            change: stats?.activitiesToday || 0,
+            changeLabel: 'due today',
             trend: 'up',
-            icon: Briefcase,
+            icon: CheckCircle2,
             gradient: 'from-violet-500 to-violet-600',
             bg: 'bg-violet-50',
             iconColor: 'text-violet-500',
@@ -143,18 +147,39 @@ export default function DashboardPage() {
                         Welcome back, {user?.firstName}! Here's your sales overview.
                     </p>
                 </div>
-                <div className="text-right hidden sm:block">
-                    <p className="text-sm text-muted-foreground">Today</p>
-                    <p className="text-lg font-semibold">
-                        {new Date().toLocaleDateString('en-US', {
-                            weekday: 'long',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                        })}
-                    </p>
+                <div className="flex gap-4 items-center">
+
+                    <div className="text-right hidden sm:block">
+                        <p className="text-sm text-muted-foreground">Today</p>
+                        <p className="text-lg font-semibold">
+                            {new Date().toLocaleDateString('en-US', {
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                            })}
+                        </p>
+                    </div>
                 </div>
             </div>
+
+            {/* Target & Payments Section - Only for Employees */}
+            {user?.role === 'EMPLOYEE' && (
+                <div className="space-y-6">
+                    <TargetStatsCard />
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <PaymentRequestForm />
+                        {/* Placeholder for maybe recent requests or instruction?? For now just form and empty space or maybe match charts width */}
+                        <Card className="flex items-center justify-center p-6 text-muted-foreground border-dashed">
+                            <div className="text-center">
+                                <p className="font-medium">Payment History & Status</p>
+                                <p className="text-sm mt-1">Check your "My Payments" or "Requests" section for status updates.</p>
+                                {/* Maybe a link to payments page? */}
+                            </div>
+                        </Card>
+                    </div>
+                </div>
+            )}
 
             {/* Stats Cards */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
@@ -247,7 +272,7 @@ export default function DashboardPage() {
                             <div className="p-2 rounded-lg bg-primary/10">
                                 <Target className="h-5 w-5 text-primary" />
                             </div>
-                            Deal Pipeline
+                            Lead Pipeline
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -309,8 +334,8 @@ export default function DashboardPage() {
                     </Card>
                     <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
                         <CardContent className="p-6">
-                            <p className="text-emerald-100 text-sm font-medium">Deals Won</p>
-                            <p className="text-3xl font-bold mt-2">{salesData.wonDeals || 0}</p>
+                            <p className="text-emerald-100 text-sm font-medium">Leads Converted</p>
+                            <p className="text-3xl font-bold mt-2">{salesData.leadsConverted || 0}</p>
                         </CardContent>
                     </Card>
                     <Card className="bg-gradient-to-br from-amber-500 to-amber-600 text-white">
@@ -321,8 +346,8 @@ export default function DashboardPage() {
                     </Card>
                     <Card className="bg-gradient-to-br from-rose-500 to-rose-600 text-white">
                         <CardContent className="p-6">
-                            <p className="text-rose-100 text-sm font-medium">Avg Deal Size</p>
-                            <p className="text-3xl font-bold mt-2">{formatCurrency(salesData.avgDealSize || 0)}</p>
+                            <p className="text-rose-100 text-sm font-medium">Activities Completed</p>
+                            <p className="text-3xl font-bold mt-2">{salesData.activitiesCompleted || 0}</p>
                         </CardContent>
                     </Card>
                 </div>

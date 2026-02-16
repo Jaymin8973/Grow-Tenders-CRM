@@ -37,9 +37,7 @@ export class ActivitiesService {
                 customer: {
                     select: { id: true, firstName: true, lastName: true, company: true },
                 },
-                deal: {
-                    select: { id: true, title: true, value: true },
-                },
+
             },
         });
 
@@ -107,9 +105,7 @@ export class ActivitiesService {
                 customer: {
                     select: { id: true, firstName: true, lastName: true, company: true },
                 },
-                deal: {
-                    select: { id: true, title: true },
-                },
+
             },
             orderBy: { scheduledAt: 'asc' },
         });
@@ -151,9 +147,7 @@ export class ActivitiesService {
                 customer: {
                     select: { id: true, firstName: true, lastName: true, company: true },
                 },
-                deal: {
-                    select: { id: true, title: true },
-                },
+
             },
             orderBy: { scheduledAt: 'asc' },
         });
@@ -217,9 +211,7 @@ export class ActivitiesService {
                 customer: {
                     select: { id: true, firstName: true, lastName: true, email: true, company: true },
                 },
-                deal: {
-                    select: { id: true, title: true, value: true, stage: true },
-                },
+
             },
         });
 

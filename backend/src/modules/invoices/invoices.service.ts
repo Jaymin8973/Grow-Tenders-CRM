@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
-import { Role, InvoiceStatus, DealStage } from '@prisma/client';
+import { Role, InvoiceStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
@@ -52,12 +52,13 @@ export class InvoicesService {
                 companyEmail: createInvoiceDto.companyEmail,
                 companyLogo: createInvoiceDto.companyLogo,
                 customerId: createInvoiceDto.customerId,
-                dealId: createInvoiceDto.dealId,
+
                 subtotal,
                 taxRate: createInvoiceDto.taxRate || 0,
                 taxAmount,
                 discount,
                 discountType: createInvoiceDto.discountType,
+                status: 'PAID', // Always paid immediately
                 total,
                 paymentTerms: createInvoiceDto.paymentTerms,
                 dueDate: createInvoiceDto.dueDate ? new Date(createInvoiceDto.dueDate) : null,
@@ -77,9 +78,7 @@ export class InvoicesService {
                 customer: {
                     select: { id: true, firstName: true, lastName: true, email: true, company: true },
                 },
-                deal: {
-                    select: { id: true, title: true, value: true },
-                },
+
                 lineItems: true,
                 createdBy: {
                     select: { id: true, firstName: true, lastName: true },
@@ -90,28 +89,7 @@ export class InvoicesService {
         return invoice;
     }
 
-    async createFromDeal(dealId: string, invoiceData: CreateInvoiceDto, userId: string) {
-        const deal = await this.prisma.deal.findUnique({
-            where: { id: dealId },
-            include: { customer: true },
-        });
 
-        if (!deal) {
-            throw new NotFoundException('Deal not found');
-        }
-
-        if (deal.stage !== DealStage.CLOSED_WON) {
-            throw new ForbiddenException('Can only create invoice for closed-won deals');
-        }
-
-        const data = {
-            ...invoiceData,
-            dealId,
-            customerId: deal.customerId || invoiceData.customerId,
-        };
-
-        return this.create(data, userId);
-    }
 
     async findAll(filters?: {
         status?: InvoiceStatus;
@@ -139,9 +117,7 @@ export class InvoicesService {
                 customer: {
                     select: { id: true, firstName: true, lastName: true, email: true, company: true },
                 },
-                deal: {
-                    select: { id: true, title: true },
-                },
+
                 createdBy: {
                     select: { id: true, firstName: true, lastName: true },
                 },
@@ -158,7 +134,6 @@ export class InvoicesService {
             where: { id },
             include: {
                 customer: true,
-                deal: true,
                 lineItems: true,
                 createdBy: {
                     select: { id: true, firstName: true, lastName: true },

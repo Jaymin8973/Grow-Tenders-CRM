@@ -34,7 +34,7 @@ export class AttachmentsController {
                 file: { type: 'string', format: 'binary' },
                 leadId: { type: 'string' },
                 customerId: { type: 'string' },
-                dealId: { type: 'string' },
+
                 tenderId: { type: 'string' },
             },
         },
@@ -44,13 +44,11 @@ export class AttachmentsController {
         @UploadedFile() file: Express.Multer.File,
         @Query('leadId') leadId?: string,
         @Query('customerId') customerId?: string,
-        @Query('dealId') dealId?: string,
         @Query('tenderId') tenderId?: string,
     ) {
         return this.attachmentsService.upload(file, {
             leadId,
             customerId,
-            dealId,
             tenderId,
         });
     }
@@ -67,11 +65,7 @@ export class AttachmentsController {
         return this.attachmentsService.findByCustomer(customerId);
     }
 
-    @Get('deal/:dealId')
-    @ApiOperation({ summary: 'Get attachments by deal' })
-    findByDeal(@Param('dealId') dealId: string) {
-        return this.attachmentsService.findByDeal(dealId);
-    }
+
 
     @Get('tender/:tenderId')
     @ApiOperation({ summary: 'Get attachments by tender' })

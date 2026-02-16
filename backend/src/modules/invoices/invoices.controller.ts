@@ -35,16 +35,7 @@ export class InvoicesController {
         return this.invoicesService.create(createInvoiceDto, userId);
     }
 
-    @Post('from-deal/:dealId')
-    @Roles(Role.SUPER_ADMIN, Role.MANAGER)
-    @ApiOperation({ summary: 'Create invoice from closed-won deal (Super Admin & Manager)' })
-    createFromDeal(
-        @Param('dealId') dealId: string,
-        @Body() createInvoiceDto: CreateInvoiceDto,
-        @CurrentUser('id') userId: string,
-    ) {
-        return this.invoicesService.createFromDeal(dealId, createInvoiceDto, userId);
-    }
+
 
     @Get()
     @Roles(Role.SUPER_ADMIN, Role.MANAGER)

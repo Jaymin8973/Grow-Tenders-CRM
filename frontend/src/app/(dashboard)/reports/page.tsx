@@ -119,8 +119,8 @@ export default function ReportsPage() {
                                 <CheckCircle2 className="h-6 w-6" />
                             </div>
                             <div>
-                                <p className="text-white/80 text-sm">Deals Won</p>
-                                <p className="text-2xl font-bold">{salesData?.wonDeals || 0}</p>
+                                <p className="text-white/80 text-sm">Leads Converted</p>
+                                <p className="text-2xl font-bold">{salesData?.leadsConverted || 0}</p>
                             </div>
                         </div>
                     </CardContent>
@@ -145,8 +145,8 @@ export default function ReportsPage() {
                                 <TrendingUp className="h-6 w-6" />
                             </div>
                             <div>
-                                <p className="text-white/80 text-sm">Avg Deal Size</p>
-                                <p className="text-2xl font-bold">{formatCurrency(salesData?.avgDealSize || 0)}</p>
+                                <p className="text-white/80 text-sm">Activities Completed</p>
+                                <p className="text-2xl font-bold">{salesData?.activitiesCompleted || 0}</p>
                             </div>
                         </div>
                     </CardContent>
@@ -323,7 +323,7 @@ export default function ReportsPage() {
                                         <div className="flex-1 min-w-0">
                                             <p className="font-medium truncate">{emp.firstName} {emp.lastName}</p>
                                             <p className="text-sm text-muted-foreground">
-                                                {emp.dealsWon || 0} deals won
+                                                {emp.activitiesCompleted || 0} activities
                                             </p>
                                         </div>
                                         <div className="text-right">

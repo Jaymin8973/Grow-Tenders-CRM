@@ -46,11 +46,10 @@ import { Badge } from "@/components/ui/badge"
 
 const formSchema = z.object({
     title: z.string().optional(),
-    content: z.string().min(10, {
-        message: 'Report content must be at least 10 characters.',
-    }),
+    content: z.string().optional(), // Made optional as per user request
     callCount: z.coerce.number().min(0).optional(),
     avgTalkTime: z.coerce.number().min(0).optional(),
+    leadsGenerated: z.coerce.number().min(0).optional(),
     paymentReceivedFromCustomerIds: z.array(z.string()).optional(),
 });
 
@@ -75,9 +74,10 @@ export function CreateReportDialog({ onSuccess }: CreateReportDialogProps) {
         resolver: zodResolver(formSchema),
         defaultValues: {
             title: '',
-            content: '',
+            content: '', // Default to empty string
             callCount: 0,
             avgTalkTime: 0,
+            leadsGenerated: 0,
             paymentReceivedFromCustomerIds: [],
         },
     });
@@ -144,21 +144,9 @@ export function CreateReportDialog({ onSuccess }: CreateReportDialogProps) {
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                        <FormField
-                            control={form.control}
-                            name="title"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Title (Optional)</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="e.g. Sales calls update" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                        {/* Title field removed */}
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-3 gap-4">
                             <FormField
                                 control={form.control}
                                 name="callCount"
@@ -180,6 +168,19 @@ export function CreateReportDialog({ onSuccess }: CreateReportDialogProps) {
                                         <FormLabel>Avg Talk Time (mins)</FormLabel>
                                         <FormControl>
                                             <Input type="number" min="0" step="0.1" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="leadsGenerated"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Leads Generated</FormLabel>
+                                        <FormControl>
+                                            <Input type="number" min="0" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -271,23 +272,7 @@ export function CreateReportDialog({ onSuccess }: CreateReportDialogProps) {
                             </div>
                         </FormItem>
 
-                        <FormField
-                            control={form.control}
-                            name="content"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Content</FormLabel>
-                                    <FormControl>
-                                        <Textarea
-                                            placeholder="Describe your activities for today..."
-                                            className="min-h-[150px]"
-                                            {...field}
-                                        />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                        {/* Content field removed */}
                         <DialogFooter>
                             <Button type="submit" disabled={form.formState.isSubmitting}>
                                 {form.formState.isSubmitting ? 'Submitting...' : 'Submit Report'}

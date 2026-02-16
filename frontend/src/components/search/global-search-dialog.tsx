@@ -11,13 +11,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Search, Users, Briefcase, FileText, Building2, Loader2 } from 'lucide-react';
+import { Search, Users, FileText, Building2, Loader2 } from 'lucide-react';
 import { getInitials, formatCurrency } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 
 interface SearchResult {
     id: string;
-    type: 'lead' | 'customer' | 'deal';
+    type: 'lead' | 'customer';
     title: string;
     subtitle?: string;
     company?: string;
@@ -62,18 +62,9 @@ export function GlobalSearchDialog({ open, onOpenChange }: { open: boolean; onOp
         enabled: searchQuery.trim().length > 0,
     });
 
-    // Search deals
-    const { data: dealsData, isLoading: isLoadingDeals } = useQuery({
-        queryKey: ['search-deals', searchQuery],
-        queryFn: async () => {
-            if (!searchQuery.trim()) return [];
-            const response = await apiClient.get(`/deals?search=${encodeURIComponent(searchQuery)}`);
-            return response.data;
-        },
-        enabled: searchQuery.trim().length > 0,
-    });
 
-    const isLoading = isLoadingLeads || isLoadingCustomers || isLoadingDeals;
+
+    const isLoading = isLoadingLeads || isLoadingCustomers;
 
     const handleResultClick = (result: SearchResult) => {
         router.push(result.url);
@@ -109,18 +100,7 @@ export function GlobalSearchDialog({ open, onOpenChange }: { open: boolean; onOp
             });
         });
 
-        // Add deals
-        dealsData?.forEach((deal: any) => {
-            results.push({
-                id: deal.id,
-                type: 'deal',
-                title: deal.dealName,
-                subtitle: deal.customer?.firstName ? `${deal.customer.firstName} ${deal.customer.lastName}` : undefined,
-                amount: deal.value,
-                status: deal.stage,
-                url: `/deals/${deal.id}`,
-            });
-        });
+
 
         return results;
     };
@@ -131,8 +111,6 @@ export function GlobalSearchDialog({ open, onOpenChange }: { open: boolean; onOp
                 return <Users className="h-4 w-4 text-blue-500" />;
             case 'customer':
                 return <Building2 className="h-4 w-4 text-emerald-500" />;
-            case 'deal':
-                return <Briefcase className="h-4 w-4 text-violet-500" />;
             default:
                 return <FileText className="h-4 w-4 text-gray-500" />;
         }
@@ -144,8 +122,6 @@ export function GlobalSearchDialog({ open, onOpenChange }: { open: boolean; onOp
                 return 'Lead';
             case 'customer':
                 return 'Customer';
-            case 'deal':
-                return 'Deal';
             default:
                 return 'Unknown';
         }
@@ -153,14 +129,12 @@ export function GlobalSearchDialog({ open, onOpenChange }: { open: boolean; onOp
 
     const getStatusColor = (type: string, status?: string) => {
         if (!status) return 'bg-gray-100 text-gray-800';
-        
+
         switch (type) {
             case 'lead':
                 return 'bg-blue-100 text-blue-800';
             case 'customer':
                 return 'bg-emerald-100 text-emerald-800';
-            case 'deal':
-                return 'bg-violet-100 text-violet-800';
             default:
                 return 'bg-gray-100 text-gray-800';
         }
@@ -179,7 +153,7 @@ export function GlobalSearchDialog({ open, onOpenChange }: { open: boolean; onOp
                             <Input
                                 ref={inputRef}
                                 type="search"
-                                placeholder="Search leads, customers, deals..."
+                                placeholder="Search leads, customers..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="pl-10 pr-4 h-12 border-0 text-base focus-visible:ring-0"
@@ -196,7 +170,7 @@ export function GlobalSearchDialog({ open, onOpenChange }: { open: boolean; onOp
                             <div className="p-8 text-center text-muted-foreground">
                                 <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
                                 <p className="text-lg font-medium mb-2">Start typing to search</p>
-                                <p className="text-sm">Search for leads, customers, and deals</p>
+                                <p className="text-sm">Search for leads and customers</p>
                             </div>
                         ) : isLoading ? (
                             <div className="p-8 text-center text-muted-foreground">
@@ -230,7 +204,7 @@ export function GlobalSearchDialog({ open, onOpenChange }: { open: boolean; onOp
                                                 </div>
                                             )}
                                         </div>
-                                        
+
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 mb-1">
                                                 <p className="font-medium truncate">{result.title}</p>
