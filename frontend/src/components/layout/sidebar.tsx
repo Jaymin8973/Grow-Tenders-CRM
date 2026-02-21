@@ -19,6 +19,7 @@ import {
     Wallet,
     FileSearch,
     Target,
+    Phone,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -26,6 +27,7 @@ import { getInitials } from '@/lib/utils';
 
 const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'Telecalling', href: '/telecalling', icon: Phone },
     { name: 'Leads', href: '/leads', icon: UserPlus },
     { name: 'Customers', href: '/customers', icon: Users },
 
@@ -84,9 +86,9 @@ export function Sidebar() {
         <div className="flex h-full w-72 flex-col bg-card border-r">
             {/* Logo */}
             <div className="flex h-20 items-center gap-3 px-6 border-b">
-                <div className="relative h-11 w-11 rounded-xl overflow-hidden shadow-lg border-2 border-primary/20">
+                <div className="relative h-11 w-11 ">
                     <Image
-                        src="/images/logo.jpg"
+                        src="/images/Logo-GT.png"
                         alt="Company Logo"
                         fill
                         className="object-cover"

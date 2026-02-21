@@ -27,6 +27,7 @@ import { TargetsModule } from './modules/targets/targets.module';
 import { PaymentRequestsModule } from './modules/payment-requests/payment-requests.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { RawLeadsModule } from './modules/raw-leads/raw-leads.module';
 
 @Module({
     imports: [
@@ -72,6 +73,7 @@ import { join } from 'path';
         DailyReportsModule,
         TargetsModule,
         PaymentRequestsModule,
+        RawLeadsModule,
     ],
     providers: [
         // Apply rate limiting globally

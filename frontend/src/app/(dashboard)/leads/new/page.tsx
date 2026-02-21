@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -49,6 +50,7 @@ const leadSchema = z.object({
     email: z.string().email('Invalid email address'),
     mobile: z.string().optional(),
     company: z.string().optional(),
+    gstin: z.string().optional(),
 
     description: z.string().optional(),
     status: z.enum(['WARM_LEAD', 'HOT_LEAD', 'COLD_LEAD', 'CLOSED_LEAD', 'PROPOSAL_LEAD']),
@@ -86,6 +88,16 @@ export default function NewLeadPage() {
 
     const activeFollowUpDate = watch('nextFollowUp');
 
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            const phone = params.get('phone');
+            if (phone) {
+                setValue('mobile', phone);
+            }
+        }
+    }, [setValue]);
+
     // Fetch team members for assignment
     const { data: teamMembers } = useQuery({
         queryKey: ['team-members'],
@@ -100,9 +112,22 @@ export default function NewLeadPage() {
         mutationFn: async (data: LeadFormData) => {
             return apiClient.post('/leads', data);
         },
-        onSuccess: () => {
+        onSuccess: async (response) => {
+            if (typeof window !== 'undefined') {
+                const params = new URLSearchParams(window.location.search);
+                const rawId = params.get('rawId');
+                if (rawId && response?.data?.id) {
+                    try {
+                        await apiClient.post(`/raw-leads/${rawId}/convert`, { convertedLeadId: response.data.id });
+                    } catch (e) {
+                        console.error("Failed to mark raw lead as converted", e);
+                    }
+                }
+            }
+
             queryClient.invalidateQueries({ queryKey: ['leads'] });
             queryClient.invalidateQueries({ queryKey: ['lead-stats'] });
+            queryClient.invalidateQueries({ queryKey: ['raw-leads'] });
             toast({
                 title: 'Success',
                 description: 'Lead created successfully.',
@@ -217,10 +242,14 @@ export default function NewLeadPage() {
                                         <Building2 className="h-3 w-3" />
                                         Organization
                                     </Label>
-                                    <div className="grid grid-cols-1 gap-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
                                             <Label className="text-xs text-muted-foreground">Company</Label>
                                             <Input {...register('company')} placeholder="Acme Inc" className="h-9" />
+                                        </div>
+                                        <div>
+                                            <Label className="text-xs text-muted-foreground">GST Number</Label>
+                                            <Input {...register('gstin')} placeholder="24XXXXX1234X1Z5" className="h-9" />
                                         </div>
                                     </div>
                                 </div>

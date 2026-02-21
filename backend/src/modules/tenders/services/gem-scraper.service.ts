@@ -25,8 +25,8 @@ interface ScrapedTenderData {
 @Injectable()
 export class GemScraperService {
     private readonly logger = new Logger(GemScraperService.name);
-    // URL with sorting by bid start date (latest first)
-    private readonly baseUrl = 'https://bidplus.gem.gov.in/bidlists?bidlists&sorting=bid_start_date%7Cdesc';
+    // Base URL for all bids page (sort applied via UI dropdown click)
+    private readonly baseUrl = 'https://bidplus.gem.gov.in/all-bids';
 
     constructor(private prisma: PrismaService) { }
 
@@ -99,39 +99,24 @@ export class GemScraperService {
 
             currentUrl = page.url();
 
-            const recoverPage = async () => {
-                const isConnected = typeof browser?.isConnected === 'function' ? browser.isConnected() : true;
-                if (!browser || !isConnected) {
-                    this.logger.warn('Browser disconnected. Relaunching...');
-                    browser = await this.launchBrowser();
+            // We extract the CSRF token injected in the page scripts
+            const csrfToken = await page.evaluate(() => {
+                let token = null;
+                const scripts = document.querySelectorAll('script');
+                for (const s of scripts) {
+                    const match = s.innerHTML.match(/['"]?csrf_bd_gem_nk['"]?\s*:\s*['"]([a-f0-9]{32})['"]/);
+                    if (match) {
+                        token = match[1];
+                        break;
+                    }
                 }
+                return token;
+            });
 
-                this.logger.warn('Page closed unexpectedly. Reopening...');
-                page = await browser.newPage();
-                await this.setupPage(page);
-                await page.goto(currentUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
-                await page.waitForSelector('.card', { timeout: 30000 });
-                currentUrl = page.url();
-            };
-
-            // Apply filter for latest bid start date if not already sorted
-            let sortConfirmed = false;
-            try {
-                sortConfirmed = await this.applySortFilter(page);
-            } catch (err: any) {
-                if (this.isSessionClosedError(err)) {
-                    this.logger.warn('Page session closed while applying sort filter. Reopening and retrying...');
-                    await recoverPage();
-                    sortConfirmed = await this.applySortFilter(page);
-                } else {
-                    throw err;
-                }
+            if (!csrfToken) {
+                throw new Error('Could not extract CSRF token from page scripts.');
             }
-            this.logger.log('Applied sort filter: Bid Start Date (Latest First)');
-            if (!sortConfirmed) {
-                this.logger.warn('Sort filter not confirmed via UI. Scanning all pages until pagination ends.');
-            }
-            currentUrl = page.url();
+            this.logger.log('Extracted CSRF Token successfully.');
 
             const now = new Date();
             let pageNum = 0;
@@ -139,7 +124,7 @@ export class GemScraperService {
             const maxConsecutiveOldPages = 2;
             let consecutiveOldPages = 0;
 
-            // Main Scraping Loop
+            // Main Scraping Loop via API
             while (hasMorePages) {
                 pageNum++;
 
@@ -149,29 +134,75 @@ export class GemScraperService {
                     break;
                 }
 
-                this.logger.log(`Scraping page ${pageNum}...`);
+                this.logger.log(`Scraping page ${pageNum} via API...`);
 
-                if (!page || page.isClosed()) {
-                    await recoverPage();
-                }
-
-                let tenders: ScrapedTenderData[] = [];
+                let docs: any[] = [];
                 try {
-                    tenders = await this.extractTendersFromPage(page);
-                } catch (err: any) {
-                    if (this.isSessionClosedError(err)) {
-                        this.logger.warn('Page session closed while extracting tenders. Reopening and retrying...');
-                        await recoverPage();
-                        tenders = await this.extractTendersFromPage(page);
-                    } else {
-                        throw err;
-                    }
-                }
+                    docs = await page.evaluate(async (pNum: number, token: string) => {
+                        const payloadObj = {
+                            param: { searchBid: '', searchType: 'fullText' },
+                            filter: {
+                                bidStatusType: 'ongoing_bids',
+                                byType: 'all',
+                                highBidValue: '',
+                                byEndDate: { from: '', to: '' },
+                                sort: 'Bid-Start-Date-Latest'
+                            }
+                        };
+                        if (pNum > 1) {
+                            (payloadObj as any).page = pNum;
+                        }
 
-                if (tenders.length === 0) {
-                    this.logger.warn(`No tenders found on page ${pageNum}. Stopping.`);
+                        const payloadStr = encodeURIComponent(JSON.stringify(payloadObj));
+                        const formData = 'payload=' + payloadStr + '&csrf_bd_gem_nk=' + token;
+
+                        const r = await fetch('https://bidplus.gem.gov.in/all-bids-data', {
+                            method: 'POST',
+                            headers: {
+                                'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                                'x-requested-with': 'XMLHttpRequest'
+                            },
+                            body: formData
+                        });
+                        const json = await r.json();
+                        return json?.response?.response?.docs || [];
+                    }, pageNum, csrfToken);
+                } catch (err: any) {
+                    this.logger.warn(`API fetch failed on page ${pageNum}: ${err.message}. Stopping.`);
                     break;
                 }
+
+                if (!docs || docs.length === 0) {
+                    this.logger.log(`No active tenders found on page ${pageNum}. Stopping.`);
+                    break;
+                }
+
+                // Map JSON response to ScrapedTenderData
+                let tenders: ScrapedTenderData[] = docs.map((doc: any) => {
+                    const bidNo = doc.b_bid_number ? doc.b_bid_number[0] : '';
+                    let title = doc.bbt_title ? doc.bbt_title[0] : '';
+                    let category = doc.b_category_name ? doc.b_category_name[0] : '';
+                    if (!title) title = category;
+                    if (category.length > 100) category = category.substring(0, 100);
+
+                    let department = '';
+                    if (doc.ba_official_details_minName) department += doc.ba_official_details_minName[0] + ' ';
+                    if (doc.ba_official_details_deptName) department += doc.ba_official_details_deptName[0];
+                    department = department.trim();
+
+                    const quantity = doc.b_total_quantity ? String(doc.b_total_quantity[0]) : '';
+
+                    return {
+                        bidNo,
+                        title,
+                        category,
+                        department,
+                        quantity,
+                        startDate: doc.final_start_date_sort ? doc.final_start_date_sort[0] : '', // ISO String
+                        endDate: doc.final_end_date_sort ? doc.final_end_date_sort[0] : '', // ISO String
+                        sourceUrl: bidNo ? `https://bidplus.gem.gov.in/showbidDocument/${doc.b_id[0]}` : ''
+                    } as ScrapedTenderData;
+                }).filter((t: any) => t.bidNo);
 
                 // Gather Reference IDs for duplicate check
                 const referenceIds = tenders.map((t) => t.bidNo).filter(Boolean);
@@ -188,8 +219,8 @@ export class GemScraperService {
 
                 for (const tender of tenders) {
                     try {
-                        const startDateObj = this.parseGemdDate(tender.startDate);
-                        const endDateObj = this.parseGemdDate(tender.endDate);
+                        const startDateObj = tender.startDate ? new Date(tender.startDate) : null;
+                        const endDateObj = tender.endDate ? new Date(tender.endDate) : null;
 
                         // Skip tenders older than fromDate, but keep scanning the page.
                         // We only stop after seeing consecutive pages with no fresh tenders.
@@ -250,48 +281,16 @@ export class GemScraperService {
                     }
                 });
 
-                if (sortConfirmed) {
-                    if (pageFreshCount > 0 || pageUnknownCount > 0) {
-                        consecutiveOldPages = 0;
-                    } else if (pageOldCount > 0) {
-                        consecutiveOldPages++;
-                    }
-
-                    if (consecutiveOldPages >= maxConsecutiveOldPages) {
-                        this.logger.log(`No tenders on/after ${fromDate!.toDateString()} for ${consecutiveOldPages} consecutive pages. Stopping.`);
-                        hasMorePages = false;
-                        break;
-                    }
+                if (pageFreshCount > 0 || pageUnknownCount > 0) {
+                    consecutiveOldPages = 0;
+                } else if (pageOldCount > 0) {
+                    consecutiveOldPages++;
                 }
 
-                // Try to go to next page
-                try {
-                    hasMorePages = await this.goToNextPage(page);
-                } catch (err: any) {
-                    if (this.isSessionClosedError(err)) {
-                        this.logger.warn('Page session closed while moving to next page. Reopening and retrying...');
-                        await recoverPage();
-                        hasMorePages = await this.goToNextPage(page);
-                    } else {
-                        throw err;
-                    }
-                }
-                if (hasMorePages) {
-                    try {
-                        await page.waitForSelector('.card', { timeout: 30000 });
-                        currentUrl = page.url();
-                        await this.delay(1500);
-                    } catch (err: any) {
-                        if (this.isSessionClosedError(err)) {
-                            this.logger.warn('Page session closed while waiting for next page. Reopening and retrying...');
-                            await recoverPage();
-                            await this.delay(1500);
-                        } else {
-                            throw err;
-                        }
-                    }
-                } else {
-                    this.logger.log(`No more pages available. Stopped at page ${pageNum}`);
+                if (consecutiveOldPages >= maxConsecutiveOldPages) {
+                    this.logger.log(`No tenders on/after ${fromDate!.toDateString()} for ${consecutiveOldPages} consecutive pages. Stopping.`);
+                    hasMorePages = false;
+                    break;
                 }
             }
 
@@ -334,155 +333,7 @@ export class GemScraperService {
             .padStart(2, '0')}-${date.getFullYear()}`;
     }
 
-    /**
-     * Extract tender cards from page
-     */
-    private async extractTendersFromPage(page: any): Promise<ScrapedTenderData[]> {
-        return page.evaluate(() => {
-            const cards = document.querySelectorAll('.card');
-            const tenders: any[] = [];
 
-            const cleanText = (t: string) => (t || '').replace(/\s+/g, ' ').trim();
-
-            cards.forEach((card) => {
-                try {
-                    const bidNoEl = card.querySelector('a.bid_no_hover');
-                    const bidNo = cleanText(bidNoEl?.textContent || '');
-
-                    if (!bidNo) return;
-
-                    // Title
-                    const titleEl = card.querySelector('.card-body .col-md-4 a');
-                    const title =
-                        titleEl?.getAttribute('data-content') ||
-                        cleanText(titleEl?.textContent || '');
-
-                    let category = (title || '').split(/[,\-\n]/)[0]?.trim() || '';
-                    if (category.length > 100) category = category.substring(0, 100);
-
-                    // Quantity (robust)
-                    let quantity = '';
-                    const quantityText = cleanText(card.textContent || '');
-                    const qMatch = quantityText.match(/Quantity[:\s]*([0-9,]+)/i);
-                    if (qMatch?.[1]) {
-                        quantity = qMatch[1].replace(/,/g, '');
-                    }
-
-                    // Department block (best-effort)
-                    const deptEl = card.querySelector('.card-body .col-md-5');
-                    const department = cleanText(deptEl?.textContent || '');
-
-                    // Dates
-                    const startEl = card.querySelector('.start_date');
-                    const endEl = card.querySelector('.end_date');
-                    const startDate = cleanText(startEl?.textContent || '');
-                    const endDate = cleanText(endEl?.textContent || '');
-
-                    const sourceUrl = bidNoEl ? (bidNoEl as HTMLAnchorElement).href : '';
-
-                    tenders.push({
-                        bidNo,
-                        title,
-                        category,
-                        department,
-                        quantity,
-                        startDate,
-                        endDate,
-                        sourceUrl,
-                    });
-                } catch (e) {
-                    // skip
-                }
-            });
-
-            return tenders;
-        });
-    }
-
-    /**
-     * Go to next page safely
-     */
-    private async goToNextPage(page: any): Promise<boolean> {
-        // GeM pagination sometimes uses next button with different selectors
-        const nextSelectors = [
-            'a.page-link.next',
-            'ul.pagination a[rel="next"]',
-            'ul.pagination li.page-item:last-child a.page-link',
-        ];
-
-        let nextButton: any = null;
-
-        for (const sel of nextSelectors) {
-            const btn = await page.$(sel);
-            if (btn) {
-                nextButton = btn;
-                break;
-            }
-        }
-
-        if (!nextButton) return false;
-
-        // Check disabled state (best-effort)
-        const isDisabled = await page.evaluate((el: any) => {
-            const cls = el.getAttribute('class') || '';
-            const parentCls = el.parentElement?.getAttribute('class') || '';
-            return cls.includes('disabled') || parentCls.includes('disabled') || el.getAttribute('aria-disabled') === 'true';
-        }, nextButton);
-
-        if (isDisabled) return false;
-
-        // ✅ Click and wait (works for navigation + ajax)
-        const oldFirstBid = await page.evaluate(() => {
-            const first = document.querySelector('a.bid_no_hover');
-            return first?.textContent?.trim() || '';
-        });
-
-        await nextButton.click();
-        await this.delay(800);
-
-        // Wait until first bid changes OR cards re-render
-        try {
-            await page.waitForFunction(
-                (oldBid: string) => {
-                    const first = document.querySelector('a.bid_no_hover');
-                    const newBid = first?.textContent?.trim() || '';
-                    return newBid && newBid !== oldBid;
-                },
-                { timeout: 30000 },
-                oldFirstBid,
-            );
-        } catch (e) {
-            // fallback: still continue, sometimes first bid stays same but page changed
-        }
-
-        return true;
-    }
-
-    /**
-     * Parse GeM date: "29-12-2025 12:15 PM"
-     */
-    private parseGemdDate(dateStr: string): Date | null {
-        if (!dateStr) return null;
-
-        const match = dateStr.match(/(\d{2})-(\d{2})-(\d{4})\s+(\d{1,2}):(\d{2})\s*(AM|PM)/i);
-        if (!match) return null;
-
-        let [, day, month, year, hours, minutes, period] = match;
-
-        let hour = parseInt(hours, 10);
-        const minute = parseInt(minutes, 10);
-
-        if (period.toUpperCase() === 'PM' && hour !== 12) hour += 12;
-        if (period.toUpperCase() === 'AM' && hour === 12) hour = 0;
-
-        return new Date(
-            parseInt(year, 10),
-            parseInt(month, 10) - 1,
-            parseInt(day, 10),
-            hour,
-            minute,
-        );
-    }
 
     /**
      * Extract state from department text (best-effort)
@@ -570,55 +421,7 @@ export class GemScraperService {
         page.setDefaultNavigationTimeout(60000);
     }
 
-    private isSessionClosedError(error: any): boolean {
-        const message = error?.message?.toLowerCase() || '';
-        return (
-            message.includes('session closed') ||
-            message.includes('target closed') ||
-            message.includes('browser has disconnected')
-        );
-    }
 
-    /**
-     * Apply sort filter on GeM page for latest bid start date
-     */
-    private async applySortFilter(page: any): Promise<boolean> {
-        try {
-            // Try clicking on sort dropdown and selecting "Bid Start Date" with desc order
-            // GeM uses a dropdown for sorting - we'll try to click it and select the right option
-
-            // First, try to find and click sort dropdown
-            const sortDropdown = await page.$('select#sorting, select[name="sorting"], .sorting-dropdown');
-            if (sortDropdown) {
-                await page.select('select#sorting, select[name="sorting"]', 'bid_start_date|desc');
-                await this.delay(2000);
-                await page.waitForSelector('.card', { timeout: 15000 });
-                return true;
-            }
-
-            // Alternative: Click on sort link if it's a link-based sorter
-            const sortLinks = await page.$$('a[href*="sorting"], .sort-option');
-            for (const link of sortLinks) {
-                const text = await page.evaluate((el: any) => el.textContent?.toLowerCase() || '', link);
-                if (text.includes('start date') || text.includes('latest')) {
-                    await link.click();
-                    await this.delay(2000);
-                    await page.waitForSelector('.card', { timeout: 15000 });
-                    return true;
-                }
-            }
-
-            // If no UI elements found, the URL param should already handle sorting
-            this.logger.log('Sort filter applied via URL parameter');
-            return false;
-        } catch (error: any) {
-            if (this.isSessionClosedError(error)) {
-                throw error;
-            }
-            this.logger.warn(`Could not apply sort filter via UI: ${error.message}. Using URL param.`);
-            return false;
-        }
-    }
 
     private delay(ms: number): Promise<void> {
         return new Promise((resolve) => setTimeout(resolve, ms));

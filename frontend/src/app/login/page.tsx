@@ -229,29 +229,6 @@ export default function LoginPage() {
                                 </Button>
                             </form>
 
-                            {/* Demo Credentials */}
-                            <div className="mt-6 p-4 rounded-xl bg-slate-100 border border-slate-200">
-                                <p className="text-sm font-medium text-slate-700 mb-3">
-                                    Demo Accounts
-                                </p>
-                                <div className="space-y-2 text-xs">
-                                    <div className="flex justify-between p-2 rounded-lg bg-white">
-                                        <span className="text-slate-600">Admin</span>
-                                        <span className="font-mono text-slate-800">admin@example.com</span>
-                                    </div>
-                                    <div className="flex justify-between p-2 rounded-lg bg-white">
-                                        <span className="text-slate-600">Manager</span>
-                                        <span className="font-mono text-slate-800">manager@example.com</span>
-                                    </div>
-                                    <div className="flex justify-between p-2 rounded-lg bg-white">
-                                        <span className="text-slate-600">Employee</span>
-                                        <span className="font-mono text-slate-800">employee@example.com</span>
-                                    </div>
-                                    <p className="text-center text-slate-500 pt-2">
-                                        Password: <span className="font-mono">Role@123</span>
-                                    </p>
-                                </div>
-                            </div>
                         </CardContent>
                     </Card>
                 </div>

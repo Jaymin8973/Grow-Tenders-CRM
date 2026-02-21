@@ -13,7 +13,7 @@ export class PdfService {
     // Load logo as base64
     try {
       // Try resolving relative to the compiled file location
-      let logoPath = path.join(__dirname, '../../assets/logo.jpg');
+      let logoPath = path.join(__dirname, '../../assets/logo-invoice.png');
       console.log('Attempting to load logo from:', logoPath);
 
       if (!fs.existsSync(logoPath)) {
@@ -248,7 +248,8 @@ export class PdfService {
         <div>GSTIN: {{companyGst}}</div>
         <div style="max-width: 300px;">{{companyAddress}}</div>
         <div>State Name : {{companyState}}, Code : {{companyStateCode}}</div>
-        <div>Phone {{companyPhone}}</div>
+        <div>Phone: {{companyPhone}}</div>
+        <div>Support: +91 8866502216</div>
       </div>
 
       <div class="invoice-details">
@@ -328,7 +329,7 @@ export class PdfService {
         <span>{{bankDetails.ifsc}}</span>
       </div>
       <div class="bank-row">
-        <span class="bank-label">SWIFT code:</span>
+        <span class="bank-label">SWIFT code:</span> 
         <span>{{bankDetails.swift}}</span>
       </div>
       <div class="bank-row">
@@ -339,6 +340,10 @@ export class PdfService {
         <span class="bank-label">Branch:</span>
         <span>{{bankDetails.branch}}</span>
       </div>
+    </div>
+
+    <div style="margin-top: 30px; text-align: center; font-style: italic; font-size: 10pt;">
+      If you have any query, please contact on +91 8866502216
     </div>
 
   </div>

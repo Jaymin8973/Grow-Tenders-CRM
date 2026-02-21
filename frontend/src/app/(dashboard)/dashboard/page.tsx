@@ -181,177 +181,183 @@ export default function DashboardPage() {
                 </div>
             )}
 
-            {/* Stats Cards */}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                {statsCards.map((stat) => {
-                    const IconComponent = stat.icon;
-                    return (
-                        <Card key={stat.title} className="card-hover overflow-hidden">
-                            <CardContent className="p-5">
-                                <div className="flex items-start justify-between mb-4">
-                                    <div className={`stat-icon ${stat.bg}`}>
-                                        <IconComponent className={`h-6 w-6 ${stat.iconColor}`} />
-                                    </div>
-                                    {stat.trend && (
-                                        <div className={`flex items-center gap-1 text-xs font-medium ${stat.trend === 'up' ? 'text-emerald-600' : 'text-rose-600'
-                                            }`}>
-                                            {stat.trend === 'up' ? (
-                                                <ArrowUpRight className="h-3 w-3" />
-                                            ) : (
-                                                <ArrowDownRight className="h-3 w-3" />
+            {/* Start Restricted Admin/Manager Sections */}
+            {(user?.role === 'SUPER_ADMIN' || user?.role === 'MANAGER') && (
+                <>
+                    {/* Stats Cards */}
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                        {statsCards.map((stat) => {
+                            const IconComponent = stat.icon;
+                            return (
+                                <Card key={stat.title} className="card-hover overflow-hidden">
+                                    <CardContent className="p-5">
+                                        <div className="flex items-start justify-between mb-4">
+                                            <div className={`stat-icon ${stat.bg}`}>
+                                                <IconComponent className={`h-6 w-6 ${stat.iconColor}`} />
+                                            </div>
+                                            {stat.trend && (
+                                                <div className={`flex items-center gap-1 text-xs font-medium ${stat.trend === 'up' ? 'text-emerald-600' : 'text-rose-600'
+                                                    }`}>
+                                                    {stat.trend === 'up' ? (
+                                                        <ArrowUpRight className="h-3 w-3" />
+                                                    ) : (
+                                                        <ArrowDownRight className="h-3 w-3" />
+                                                    )}
+                                                    {stat.change && `+${stat.change}`}
+                                                </div>
                                             )}
-                                            {stat.change && `+${stat.change}`}
                                         </div>
-                                    )}
-                                </div>
-                                <div>
-                                    <p className="text-2xl font-bold">{stat.value}</p>
-                                    <p className="text-sm text-muted-foreground">{stat.title}</p>
-                                    {stat.changeLabel && (
-                                        <p className="text-xs text-muted-foreground mt-1">{stat.changeLabel}</p>
-                                    )}
+                                        <div>
+                                            <p className="text-2xl font-bold">{stat.value}</p>
+                                            <p className="text-sm text-muted-foreground">{stat.title}</p>
+                                            {stat.changeLabel && (
+                                                <p className="text-xs text-muted-foreground mt-1">{stat.changeLabel}</p>
+                                            )}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            );
+                        })}
+                    </div>
+
+                    {/* Charts */}
+                    <div className="grid gap-6 lg:grid-cols-2">
+                        {/* Monthly Revenue Chart */}
+                        <Card className="card-hover">
+                            <CardHeader className="pb-2">
+                                <CardTitle className="flex items-center gap-2 text-lg">
+                                    <div className="p-2 rounded-lg bg-primary/10">
+                                        <TrendingUp className="h-5 w-5 text-primary" />
+                                    </div>
+                                    Monthly Revenue
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="h-80">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <AreaChart data={salesData?.monthlyRevenue || []}>
+                                            <defs>
+                                                <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
+                                                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                                                </linearGradient>
+                                            </defs>
+                                            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
+                                            <XAxis dataKey="month" className="text-xs" axisLine={false} tickLine={false} />
+                                            <YAxis className="text-xs" axisLine={false} tickLine={false} />
+                                            <Tooltip
+                                                contentStyle={{
+                                                    backgroundColor: 'hsl(var(--card))',
+                                                    border: '1px solid hsl(var(--border))',
+                                                    borderRadius: '12px',
+                                                    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                                                }}
+                                                formatter={(value: any) => [formatCurrency(value || 0), 'Revenue']}
+                                            />
+                                            <Area
+                                                type="monotone"
+                                                dataKey="revenue"
+                                                stroke="#6366f1"
+                                                strokeWidth={3}
+                                                fillOpacity={1}
+                                                fill="url(#colorRevenue)"
+                                            />
+                                        </AreaChart>
+                                    </ResponsiveContainer>
                                 </div>
                             </CardContent>
                         </Card>
-                    );
-                })}
-            </div>
 
-            {/* Charts */}
-            <div className="grid gap-6 lg:grid-cols-2">
-                {/* Monthly Revenue Chart */}
-                <Card className="card-hover">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="flex items-center gap-2 text-lg">
-                            <div className="p-2 rounded-lg bg-primary/10">
-                                <TrendingUp className="h-5 w-5 text-primary" />
-                            </div>
-                            Monthly Revenue
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="h-80">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={salesData?.monthlyRevenue || []}>
-                                    <defs>
-                                        <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-                                            <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                                        </linearGradient>
-                                    </defs>
-                                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
-                                    <XAxis dataKey="month" className="text-xs" axisLine={false} tickLine={false} />
-                                    <YAxis className="text-xs" axisLine={false} tickLine={false} />
-                                    <Tooltip
-                                        contentStyle={{
-                                            backgroundColor: 'hsl(var(--card))',
-                                            border: '1px solid hsl(var(--border))',
-                                            borderRadius: '12px',
-                                            boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-                                        }}
-                                        formatter={(value: any) => [formatCurrency(value || 0), 'Revenue']}
-                                    />
-                                    <Area
-                                        type="monotone"
-                                        dataKey="revenue"
-                                        stroke="#6366f1"
-                                        strokeWidth={3}
-                                        fillOpacity={1}
-                                        fill="url(#colorRevenue)"
-                                    />
-                                </AreaChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Pipeline Chart */}
-                <Card className="card-hover">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="flex items-center gap-2 text-lg">
-                            <div className="p-2 rounded-lg bg-primary/10">
-                                <Target className="h-5 w-5 text-primary" />
-                            </div>
-                            Lead Pipeline
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="h-80 flex items-center justify-center">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={pipelineData || []}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={70}
-                                        outerRadius={110}
-                                        paddingAngle={4}
-                                        dataKey="count"
-                                        nameKey="stage"
-                                    >
-                                        {(pipelineData || []).map((entry: any, index: number) => (
-                                            <Cell
-                                                key={`cell-${index}`}
-                                                fill={COLORS[index % COLORS.length]}
-                                                className="stroke-2 stroke-card"
+                        {/* Pipeline Chart */}
+                        <Card className="card-hover">
+                            <CardHeader className="pb-2">
+                                <CardTitle className="flex items-center gap-2 text-lg">
+                                    <div className="p-2 rounded-lg bg-primary/10">
+                                        <Target className="h-5 w-5 text-primary" />
+                                    </div>
+                                    Lead Pipeline
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="h-80 flex items-center justify-center">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie
+                                                data={pipelineData || []}
+                                                cx="50%"
+                                                cy="50%"
+                                                innerRadius={70}
+                                                outerRadius={110}
+                                                paddingAngle={4}
+                                                dataKey="count"
+                                                nameKey="stage"
+                                            >
+                                                {(pipelineData || []).map((entry: any, index: number) => (
+                                                    <Cell
+                                                        key={`cell-${index}`}
+                                                        fill={COLORS[index % COLORS.length]}
+                                                        className="stroke-2 stroke-card"
+                                                    />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip
+                                                contentStyle={{
+                                                    backgroundColor: 'hsl(var(--card))',
+                                                    border: '1px solid hsl(var(--border))',
+                                                    borderRadius: '12px',
+                                                }}
                                             />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip
-                                        contentStyle={{
-                                            backgroundColor: 'hsl(var(--card))',
-                                            border: '1px solid hsl(var(--border))',
-                                            borderRadius: '12px',
-                                        }}
-                                    />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </div>
-                        {/* Legend */}
-                        <div className="flex flex-wrap justify-center gap-4 -mt-4">
-                            {(pipelineData || []).map((entry: any, index: number) => (
-                                <div key={entry.stage} className="flex items-center gap-2">
-                                    <div
-                                        className="w-3 h-3 rounded-full"
-                                        style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                                    />
-                                    <span className="text-xs text-muted-foreground">{entry.stage}</span>
+                                        </PieChart>
+                                    </ResponsiveContainer>
                                 </div>
-                            ))}
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
+                                {/* Legend */}
+                                <div className="flex flex-wrap justify-center gap-4 -mt-4">
+                                    {(pipelineData || []).map((entry: any, index: number) => (
+                                        <div key={entry.stage} className="flex items-center gap-2">
+                                            <div
+                                                className="w-3 h-3 rounded-full"
+                                                style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                                            />
+                                            <span className="text-xs text-muted-foreground">{entry.stage}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
 
-            {/* Quick Stats for Admin/Manager */}
-            {salesData && (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    <Card className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white">
-                        <CardContent className="p-6">
-                            <p className="text-indigo-100 text-sm font-medium">Total Revenue</p>
-                            <p className="text-3xl font-bold mt-2">{formatCurrency(salesData.totalRevenue || 0)}</p>
-                        </CardContent>
-                    </Card>
-                    <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
-                        <CardContent className="p-6">
-                            <p className="text-emerald-100 text-sm font-medium">Leads Converted</p>
-                            <p className="text-3xl font-bold mt-2">{salesData.leadsConverted || 0}</p>
-                        </CardContent>
-                    </Card>
-                    <Card className="bg-gradient-to-br from-amber-500 to-amber-600 text-white">
-                        <CardContent className="p-6">
-                            <p className="text-amber-100 text-sm font-medium">Win Rate</p>
-                            <p className="text-3xl font-bold mt-2">{salesData.winRate || 0}%</p>
-                        </CardContent>
-                    </Card>
-                    <Card className="bg-gradient-to-br from-rose-500 to-rose-600 text-white">
-                        <CardContent className="p-6">
-                            <p className="text-rose-100 text-sm font-medium">Activities Completed</p>
-                            <p className="text-3xl font-bold mt-2">{salesData.activitiesCompleted || 0}</p>
-                        </CardContent>
-                    </Card>
-                </div>
+                    {/* Quick Stats for Admin/Manager */}
+                    {salesData && (
+                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                            <Card className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white">
+                                <CardContent className="p-6">
+                                    <p className="text-indigo-100 text-sm font-medium">Total Revenue</p>
+                                    <p className="text-3xl font-bold mt-2">{formatCurrency(salesData.totalRevenue || 0)}</p>
+                                </CardContent>
+                            </Card>
+                            <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
+                                <CardContent className="p-6">
+                                    <p className="text-emerald-100 text-sm font-medium">Leads Converted</p>
+                                    <p className="text-3xl font-bold mt-2">{salesData.leadsConverted || 0}</p>
+                                </CardContent>
+                            </Card>
+                            <Card className="bg-gradient-to-br from-amber-500 to-amber-600 text-white">
+                                <CardContent className="p-6">
+                                    <p className="text-amber-100 text-sm font-medium">Win Rate</p>
+                                    <p className="text-3xl font-bold mt-2">{salesData.winRate || 0}%</p>
+                                </CardContent>
+                            </Card>
+                            <Card className="bg-gradient-to-br from-rose-500 to-rose-600 text-white">
+                                <CardContent className="p-6">
+                                    <p className="text-rose-100 text-sm font-medium">Activities Completed</p>
+                                    <p className="text-3xl font-bold mt-2">{salesData.activitiesCompleted || 0}</p>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    )}
+                </>
             )}
+            {/* End Restricted Sections */}
         </div>
     );
 }

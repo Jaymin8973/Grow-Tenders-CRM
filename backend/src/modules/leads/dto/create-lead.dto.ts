@@ -33,6 +33,11 @@ export class CreateLeadDto {
     @IsOptional()
     company?: string;
 
+    @ApiPropertyOptional({ example: '24XXXXX1234X1Z5' })
+    @IsString()
+    @IsOptional()
+    gstin?: string;
+
 
 
     @ApiPropertyOptional({ enum: LeadStatus, default: LeadStatus.COLD_LEAD })

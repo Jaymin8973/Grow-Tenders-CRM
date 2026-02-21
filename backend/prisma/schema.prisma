@@ -37,6 +37,15 @@ enum LeadSource {
   OTHER
 }
 
+enum RawLeadStatus {
+  UNTOUCHED
+  CALL_LATER
+  INTERESTED
+  NOT_INTERESTED
+  INVALID
+  DND
+}
+
 enum CustomerLifecycle {
   LEAD
   PROSPECT
@@ -172,6 +181,7 @@ model User {
   // Relations
   leadsAssigned         Lead[]         @relation("LeadAssignee")
   leadsCreated          Lead[]         @relation("LeadCreator")
+  rawLeadsAssigned      RawLead[]      @relation("RawLeadAssignee")
   customersAssigned     Customer[]     @relation("CustomerAssignee")
 
   activitiesAssigned    Activity[]     @relation("ActivityAssignee")
@@ -199,6 +209,7 @@ model Lead {
   lastName      String
   email         String
   company       String?
+  gstin         String?
 
   status        LeadStatus  @default(COLD_LEAD)
   source        LeadSource  @default(OTHER)
@@ -243,6 +254,25 @@ model Lead {
   @@map("leads")
 }
 
+model RawLead {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  phone           String         @unique
+  status          RawLeadStatus  @default(UNTOUCHED)
+  notes           String?
+  source          String?        // e.g., 'CSV Upload', 'Manual'
+  batchName       String?        // Identifier for the bulk upload batch
+  
+  assigneeId      String?        @db.ObjectId
+  assignee        User?          @relation("RawLeadAssignee", fields: [assigneeId], references: [id])
+  
+  convertedLeadId String?        @db.ObjectId
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@map("raw_leads")
+}
+
 // Separate FollowUp model for timeline
 model FollowUp {
   id            String    @id @default(auto()) @map("_id") @db.ObjectId
@@ -252,7 +282,7 @@ model FollowUp {
   completedAt   DateTime?
   
   leadId        String    @db.ObjectId
-  lead          Lead      @relation(fields: [leadId], references: [id])
+  lead          Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
   
   createdById   String    @db.ObjectId
   
@@ -344,7 +374,7 @@ model Activity {
   lead          Lead?          @relation(fields: [leadId], references: [id])
   
   customerId    String?        @db.ObjectId
-  customer      Customer?      @relation(fields: [customerId], references: [id])
+  customer      Customer?      @relation(fields: [customerId], references: [id], onDelete: Cascade)
   
 
   
@@ -368,7 +398,7 @@ model Invoice {
   
   // Customer Details
   customerId      String         @db.ObjectId
-  customer        Customer       @relation(fields: [customerId], references: [id])
+  customer        Customer       @relation(fields: [customerId], references: [id], onDelete: Cascade)
   
 
 
@@ -481,7 +511,7 @@ model Tender {
 model TenderSubscription {
   id          String    @id @default(auto()) @map("_id") @db.ObjectId
   customerId  String    @db.ObjectId
-  customer    Customer  @relation(fields: [customerId], references: [id])
+  customer    Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
   
   categories  String[]  // Array of category keywords
   states      String[]  // Array of state names for matching
@@ -523,7 +553,7 @@ model EmailLog {
   
   // Optional references
   customerId  String?   @db.ObjectId
-  customer    Customer? @relation(fields: [customerId], references: [id])
+  customer    Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
   
   leadId      String?   @db.ObjectId
   lead        Lead?     @relation(fields: [leadId], references: [id])
@@ -581,7 +611,7 @@ model Note {
   lead        Lead?     @relation(fields: [leadId], references: [id])
   
   customerId  String?   @db.ObjectId
-  customer    Customer? @relation(fields: [customerId], references: [id])
+  customer    Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
   
 
   
@@ -606,7 +636,7 @@ model Attachment {
   lead        Lead?     @relation(fields: [leadId], references: [id])
   
   customerId  String?   @db.ObjectId
-  customer    Customer? @relation(fields: [customerId], references: [id])
+  customer    Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
   
 
   
@@ -625,7 +655,7 @@ model Payment {
   // Customer Info (for internal - linked, for external - manual)
   referenceType   ReferenceType  @default(INTERNAL)
   customerId      String?        @db.ObjectId
-  customer        Customer?      @relation(fields: [customerId], references: [id])
+  customer        Customer?      @relation(fields: [customerId], references: [id], onDelete: SetNull)
   customerName    String?        // For external customers
   companyName     String?        // For external customers
   phone           String?
@@ -661,7 +691,7 @@ model Payment {
 model LeadTransferRequest {
   id          String         @id @default(auto()) @map("_id") @db.ObjectId
   leadId      String         @db.ObjectId
-  lead        Lead           @relation(fields: [leadId], references: [id])
+  lead        Lead           @relation(fields: [leadId], references: [id], onDelete: Cascade)
   
   requesterId String         @db.ObjectId
   requester   User           @relation("TransferRequester", fields: [requesterId], references: [id])
@@ -702,7 +732,7 @@ model TenderDispatchQueue {
   tender          Tender      @relation(fields: [tenderId], references: [id])
   
   customerId      String      @db.ObjectId
-  customer        Customer    @relation(fields: [customerId], references: [id])
+  customer        Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
   
   status          String      @default("PENDING") // PENDING, SENT, FAILED
   retryCount      Int         @default(0)
@@ -796,7 +826,7 @@ model PaymentRequest {
   lead            Lead?     @relation(fields: [leadId], references: [id])
   
   customerId      String?   @db.ObjectId
-  customer        Customer? @relation(fields: [customerId], references: [id])
+  customer        Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
   
   // Link to created Payment when approved
   paymentId       String?   @db.ObjectId
