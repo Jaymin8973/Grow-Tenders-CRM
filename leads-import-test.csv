@@ -1,0 +1,4 @@
+email,firstName,lastName,company,mobile,status,source,assigneeId,nextFollowUp,industry,description
+john.doe.test1@example.com,John,Doe,Acme Pvt Ltd,+919999000001,COLD_LEAD,OTHER,,2026-12-31,Manufacturing,Interested in demo
+jane.smith.test2@example.com,Jane,Smith,Globex Corp,+919999000002,WARM_LEAD,REFERRAL,,2026-11-15,IT Services,Asked for pricing
+raj.kumar.test3@example.com,Raj,Kumar,Initech,+919999000003,HOT_LEAD,WEBSITE,,2026-10-01,Software,Wants to schedule a call

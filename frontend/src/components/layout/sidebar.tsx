@@ -96,7 +96,7 @@ export function Sidebar() {
                 </div>
                 <div>
                     <span className="text-xl font-bold bg-gradient-to-r from-[#1a5f6c] to-[#e67e22] bg-clip-text text-transparent">
-                        Grow Tenders
+                        Grow Tender
                     </span>
                     <p className="text-xs text-muted-foreground">CRM Platform</p>
                 </div>

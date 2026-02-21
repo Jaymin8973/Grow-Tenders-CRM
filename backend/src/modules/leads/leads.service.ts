@@ -1,8 +1,10 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
 import { Role, LeadStatus, LeadSource, Prisma, ActivityType, ActivityStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
+import * as XLSX from 'xlsx';
+import { parse as parseCsv } from 'csv-parse/sync';
 
 interface UserContext {
     id: string;
@@ -16,6 +18,8 @@ import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class LeadsService {
+    private readonly logger = new Logger(LeadsService.name);
+
     constructor(
         private prisma: PrismaService,
         private customersService: CustomersService,
@@ -45,6 +49,146 @@ export class LeadsService {
             activity.title,
             activity.id,
         );
+    }
+
+    async bulkImportFromFile(file: Express.Multer.File, user: UserContext) {
+        if (!file) {
+            throw new NotFoundException('No file uploaded');
+        }
+
+        const maxBytes = 5 * 1024 * 1024;
+        if (file.size > maxBytes) {
+            throw new ForbiddenException('File too large. Max allowed size is 5MB');
+        }
+
+        const ext = (file.originalname.split('.').pop() || '').toLowerCase();
+
+        let records: Record<string, any>[] = [];
+
+        if (ext === 'csv') {
+            const text = file.buffer.toString('utf8');
+            records = parseCsv(text, {
+                columns: true,
+                skip_empty_lines: true,
+                trim: true,
+            });
+        } else if (ext === 'xlsx' || ext === 'xls') {
+            const workbook = XLSX.read(file.buffer, { type: 'buffer' });
+            const sheetName = workbook.SheetNames[0];
+            const sheet = workbook.Sheets[sheetName];
+            records = XLSX.utils.sheet_to_json(sheet, { defval: '' }) as any;
+        } else {
+            throw new ForbiddenException('Unsupported file type. Please upload CSV or XLSX');
+        }
+
+        const maxRows = 2000;
+        if (records.length > maxRows) {
+            throw new ForbiddenException(`Too many rows. Max allowed rows is ${maxRows}`);
+        }
+
+        const normalizeKey = (k: string) => k.toLowerCase().replace(/\s|\-|\./g, '');
+        const getField = (row: any, keys: string[]) => {
+            const map = new Map<string, any>();
+            Object.keys(row || {}).forEach(k => map.set(normalizeKey(k), row[k]));
+            for (const key of keys) {
+                const v = map.get(normalizeKey(key));
+                if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim();
+            }
+            return undefined;
+        };
+
+        const result = {
+            totalRows: records.length,
+            created: 0,
+            updated: 0,
+            failed: 0,
+            errors: [] as { row: number; message: string }[],
+        };
+
+        for (let i = 0; i < records.length; i++) {
+            const row = records[i];
+            const rowNumber = i + 2;
+
+            const email = getField(row, ['email']);
+            const firstName = getField(row, ['firstName', 'first name', 'firstname']);
+            const lastName = getField(row, ['lastName', 'last name', 'lastname']);
+
+            if (!email || !firstName || !lastName) {
+                result.failed++;
+                result.errors.push({ row: rowNumber, message: 'Missing required fields: email, firstName, lastName' });
+                continue;
+            }
+
+            const company = getField(row, ['company']);
+            const mobile = getField(row, ['mobile', 'phone', 'phonenumber', 'phone number']);
+            const statusRaw = getField(row, ['status']);
+            const sourceRaw = getField(row, ['source']);
+            const assigneeId = getField(row, ['assigneeId', 'assignee id']);
+            const nextFollowUpRaw = getField(row, ['nextFollowUp', 'next follow up', 'nextfollowup']);
+            const industry = getField(row, ['industry']);
+            const description = getField(row, ['description']);
+
+            const status = (statusRaw as LeadStatus) || undefined;
+            const source = (sourceRaw as LeadSource) || undefined;
+
+            let nextFollowUp: Date | undefined;
+            if (nextFollowUpRaw) {
+                const d = new Date(nextFollowUpRaw);
+                if (!Number.isNaN(d.getTime())) nextFollowUp = d;
+            }
+
+            try {
+                const existing = await this.prisma.lead.findFirst({
+                    where: { email: { equals: email, mode: 'insensitive' } },
+                    select: { id: true },
+                });
+
+                if (existing) {
+                    await this.prisma.lead.update({
+                        where: { id: existing.id },
+                        data: {
+                            firstName,
+                            lastName,
+                            email,
+                            company,
+                            mobile,
+                            industry,
+                            description,
+                            status,
+                            source,
+                            assigneeId: assigneeId || undefined,
+                            nextFollowUp: nextFollowUp || undefined,
+                        } as any,
+                    });
+                    result.updated++;
+                } else {
+                    await this.prisma.lead.create({
+                        data: {
+                            title: `${firstName} ${lastName}`,
+                            firstName,
+                            lastName,
+                            email,
+                            company,
+                            mobile,
+                            industry,
+                            description,
+                            status: status || LeadStatus.COLD_LEAD,
+                            source: source || LeadSource.OTHER,
+                            createdById: user.id,
+                            assigneeId: assigneeId || user.id,
+                            nextFollowUp: nextFollowUp || undefined,
+                        } as any,
+                    });
+                    result.created++;
+                }
+            } catch (e: any) {
+                this.logger.warn(`Bulk import row failed: ${e?.message || e}`);
+                result.failed++;
+                result.errors.push({ row: rowNumber, message: e?.message || 'Unknown error' });
+            }
+        }
+
+        return result;
     }
 
     async create(createLeadDto: CreateLeadDto, userId: string) {
@@ -88,6 +232,11 @@ export class LeadsService {
         assigneeId?: string;
         search?: string;
         excludeAssigneeId?: string;
+        page?: number;
+        pageSize?: number;
+        cursor?: string;
+        sortBy?: string;
+        sortOrder?: 'asc' | 'desc';
     }) {
         let where: any = {};
 
@@ -161,7 +310,15 @@ export class LeadsService {
             ];
         }
 
-        const leads = await this.prisma.lead.findMany({
+        const pageSize = Math.min(Math.max(filters?.pageSize ?? 25, 1), 100);
+        const page = Math.max(filters?.page ?? 1, 1);
+
+        const sortBy = filters?.sortBy ?? 'createdAt';
+        const sortOrder: 'asc' | 'desc' = filters?.sortOrder ?? 'desc';
+
+        const orderBy: Prisma.LeadOrderByWithRelationInput = { [sortBy]: sortOrder } as any;
+
+        const baseQuery: Prisma.LeadFindManyArgs = {
             where,
             include: {
                 assignee: {
@@ -174,11 +331,27 @@ export class LeadsService {
                     select: { activities: true },
                 },
             },
-            orderBy: { createdAt: 'desc' },
+            orderBy,
+        };
+
+        const usingCursor = !!filters?.cursor;
+
+        const leads = await this.prisma.lead.findMany({
+            ...baseQuery,
+            ...(usingCursor
+                ? {
+                    cursor: { id: filters!.cursor! },
+                    skip: 1,
+                    take: pageSize,
+                }
+                : {
+                    skip: (page - 1) * pageSize,
+                    take: pageSize,
+                }),
         });
 
-        if (user.role === Role.EMPLOYEE) {
-            return leads.map(lead => {
+        const maskedLeads = user.role === Role.EMPLOYEE
+            ? leads.map(lead => {
                 if (lead.assigneeId !== user.id && lead.mobile) {
                     // Mask mobile number details
                     // Keep last 4 digits, hide the rest
@@ -195,10 +368,22 @@ export class LeadsService {
                     };
                 }
                 return lead;
-            });
-        }
+            })
+            : leads;
 
-        return leads;
+        const nextCursor = maskedLeads.length > 0 ? maskedLeads[maskedLeads.length - 1].id : null;
+
+        const total = usingCursor
+            ? undefined
+            : await this.prisma.lead.count({ where });
+
+        return {
+            items: maskedLeads,
+            page: usingCursor ? undefined : page,
+            pageSize,
+            total,
+            nextCursor,
+        };
     }
 
     async findOne(id: string, user: UserContext) {
@@ -360,12 +545,54 @@ export class LeadsService {
             } catch (error) {
                 // Log error but don't fail the status update? 
                 // Or maybe we should fail? 
-                // For now, let's log to console. Ideally use Logger.
-                console.error('Failed to auto-convert lead to customer:', error);
+                this.logger.error('Failed to auto-convert lead to customer', error as any);
             }
         }
 
         return updatedLead;
+    }
+
+    async bulkAssignLeads(leadIds: string[], assigneeId: string, user: UserContext) {
+        if (user.role === Role.EMPLOYEE) {
+            throw new ForbiddenException('Employees cannot reassign leads');
+        }
+
+        // Verify assignee exists
+        const assignee = await this.prisma.user.findUnique({ where: { id: assigneeId } });
+        if (!assignee) {
+            throw new NotFoundException('Assignee not found');
+        }
+
+        // Update all leads
+        const result = await this.prisma.lead.updateMany({
+            where: {
+                id: { in: leadIds },
+            },
+            data: { assigneeId },
+        });
+
+        return {
+            message: `Successfully assigned ${result.count} lead(s)`,
+            count: result.count,
+        };
+    }
+
+    async bulkDeleteLeads(leadIds: string[], user: UserContext) {
+        if (user.role === Role.EMPLOYEE) {
+            throw new ForbiddenException('Employees cannot delete leads');
+        }
+
+        // Delete all leads
+        const result = await this.prisma.lead.deleteMany({
+            where: {
+                id: { in: leadIds },
+            },
+        });
+
+        return {
+            message: `Successfully deleted ${result.count} lead(s)`,
+            count: result.count,
+        };
     }
 
     async getLeadStats(user: UserContext) {

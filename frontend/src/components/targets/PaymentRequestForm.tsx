@@ -30,8 +30,8 @@ export function PaymentRequestForm() {
     const { data: leads } = useQuery({
         queryKey: ['my-leads'],
         queryFn: async () => {
-            const response = await apiClient.get('/leads'); // Assuming this returns my leads
-            return response.data;
+            const response = await apiClient.get('/leads?page=1&pageSize=100');
+            return response.data?.items ?? [];
         },
     });
 

@@ -300,7 +300,6 @@ model Customer {
   phone         String?
   company       String?
   position      String?
-  lifecycle     CustomerLifecycle @default(PROSPECT)
   address       String?
   city          String?
   state         String?

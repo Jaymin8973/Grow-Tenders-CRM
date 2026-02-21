@@ -44,13 +44,6 @@ import { formatDistanceToNow } from 'date-fns';
 import { getInitials, cn, formatCurrency } from '@/lib/utils';
 import { ComposeEmailDialog } from '@/components/mail/compose-email-dialog';
 
-const lifecycleConfig: Record<string, { label: string; color: string; bg: string }> = {
-    LEAD: { label: 'Lead', color: 'text-blue-700', bg: 'bg-blue-100' },
-    PROSPECT: { label: 'Prospect', color: 'text-purple-700', bg: 'bg-purple-100' },
-    CUSTOMER: { label: 'Customer', color: 'text-emerald-700', bg: 'bg-emerald-100' },
-    CHURNED: { label: 'Churned', color: 'text-red-700', bg: 'bg-red-100' },
-};
-
 export default function CustomerDetailPage() {
     const params = useParams();
     const router = useRouter();
@@ -218,7 +211,6 @@ export default function CustomerDetailPage() {
         );
     }
 
-    const lifecycle = lifecycleConfig[customer.lifecycle] || lifecycleConfig.LEAD;
     const totalRevenue = invoices?.filter((inv: any) => inv.status === 'PAID')
         .reduce((sum: number, inv: any) => sum + (inv.total || 0), 0) || 0;
 
@@ -234,9 +226,6 @@ export default function CustomerDetailPage() {
                         <h1 className="text-2xl font-bold">
                             {customer.firstName} {customer.lastName}
                         </h1>
-                        <Badge className={cn(lifecycle.bg, lifecycle.color, 'border-0')}>
-                            {lifecycle.label}
-                        </Badge>
                     </div>
                     <p className="text-muted-foreground">{customer.company || 'No company'}</p>
                 </div>

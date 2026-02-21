@@ -13,6 +13,13 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import {
     AlertDialog,
     AlertDialogAction,
     AlertDialogCancel,
@@ -51,14 +58,6 @@ import {
 } from 'lucide-react';
 import { getInitials, formatCurrency, cn } from '@/lib/utils';
 
-const lifecycleConfig: Record<string, { label: string; color: string; bg: string }> = {
-    LEAD: { label: 'Lead', color: 'text-slate-700', bg: 'bg-slate-50 border-slate-200' },
-    PROSPECT: { label: 'Prospect', color: 'text-blue-700', bg: 'bg-blue-50 border-blue-200' },
-    OPPORTUNITY: { label: 'Opportunity', color: 'text-violet-700', bg: 'bg-violet-50 border-violet-200' },
-    CUSTOMER: { label: 'Customer', color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200' },
-    CHURNED: { label: 'Churned', color: 'text-red-700', bg: 'bg-red-50 border-red-200' },
-};
-
 // Skeleton row component for loading state
 function TableRowSkeleton() {
     return (
@@ -86,7 +85,8 @@ export default function CustomersPage() {
     const { user } = useAuth();
     const queryClient = useQueryClient();
     const [search, setSearch] = useState('');
-    const [lifecycleFilter, setLifecycleFilter] = useState<string | null>(null);
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(25);
     const [emailDialogOpen, setEmailDialogOpen] = useState(false);
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -97,17 +97,28 @@ export default function CustomersPage() {
     // Debounce search input to avoid excessive API calls
     const debouncedSearch = useDebounce(search, 300);
 
-    const { data: customers, isLoading, isFetching } = useQuery({
-        queryKey: ['customers', debouncedSearch, lifecycleFilter],
+    const { data: customerStats } = useQuery({
+        queryKey: ['customer-stats'],
+        queryFn: async () => {
+            const response = await apiClient.get('/customers/stats');
+            return response.data;
+        },
+    });
+
+    const { data: customersData, isLoading, isFetching } = useQuery({
+        queryKey: ['customers', debouncedSearch, page, pageSize],
         queryFn: async () => {
             const params = new URLSearchParams();
             if (debouncedSearch) params.append('search', debouncedSearch);
-            if (lifecycleFilter) params.append('lifecycle', lifecycleFilter);
+            params.append('page', String(page));
+            params.append('pageSize', String(pageSize));
             const response = await apiClient.get(`/customers?${params.toString()}`);
             return response.data;
         },
         placeholderData: keepPreviousData, // Keep showing old data while fetching new
     });
+
+    const customers = customersData?.items ?? [];
 
     // Delete customer mutation
     const deleteCustomerMutation = useMutation({
@@ -146,7 +157,7 @@ export default function CustomersPage() {
                                 <Users className="h-6 w-6 text-blue-500" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold">{customers?.length || 0}</p>
+                                <p className="text-2xl font-bold">{customerStats?.total ?? 0}</p>
                                 <p className="text-sm text-muted-foreground">Total Customers</p>
                             </div>
                         </div>
@@ -159,10 +170,8 @@ export default function CustomersPage() {
                                 <TrendingUp className="h-6 w-6 text-emerald-500" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold">
-                                    {customers?.filter((c: any) => c.lifecycle === 'CUSTOMER').length || 0}
-                                </p>
-                                <p className="text-sm text-muted-foreground">Active</p>
+                                <p className="text-2xl font-bold">{customerStats?.total ?? 0}</p>
+                                <p className="text-sm text-muted-foreground">Customers</p>
                             </div>
                         </div>
                     </CardContent>
@@ -174,10 +183,8 @@ export default function CustomersPage() {
                                 <Star className="h-6 w-6 text-amber-500" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold">
-                                    {formatCurrency(customers?.reduce((sum: number, c: any) => sum + (c.totalRevenue || 0), 0) || 0)}
-                                </p>
-                                <p className="text-sm text-muted-foreground">Total Revenue</p>
+                                <p className="text-2xl font-bold">{formatCurrency(customerStats?.revenue || 0)}</p>
+                                <p className="text-sm text-muted-foreground">Revenue</p>
                             </div>
                         </div>
                     </CardContent>
@@ -189,9 +196,7 @@ export default function CustomersPage() {
                                 <Building2 className="h-6 w-6 text-violet-500" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold">
-                                    {new Set(customers?.map((c: any) => c.company).filter(Boolean)).size || 0}
-                                </p>
+                                <p className="text-2xl font-bold">{customerStats?.companies ?? 0}</p>
                                 <p className="text-sm text-muted-foreground">Companies</p>
                             </div>
                         </div>
@@ -209,26 +214,17 @@ export default function CustomersPage() {
                                 type="search"
                                 placeholder="Search by name, email, company..."
                                 value={search}
-                                onChange={(e) => setSearch(e.target.value)}
+                                onChange={(e) => {
+                                    setSearch(e.target.value);
+                                    setPage(1);
+                                }}
                                 className="pl-10 pr-10"
                             />
                             {isFetching && (
                                 <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
                             )}
                         </div>
-                        <div className="flex gap-2 flex-wrap">
-                            {Object.entries(lifecycleConfig).map(([key, config]) => (
-                                <Button
-                                    key={key}
-                                    variant={lifecycleFilter === key ? 'default' : 'outline'}
-                                    size="sm"
-                                    onClick={() => setLifecycleFilter(lifecycleFilter === key ? null : key)}
-                                    className="text-xs"
-                                >
-                                    {config.label}
-                                </Button>
-                            ))}
-                        </div>
+                        <div />
                     </div>
                 </CardContent>
             </Card>
@@ -241,7 +237,6 @@ export default function CustomersPage() {
                             <TableRow>
                                 <TableHead className="w-[300px]">Customer</TableHead>
                                 <TableHead>Company</TableHead>
-                                <TableHead>Lifecycle</TableHead>
                                 <TableHead>Total Revenue</TableHead>
                                 <TableHead>Contact</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
@@ -259,9 +254,7 @@ export default function CustomersPage() {
                                 </>
                             )}
                             {/* Show actual data */}
-                            {!isLoading && customers?.map((customer: any) => {
-                                const lifecycle = lifecycleConfig[customer.lifecycle] || lifecycleConfig.LEAD;
-
+                            {!isLoading && customers.map((customer: any) => {
                                 return (
                                     <TableRow
                                         key={customer.id}
@@ -292,11 +285,6 @@ export default function CustomersPage() {
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <Badge variant="outline" className={cn(lifecycle.bg, lifecycle.color, 'border')}>
-                                                {lifecycle.label}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="font-medium">
                                             {formatCurrency(customer.totalRevenue || 0)}
                                         </TableCell>
                                         <TableCell>
@@ -366,9 +354,9 @@ export default function CustomersPage() {
                                     </TableRow>
                                 );
                             })}
-                            {!isLoading && (!customers || customers.length === 0) && (
+                            {!isLoading && customers.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="h-32 text-center">
+                                    <TableCell colSpan={5} className="h-32 text-center">
                                         <div className="flex flex-col items-center justify-center text-muted-foreground">
                                             <Users className="h-10 w-10 mb-2 opacity-50" />
                                             <p>No customers found</p>
@@ -381,6 +369,47 @@ export default function CustomersPage() {
                     </Table>
                 </CardContent>
             </Card>
+
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="text-sm text-muted-foreground">
+                    {typeof customersData?.total === 'number'
+                        ? `Showing ${customers.length} of ${customersData.total}`
+                        : `Showing ${customers.length}`}
+                </div>
+                <div className="flex items-center gap-2">
+                    <Select
+                        value={String(pageSize)}
+                        onValueChange={(val: string) => {
+                            setPageSize(Number(val));
+                            setPage(1);
+                        }}
+                    >
+                        <SelectTrigger className="w-[140px]">
+                            <SelectValue placeholder="Page size" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="25">25 / page</SelectItem>
+                            <SelectItem value="50">50 / page</SelectItem>
+                            <SelectItem value="100">100 / page</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <Button
+                        variant="outline"
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        disabled={page <= 1}
+                    >
+                        Prev
+                    </Button>
+                    <div className="text-sm font-medium w-[90px] text-center">Page {page}</div>
+                    <Button
+                        variant="outline"
+                        onClick={() => setPage((p) => p + 1)}
+                        disabled={typeof customersData?.total === 'number' ? page * pageSize >= customersData.total : customers.length < pageSize}
+                    >
+                        Next
+                    </Button>
+                </div>
+            </div>
 
             <ComposeEmailDialog
                 isOpen={emailDialogOpen}

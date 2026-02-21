@@ -55,6 +55,7 @@ import {
     CheckCircle2,
     Edit,
     Trash2,
+    ChevronRight,
 } from 'lucide-react';
 // import { CreateTaskDialog } from '@/components/tasks/create-task-dialog';
 import { ComposeEmailDialog } from '@/components/mail/compose-email-dialog';
@@ -306,66 +307,85 @@ export default function LeadDetailPage() {
     const canUpdateStatus = user?.role !== 'EMPLOYEE' || lead.assigneeId === user?.id;
 
     return (
-        <div className="space-y-6 page-enter">
-            {/* Header */}
-            <div className="flex items-center gap-4">
-                <Button variant="ghost" size="icon" onClick={() => router.push('/leads')}>
-                    <ArrowLeft className="h-5 w-5" />
-                </Button>
-                <div className="flex-1">
-                    <div className="flex items-center gap-3">
-                        <h1 className="text-2xl font-bold">
-                            {lead.salutation} {lead.firstName} {lead.lastName}
-                        </h1>
-                        <Badge className={cn(status.bg, status.color, 'border-0')}>
-                            {status.label}
-                        </Badge>
+        <div className="max-w-7xl mx-auto space-y-6 page-enter pb-16">
+            <div className="sticky top-0 z-30 -mx-4 sm:mx-0 px-4 sm:px-0 pt-4 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+                {/* Header */}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-start gap-4 min-w-0">
+                        <Button variant="ghost" size="icon" onClick={() => router.push('/leads')}>
+                            <ArrowLeft className="h-5 w-5" />
+                        </Button>
+                        <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <h1 className="text-2xl font-bold truncate">
+                                    {lead.salutation} {lead.firstName} {lead.lastName}
+                                </h1>
+                                <Badge className={cn(status.bg, status.color, 'border-0')}>
+                                    {status.label}
+                                </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground flex items-center gap-2">
+                                <Building2 className="h-3.5 w-3.5" />
+                                <span className="truncate">{lead.company || 'No company'}</span>
+                                {lead.industry && <span className="text-muted-foreground/50 mx-1">•</span>}
+                                {lead.industry && <span className="truncate">{lead.industry}</span>}
+                            </p>
+                        </div>
                     </div>
-                    <p className="text-sm text-muted-foreground flex items-center gap-2">
-                        <Building2 className="h-3.5 w-3.5" />
-                        {lead.company || 'No company'}
-                        {lead.industry && <span className="text-muted-foreground/50 mx-1">•</span>}
-                        {lead.industry && <span>{lead.industry}</span>}
-                    </p>
+
+                    <div className="flex flex-wrap items-center gap-2 justify-end">
+                        <ComposeEmailDialog
+                            isOpen={emailOpen}
+                            onClose={() => setEmailOpen(false)}
+                            defaultTo={lead.email}
+                            relatedTo={{ type: 'Lead', id: lead.id, name: `${lead.firstName} ${lead.lastName}` }}
+                        >
+                            <Button className="gap-2" variant="outline">
+                                <Mail className="h-4 w-4" />
+                                Email
+                            </Button>
+                        </ComposeEmailDialog>
+
+                        {(user?.role === 'SUPER_ADMIN' || user?.role === 'MANAGER') && (
+                            <Button
+                                variant="secondary"
+                                className="gap-2"
+                                onClick={() => convertToCustomerMutation.mutate()}
+                                disabled={convertToCustomerMutation.isPending}
+                            >
+                                <User className="h-4 w-4" />
+                                Convert
+                            </Button>
+                        )}
+
+                        {(user?.role === 'SUPER_ADMIN' || user?.role === 'MANAGER') && (
+                            <Button
+                                variant="default"
+                                className="gap-2"
+                                onClick={() => setAssignDialogOpen(true)}
+                            >
+                                <User className="h-4 w-4" />
+                                Assign
+                            </Button>
+                        )}
+                    </div>
                 </div>
-                <ComposeEmailDialog
-                    isOpen={emailOpen}
-                    onClose={() => setEmailOpen(false)}
-                    defaultTo={lead.email}
-                    relatedTo={{ type: 'Lead', id: lead.id, name: `${lead.firstName} ${lead.lastName}` }}
-                >
-                    <Button className="gap-2">
-                        <Mail className="h-4 w-4" />
-                        Send Email
-                    </Button>
-                </ComposeEmailDialog>
 
-
-                {(user?.role === 'SUPER_ADMIN' || user?.role === 'MANAGER') && (
-                    <Button
-                        variant="secondary"
-                        className="gap-2"
-                        onClick={() => convertToCustomerMutation.mutate()}
-                        disabled={convertToCustomerMutation.isPending}
-                    >
-                        <User className="h-4 w-4" />
-                        Convert to Customer
-                    </Button>
-                )}
-
-                <AssignLeadDialog
-                    open={assignDialogOpen}
-                    onOpenChange={setAssignDialogOpen}
-                    leadId={leadId}
-                    currentAssigneeId={lead.assignee?.id}
-                />
-
-                <TransferLeadDialog
-                    open={transferDialogOpen}
-                    onOpenChange={setTransferDialogOpen}
-                    leadId={leadId}
-                />
+                <div className="h-px w-full bg-border mt-4" />
             </div>
+
+            <AssignLeadDialog
+                open={assignDialogOpen}
+                onOpenChange={setAssignDialogOpen}
+                leadId={leadId}
+                currentAssigneeId={lead.assignee?.id}
+            />
+
+            <TransferLeadDialog
+                open={transferDialogOpen}
+                onOpenChange={setTransferDialogOpen}
+                leadId={leadId}
+            />
 
             <div className="grid gap-6 lg:grid-cols-3">
                 {/* Left Column - Lead Info */}
@@ -440,6 +460,42 @@ export default function LeadDetailPage() {
                                             {lead.website}
                                         </a>
                                     </div>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Quick Actions */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-lg">Quick Actions</CardTitle>
+                        </CardHeader>
+                        <CardContent className="grid gap-2">
+                            <div className="flex flex-wrap gap-2">
+                                {lead.phone && (
+                                    <a href={`tel:${lead.phone}`} className="inline-flex">
+                                        <Button variant="outline" size="sm" className="gap-2">
+                                            <Phone className="h-4 w-4" />
+                                            Call
+                                        </Button>
+                                    </a>
+                                )}
+                                <a href={`mailto:${lead.email}`} className="inline-flex">
+                                    <Button variant="outline" size="sm" className="gap-2">
+                                        <Mail className="h-4 w-4" />
+                                        Email
+                                    </Button>
+                                </a>
+                                {(user?.role === 'SUPER_ADMIN' || user?.role === 'MANAGER') && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="gap-2"
+                                        onClick={() => setTransferDialogOpen(true)}
+                                    >
+                                        <ChevronRight className="h-4 w-4" />
+                                        Transfer
+                                    </Button>
                                 )}
                             </div>
                         </CardContent>

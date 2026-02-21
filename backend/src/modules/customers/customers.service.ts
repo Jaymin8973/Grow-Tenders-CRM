@@ -1,5 +1,5 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { Role, CustomerLifecycle } from '@prisma/client';
+import { Injectable, NotFoundException, ForbiddenException, Logger, BadRequestException } from '@nestjs/common';
+import { Role, Prisma, InvoiceStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
@@ -12,20 +12,40 @@ interface UserContext {
 
 @Injectable()
 export class CustomersService {
+    private readonly logger = new Logger(CustomersService.name);
+
     constructor(private prisma: PrismaService) { }
 
+    private async assertAssigneeExists(assigneeId?: string) {
+        if (!assigneeId) return;
+        const user = await this.prisma.user.findUnique({ where: { id: assigneeId }, select: { id: true } });
+        if (!user) {
+            throw new BadRequestException('Assignee not found');
+        }
+    }
+
     async create(createCustomerDto: CreateCustomerDto, userId: string) {
-        return this.prisma.customer.create({
-            data: {
-                ...createCustomerDto,
-                assigneeId: createCustomerDto.assigneeId || userId,
-            },
-            include: {
-                assignee: {
-                    select: { id: true, firstName: true, lastName: true, email: true },
+        await this.assertAssigneeExists(createCustomerDto.assigneeId);
+
+        try {
+            return await this.prisma.customer.create({
+                data: {
+                    ...createCustomerDto,
+                    assigneeId: createCustomerDto.assigneeId || userId,
                 },
-            },
-        });
+                include: {
+                    assignee: {
+                        select: { id: true, firstName: true, lastName: true, email: true },
+                    },
+                },
+            });
+        } catch (e: any) {
+            if (typeof e?.message === 'string' && e.message.toLowerCase().includes('unique')) {
+                throw new BadRequestException('Customer with this email already exists');
+            }
+            this.logger.error('Failed to create customer', e);
+            throw e;
+        }
     }
 
     async createFromLead(leadId: string, userId: string) {
@@ -42,7 +62,6 @@ export class CustomersService {
                 email: lead.email,
                 phone: lead.mobile,
                 company: lead.company,
-                lifecycle: CustomerLifecycle.CUSTOMER,
                 assigneeId: lead.assigneeId || userId,
                 leadId: lead.id,
             },
@@ -63,9 +82,13 @@ export class CustomersService {
     }
 
     async findAll(user: UserContext, filters?: {
-        lifecycle?: CustomerLifecycle;
         assigneeId?: string;
         search?: string;
+        page?: number;
+        pageSize?: number;
+        cursor?: string;
+        sortBy?: string;
+        sortOrder?: 'asc' | 'desc';
     }) {
         let where: any = {};
 
@@ -80,9 +103,6 @@ export class CustomersService {
             where.assigneeId = { in: [user.id, ...teamIds] };
         }
 
-        if (filters?.lifecycle) {
-            where.lifecycle = filters.lifecycle;
-        }
         if (filters?.assigneeId && user.role !== Role.EMPLOYEE) {
             // If Manager, ensure the requested assignee is in their team
             if (user.role === Role.MANAGER) {
@@ -102,7 +122,16 @@ export class CustomersService {
             ];
         }
 
-        return this.prisma.customer.findMany({
+        const pageSize = Math.min(Math.max(filters?.pageSize ?? 25, 1), 100);
+        const page = Math.max(filters?.page ?? 1, 1);
+
+        const sortBy = filters?.sortBy ?? 'createdAt';
+        const sortOrder: 'asc' | 'desc' = filters?.sortOrder ?? 'desc';
+        const allowedSortBy = new Set(['createdAt', 'updatedAt', 'firstName', 'lastName', 'email', 'company']);
+        const safeSortBy = allowedSortBy.has(sortBy) ? sortBy : 'createdAt';
+        const orderBy: Prisma.CustomerOrderByWithRelationInput = { [safeSortBy]: sortOrder } as any;
+
+        const baseQuery: Prisma.CustomerFindManyArgs = {
             where,
             include: {
                 assignee: {
@@ -112,8 +141,35 @@ export class CustomersService {
                     select: { invoices: true, activities: true },
                 },
             },
-            orderBy: { createdAt: 'desc' },
+            orderBy,
+        };
+
+        const usingCursor = !!filters?.cursor;
+
+        const items = await this.prisma.customer.findMany({
+            ...baseQuery,
+            ...(usingCursor
+                ? {
+                    cursor: { id: filters!.cursor! },
+                    skip: 1,
+                    take: pageSize,
+                }
+                : {
+                    skip: (page - 1) * pageSize,
+                    take: pageSize,
+                }),
         });
+
+        const nextCursor = items.length > 0 ? items[items.length - 1].id : null;
+        const total = usingCursor ? undefined : await this.prisma.customer.count({ where });
+
+        return {
+            items,
+            page: usingCursor ? undefined : page,
+            pageSize,
+            total,
+            nextCursor,
+        };
     }
 
     async findOne(id: string, user: UserContext) {
@@ -180,15 +236,25 @@ export class CustomersService {
             throw new ForbiddenException('You do not have access to update this customer');
         }
 
-        return this.prisma.customer.update({
-            where: { id },
-            data: updateCustomerDto,
-            include: {
-                assignee: {
-                    select: { id: true, firstName: true, lastName: true, email: true },
+        await this.assertAssigneeExists((updateCustomerDto as any)?.assigneeId);
+
+        try {
+            return await this.prisma.customer.update({
+                where: { id },
+                data: updateCustomerDto,
+                include: {
+                    assignee: {
+                        select: { id: true, firstName: true, lastName: true, email: true },
+                    },
                 },
-            },
-        });
+            });
+        } catch (e: any) {
+            if (typeof e?.message === 'string' && e.message.toLowerCase().includes('unique')) {
+                throw new BadRequestException('Customer with this email already exists');
+            }
+            this.logger.error('Failed to update customer', e);
+            throw e;
+        }
     }
 
     async delete(id: string, user: UserContext) {
@@ -206,19 +272,6 @@ export class CustomersService {
         return { message: 'Customer deleted successfully' };
     }
 
-    async updateLifecycle(id: string, lifecycle: CustomerLifecycle, user: UserContext) {
-        const customer = await this.prisma.customer.findUnique({ where: { id } });
-
-        if (!customer) {
-            throw new NotFoundException('Customer not found');
-        }
-
-        return this.prisma.customer.update({
-            where: { id },
-            data: { lifecycle },
-        });
-    }
-
     async getCustomerStats(user: UserContext) {
         let where: any = {};
 
@@ -233,21 +286,30 @@ export class CustomersService {
             where.assigneeId = { in: [user.id, ...teamIds] };
         }
 
-        const [total, byLifecycle] = await Promise.all([
-            this.prisma.customer.count({ where }),
-            this.prisma.customer.groupBy({
-                by: ['lifecycle'],
-                where,
-                _count: true,
-            }),
-        ]);
+        const customers = await this.prisma.customer.findMany({
+            where,
+            select: { id: true, company: true },
+        });
+
+        const customerIds = customers.map(c => c.id);
+        const total = customers.length;
+
+        const companies = new Set(customers.map(c => c.company).filter(Boolean) as string[]).size;
+
+        const paidRevenue = customerIds.length
+            ? await this.prisma.invoice.aggregate({
+                where: {
+                    customerId: { in: customerIds },
+                    status: InvoiceStatus.PAID,
+                },
+                _sum: { total: true },
+            })
+            : { _sum: { total: 0 } };
 
         return {
             total,
-            byLifecycle: byLifecycle.reduce((acc, item) => {
-                acc[item.lifecycle] = item._count;
-                return acc;
-            }, {} as Record<CustomerLifecycle, number>),
+            companies,
+            revenue: paidRevenue._sum.total || 0,
         };
     }
 }

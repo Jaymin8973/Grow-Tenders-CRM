@@ -2,12 +2,10 @@ import {
     IsEmail,
     IsNotEmpty,
     IsString,
-    IsEnum,
     IsOptional,
     IsNumber,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { CustomerLifecycle } from '@prisma/client';
 
 export class CreateCustomerDto {
     @ApiProperty({ example: 'John' })
@@ -39,11 +37,6 @@ export class CreateCustomerDto {
     @IsString()
     @IsOptional()
     position?: string;
-
-    @ApiPropertyOptional({ enum: CustomerLifecycle, default: CustomerLifecycle.PROSPECT })
-    @IsEnum(CustomerLifecycle)
-    @IsOptional()
-    lifecycle?: CustomerLifecycle;
 
     @ApiPropertyOptional({ example: '123 Main St' })
     @IsString()

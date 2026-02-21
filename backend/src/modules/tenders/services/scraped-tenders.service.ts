@@ -1,10 +1,32 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import * as PDFDocument from 'pdfkit';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class ScrapedTendersService {
     constructor(private prisma: PrismaService) { }
+
+    private getWatermarkLogoBuffer(): Buffer | null {
+        const candidates = [
+            path.join(process.cwd(), 'src/assets/Logo-invoice.png'),
+            path.join(process.cwd(), 'src/assets/logo-invoice.png'),
+            path.join(process.cwd(), 'src/assets/logo.jpg'),
+            path.join(__dirname, '../../../assets/Logo-invoice.png'),
+            path.join(__dirname, '../../../assets/logo-invoice.png'),
+        ];
+
+        for (const p of candidates) {
+            try {
+                if (fs.existsSync(p)) return fs.readFileSync(p);
+            } catch {
+                // ignore
+            }
+        }
+
+        return null;
+    }
 
     async findAll(filters?: {
         status?: string;
@@ -151,83 +173,139 @@ export class ScrapedTendersService {
 
         return new Promise((resolve, reject) => {
             const chunks: Buffer[] = [];
-            const doc = new PDFDocument({ margin: 50 });
+            const doc = new PDFDocument({ margin: 48, size: 'A4' });
 
             doc.on('data', (chunk: Buffer) => chunks.push(chunk));
             doc.on('end', () => resolve(Buffer.concat(chunks)));
             doc.on('error', reject);
 
-            // Header
-            doc.fontSize(20).font('Helvetica-Bold').text('Tender Details', { align: 'center' });
-            doc.moveDown();
+            const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+            const leftX = doc.page.margins.left;
 
-            // Divider
-            doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
-            doc.moveDown();
-
-            // Tender Info
-            doc.fontSize(12).font('Helvetica-Bold').text('Bid Number: ', { continued: true });
-            doc.font('Helvetica').text(tender.bidNo || 'N/A');
-            doc.moveDown(0.5);
-
-            doc.font('Helvetica-Bold').text('Title: ', { continued: true });
-            doc.font('Helvetica').text(tender.title || 'N/A');
-            doc.moveDown(0.5);
-
-            doc.font('Helvetica-Bold').text('Department: ', { continued: true });
-            doc.font('Helvetica').text(tender.department || 'N/A');
-            doc.moveDown(0.5);
-
-            if (tender.state) {
-                doc.font('Helvetica-Bold').text('State: ', { continued: true });
-                doc.font('Helvetica').text(tender.state);
-                doc.moveDown(0.5);
+            // Watermark
+            const logo = this.getWatermarkLogoBuffer();
+            if (logo) {
+                try {
+                    const markSize = Math.min(pageWidth * 0.6, 320);
+                    const markX = doc.page.width / 2 - markSize / 2;
+                    const markY = doc.page.height / 2 - markSize / 2;
+                    doc.save();
+                    doc.opacity(0.08);
+                    doc.image(logo, markX, markY, { fit: [markSize, markSize], align: 'center', valign: 'center' });
+                    doc.restore();
+                } catch {
+                    // ignore watermark failures
+                }
             }
 
-            if (tender.quantity) {
-                doc.font('Helvetica-Bold').text('Quantity: ', { continued: true });
-                doc.font('Helvetica').text(tender.quantity);
-                doc.moveDown(0.5);
-            }
+            const formatDateTime = (value?: Date | string | null) => {
+                if (!value) return 'N/A';
+                const d = value instanceof Date ? value : new Date(value);
+                if (Number.isNaN(d.getTime())) return 'N/A';
+                return d.toLocaleString('en-IN', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                });
+            };
 
-            doc.moveDown();
+            const kvRow = (label: string, value: string, opts?: { width?: number }) => {
+                const width = opts?.width ?? pageWidth;
+                const labelWidth = 110;
+                const valueWidth = Math.max(0, width - labelWidth);
 
-            // Dates
-            doc.font('Helvetica-Bold').text('Important Dates');
-            doc.moveTo(50, doc.y + 5).lineTo(200, doc.y + 5).stroke();
-            doc.moveDown(0.5);
+                const y = doc.y;
+                doc.font('Helvetica-Bold').fontSize(10).fillColor('#111827').text(label, leftX, y, {
+                    width: labelWidth,
+                    continued: false,
+                });
+                doc.font('Helvetica').fontSize(10).fillColor('#111827').text(value || 'N/A', leftX + labelWidth, y, {
+                    width: valueWidth,
+                });
+                doc.moveDown(0.4);
+            };
 
-            if (tender.startDate) {
-                doc.font('Helvetica-Bold').text('Start Date: ', { continued: true });
-                doc.font('Helvetica').text(new Date(tender.startDate).toLocaleString('en-IN'));
-                doc.moveDown(0.5);
-            }
+            // Header block
+            doc.fillColor('#111827').font('Helvetica-Bold').fontSize(18).text('Tender Details', { align: 'left' });
+            doc.moveDown(0.2);
+            doc.font('Helvetica').fontSize(10).fillColor('#6B7280').text('Generated tender summary PDF', { align: 'left' });
+            doc.moveDown(0.6);
+            doc.moveTo(leftX, doc.y).lineTo(leftX + pageWidth, doc.y).strokeColor('#E5E7EB').stroke();
+            doc.moveDown(0.8);
 
-            if (tender.endDate) {
-                doc.font('Helvetica-Bold').text('End Date: ', { continued: true });
-                doc.font('Helvetica').text(new Date(tender.endDate).toLocaleString('en-IN'));
-                doc.moveDown(0.5);
-            }
+            // Tender summary (title)
+            doc.font('Helvetica-Bold').fontSize(13).fillColor('#111827').text(tender.title || 'N/A', {
+                width: pageWidth,
+            });
+            doc.moveDown(0.6);
 
-            doc.moveDown();
+            // Two-column block
+            const colGap = 20;
+            const colWidth = (pageWidth - colGap) / 2;
+            const startY = doc.y;
 
-            // Status
-            doc.font('Helvetica-Bold').text('Status: ', { continued: true });
-            doc.font('Helvetica').text(tender.status);
-            doc.moveDown();
+            // Left column
+            doc.y = startY;
+            kvRow('Bid No', tender.bidNo || 'N/A', { width: colWidth });
+            kvRow('Status', tender.status || 'N/A', { width: colWidth });
+            if (tender.state) kvRow('State', tender.state, { width: colWidth });
+            if (tender.category) kvRow('Category', tender.category, { width: colWidth });
+            const leftEndY = doc.y;
 
-            // Source
+            // Right column
+            doc.y = startY;
+            const rightX = leftX + colWidth + colGap;
+            const yRight = doc.y;
+            const kvRowAt = (x: number, label: string, value: string) => {
+                const labelWidth = 110;
+                const valueWidth = Math.max(0, colWidth - labelWidth);
+                const y = doc.y;
+                doc.font('Helvetica-Bold').fontSize(10).fillColor('#111827').text(label, x, y, { width: labelWidth });
+                doc.font('Helvetica').fontSize(10).fillColor('#111827').text(value || 'N/A', x + labelWidth, y, { width: valueWidth });
+                doc.moveDown(0.4);
+            };
+            doc.y = yRight;
+            kvRowAt(rightX, 'Start', formatDateTime(tender.startDate));
+            kvRowAt(rightX, 'End', formatDateTime(tender.endDate));
+            if (tender.quantity) kvRowAt(rightX, 'Quantity', tender.quantity);
+            kvRowAt(rightX, 'Source', tender.source || 'N/A');
+            const rightEndY = doc.y;
+
+            // Move below both columns
+            doc.x = leftX;
+            doc.y = Math.max(leftEndY, rightEndY) + 10;
+            doc.moveDown(0.6);
+
+            // Department / details
+            doc.font('Helvetica-Bold').fontSize(11).fillColor('#111827').text('Department / Buyer', { width: pageWidth });
+            doc.moveDown(0.3);
+            doc.font('Helvetica').fontSize(10).fillColor('#111827').text(tender.department || 'N/A', {
+                width: pageWidth,
+            });
+            doc.moveDown(0.8);
+
             if (tender.sourceUrl) {
-                doc.font('Helvetica-Bold').text('GeM Portal Link: ');
-                doc.font('Helvetica').fillColor('blue').text(tender.sourceUrl, { link: tender.sourceUrl });
+                doc.font('Helvetica-Bold').fontSize(11).fillColor('#111827').text('GeM Portal Link', { width: pageWidth });
+                doc.moveDown(0.3);
+                doc.font('Helvetica').fontSize(10).fillColor('#2563EB').text(tender.sourceUrl, {
+                    link: tender.sourceUrl,
+                    underline: true,
+                    width: pageWidth,
+                });
+                doc.fillColor('#111827');
             }
 
             doc.moveDown(2);
 
             // Footer
-            doc.fillColor('gray').fontSize(10).text(
+            doc.strokeColor('#E5E7EB').moveTo(leftX, doc.page.height - 70).lineTo(leftX + pageWidth, doc.page.height - 70).stroke();
+            doc.fillColor('#6B7280').fontSize(9).text(
                 `Generated on ${new Date().toLocaleString('en-IN')}`,
-                { align: 'center' }
+                leftX,
+                doc.page.height - 55,
+                { width: pageWidth, align: 'center' }
             );
 
             doc.end();

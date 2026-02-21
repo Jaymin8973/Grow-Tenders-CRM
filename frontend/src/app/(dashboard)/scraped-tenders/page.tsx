@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
 import {
     Search,
     FileText,
@@ -71,6 +72,7 @@ interface Stats {
 }
 
 export default function ScrapedTendersPage() {
+    const { toast } = useToast();
     const router = useRouter();
     const [search, setSearch] = useState('');
     const [status, setStatus] = useState<string>('');
@@ -141,15 +143,36 @@ export default function ScrapedTendersPage() {
             const res = await apiClient.get(`/scraped-tenders/${id}/pdf`, {
                 responseType: 'blob',
             });
-            const url = window.URL.createObjectURL(new Blob([res.data]));
+
+            const contentDisposition = res.headers?.['content-disposition'] as string | undefined;
+            const match = contentDisposition?.match(/filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i);
+            const headerFilename = decodeURIComponent((match?.[1] || match?.[2] || '').trim());
+
+            const sanitize = (name: string) => {
+                const safe = name
+                    .replace(/[\\/:*?"<>|]+/g, '-')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+                return safe.length ? safe : 'tender';
+            };
+
+            const fallback = `tender-${sanitize(bidNo).replace(/\//g, '-')}.pdf`;
+            const filename = headerFilename ? sanitize(headerFilename) : fallback;
+
+            const url = window.URL.createObjectURL(res.data);
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', `tender-${bidNo.replace(/\//g, '-')}.pdf`);
+            link.setAttribute('download', filename.toLowerCase().endsWith('.pdf') ? filename : `${filename}.pdf`);
             document.body.appendChild(link);
             link.click();
             link.remove();
+            window.URL.revokeObjectURL(url);
         } catch (error) {
-            console.error('Failed to download PDF:', error);
+            toast({
+                title: 'Failed to download PDF',
+                description: 'Please try again in a moment.',
+                variant: 'destructive',
+            });
         }
     };
 

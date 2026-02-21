@@ -53,6 +53,7 @@ const leadSchema = z.object({
     email: z.string().email('Invalid email address'),
     mobile: z.string().optional(),
     company: z.string().optional(),
+    gstin: z.string().optional(),
 
     description: z.string().optional(),
     status: z.enum(['WARM_LEAD', 'HOT_LEAD', 'COLD_LEAD', 'CLOSED_LEAD', 'PROPOSAL_LEAD']),
@@ -249,6 +250,15 @@ export default function EditLeadPage() {
                                 <div>
                                     <Label className="text-xs text-muted-foreground">Mobile</Label>
                                     <Input {...register('mobile')} placeholder="+XX XXXXX" className="h-9" />
+                                </div>
+
+                                {/* GSTIN */}
+                                <div>
+                                    <Label className="text-xs text-muted-foreground">GST Number</Label>
+                                    <div className="relative">
+                                        <Hash className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                        <Input {...register('gstin')} placeholder="24XXXXX1234X1Z5" className="pl-9 h-9" />
+                                    </div>
                                 </div>
 
                                 {/* Organization */}

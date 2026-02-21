@@ -10,11 +10,9 @@ import {
     Query,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
-import { CustomerLifecycle } from '@prisma/client';
 import { CustomersService } from './customers.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
-import { UpdateLifecycleDto } from './dto/update-lifecycle.dto';
 import { JwtAuthGuard, RolesGuard } from '../../common/guards';
 import { CurrentUser } from '../../common/decorators';
 
@@ -40,16 +38,32 @@ export class CustomersController {
 
     @Get()
     @ApiOperation({ summary: 'Get all customers (role-based)' })
-    @ApiQuery({ name: 'lifecycle', required: false, enum: CustomerLifecycle })
     @ApiQuery({ name: 'assigneeId', required: false })
     @ApiQuery({ name: 'search', required: false })
+    @ApiQuery({ name: 'page', required: false, type: Number, description: '1-based page number (default: 1). Prefer cursor for large datasets.' })
+    @ApiQuery({ name: 'pageSize', required: false, type: Number, description: 'Page size (default: 25, max: 100)' })
+    @ApiQuery({ name: 'cursor', required: false, type: String, description: 'Cursor customer id for keyset pagination' })
+    @ApiQuery({ name: 'sortBy', required: false, type: String, description: 'Field to sort by (default: createdAt)' })
+    @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'], description: 'Sort order (default: desc)' })
     findAll(
         @CurrentUser() user: any,
-        @Query('lifecycle') lifecycle?: CustomerLifecycle,
         @Query('assigneeId') assigneeId?: string,
         @Query('search') search?: string,
+        @Query('page') page?: string,
+        @Query('pageSize') pageSize?: string,
+        @Query('cursor') cursor?: string,
+        @Query('sortBy') sortBy?: string,
+        @Query('sortOrder') sortOrder?: 'asc' | 'desc',
     ) {
-        return this.customersService.findAll(user, { lifecycle, assigneeId, search });
+        return this.customersService.findAll(user, {
+            assigneeId,
+            search,
+            page: page ? Number(page) : undefined,
+            pageSize: pageSize ? Number(pageSize) : undefined,
+            cursor,
+            sortBy,
+            sortOrder,
+        });
     }
 
     @Get('stats')
@@ -72,16 +86,6 @@ export class CustomersController {
         @CurrentUser() user: any,
     ) {
         return this.customersService.update(id, updateCustomerDto, user);
-    }
-
-    @Patch(':id/lifecycle')
-    @ApiOperation({ summary: 'Update customer lifecycle' })
-    updateLifecycle(
-        @Param('id') id: string,
-        @Body() dto: UpdateLifecycleDto,
-        @CurrentUser() user: any,
-    ) {
-        return this.customersService.updateLifecycle(id, dto.lifecycle, user);
     }
 
     @Delete(':id')

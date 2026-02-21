@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useQuery, keepPreviousData } from '@tanstack/react-query';
+import { useQuery, keepPreviousData, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
 import { useAuth } from '@/contexts/auth-context';
 import { useDebounce } from '@/hooks/use-debounce';
@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ComposeEmailDialog } from '@/components/mail/compose-email-dialog';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Table,
     TableBody,
@@ -38,6 +39,7 @@ import {
     Pencil,
     Trash,
     Lock,
+    X,
 } from 'lucide-react';
 import { getInitials, cn } from '@/lib/utils';
 import {
@@ -56,7 +58,6 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import {
     Select,
@@ -66,6 +67,8 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { BulkAssignDialog } from '@/components/leads/bulk-assign-dialog';
+import { BulkImportLeadsDialog } from '@/components/leads/bulk-import-leads-dialog';
 
 
 const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
@@ -108,6 +111,8 @@ export default function LeadsPage() {
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState('all'); // 'all' or 'my'
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(25);
     const [emailDialogOpen, setEmailDialogOpen] = useState(false);
     const [selectedLead, setSelectedLead] = useState<any>(null);
 
@@ -117,17 +122,27 @@ export default function LeadsPage() {
 
     const [deleteId, setDeleteId] = useState<string | null>(null);
 
+    // Multi-select state
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
+    const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+    const [bulkImportOpen, setBulkImportOpen] = useState(false);
+
     // Debounce search input to avoid excessive API calls
     const debouncedSearch = useDebounce(search, 300);
     const queryClient = useQueryClient();
     const { toast } = useToast();
 
-    const { data: leads, isLoading, isFetching } = useQuery({
-        queryKey: ['leads', debouncedSearch, statusFilter, activeTab],
+    const clearSelection = () => setSelectedIds(new Set());
+
+    const { data: leadsData, isLoading, isFetching } = useQuery({
+        queryKey: ['leads', debouncedSearch, statusFilter, activeTab, page, pageSize],
         queryFn: async () => {
             const params = new URLSearchParams();
             if (debouncedSearch) params.append('search', debouncedSearch);
             if (statusFilter) params.append('status', statusFilter);
+            params.append('page', String(page));
+            params.append('pageSize', String(pageSize));
 
             // For employees (or anyone using "My Leads" tab), filter by assignee
             if (activeTab === 'my') {
@@ -143,6 +158,8 @@ export default function LeadsPage() {
         placeholderData: keepPreviousData, // Keep showing old data while fetching new
     });
 
+    const leads = leadsData?.items ?? [];
+
     const { data: stats } = useQuery({
         queryKey: ['lead-stats'],
         queryFn: async () => {
@@ -150,6 +167,10 @@ export default function LeadsPage() {
             return response.data;
         },
     });
+
+    const getCount = (key: string) => {
+        return (stats?.byStatus && typeof stats.byStatus[key] === 'number') ? stats.byStatus[key] : 0;
+    };
 
     const deleteLeadMutation = useMutation({
         mutationFn: async (id: string) => {
@@ -180,6 +201,50 @@ export default function LeadsPage() {
         }
     };
 
+    // Multi-select handlers
+    const handleSelectAll = (checked: boolean) => {
+        if (checked && leads.length > 0) {
+            const allIds = leads.map((lead: any) => lead.id);
+            setSelectedIds(new Set(allIds));
+        } else {
+            setSelectedIds(new Set());
+        }
+    };
+
+    const handleSelectOne = (id: string, checked: boolean) => {
+        const newSet = new Set(selectedIds);
+        if (checked) {
+            newSet.add(id);
+        } else {
+            newSet.delete(id);
+        }
+        setSelectedIds(newSet);
+    };
+
+    // Bulk delete mutation
+    const bulkDeleteMutation = useMutation({
+        mutationFn: async (leadIds: string[]) => {
+            return apiClient.post('/leads/bulk-delete', { leadIds });
+        },
+        onSuccess: (response) => {
+            queryClient.invalidateQueries({ queryKey: ['leads'] });
+            queryClient.invalidateQueries({ queryKey: ['lead-stats'] });
+            toast({
+                title: 'Leads deleted',
+                description: response.data.message,
+            });
+            clearSelection();
+            setBulkDeleteOpen(false);
+        },
+        onError: (error: any) => {
+            toast({
+                title: 'Error',
+                description: error.response?.data?.message || 'Failed to delete leads',
+                variant: 'destructive',
+            });
+        },
+    });
+
 
 
     return (
@@ -188,7 +253,16 @@ export default function LeadsPage() {
             {/* Tabs for Leads */}
             {/* Tabs for Leads - Only for Employees */}
             {user?.role === 'EMPLOYEE' && (
-                <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <Tabs
+                    defaultValue="all"
+                    value={activeTab}
+                    onValueChange={(val) => {
+                        setActiveTab(val);
+                        setPage(1);
+                        clearSelection();
+                    }}
+                    className="w-full"
+                >
                     <TabsList>
                         <TabsTrigger value="all">All Leads</TabsTrigger>
                         <TabsTrigger value="my">My Leads</TabsTrigger>
@@ -198,11 +272,107 @@ export default function LeadsPage() {
 
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold tracking-tight">Leads</h1>
-                <Button onClick={() => router.push('/leads/new')}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Lead
-                </Button>
+                <div className="flex items-center gap-2">
+                    {user?.role !== 'EMPLOYEE' && (
+                        <Button variant="outline" onClick={() => setBulkImportOpen(true)}>
+                            Import
+                        </Button>
+                    )}
+                    <Button onClick={() => router.push('/leads/new')}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create Lead
+                    </Button>
+                </div>
             </div>
+
+            {/* Bulk Action Bar */}
+            {selectedIds.size > 0 && user?.role !== 'EMPLOYEE' && (
+                <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">{selectedIds.size} selected</span>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={clearSelection}
+                            className="h-7 px-2"
+                        >
+                            <X className="h-4 w-4 mr-1" />
+                            Clear
+                        </Button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setBulkAssignOpen(true)}
+                        >
+                            <UserPlus className="h-4 w-4 mr-2" />
+                            Assign
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => setBulkDeleteOpen(true)}
+                        >
+                            <Trash className="h-4 w-4 mr-2" />
+                            Delete
+                        </Button>
+                    </div>
+                </div>
+            )}
+
+            {user?.role === 'SUPER_ADMIN' && (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
+                    <Card className="card-hover">
+                        <CardContent className="p-5">
+                            <div className="space-y-1">
+                                <p className="text-sm text-muted-foreground">Total Leads</p>
+                                <p className="text-2xl font-bold">{stats?.total ?? 0}</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card className="card-hover">
+                        <CardContent className="p-5">
+                            <div className="space-y-1">
+                                <p className="text-sm text-muted-foreground">Cold Leads</p>
+                                <p className="text-2xl font-bold">{getCount('COLD_LEAD')}</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card className="card-hover">
+                        <CardContent className="p-5">
+                            <div className="space-y-1">
+                                <p className="text-sm text-muted-foreground">Warm Leads</p>
+                                <p className="text-2xl font-bold">{getCount('WARM_LEAD')}</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card className="card-hover">
+                        <CardContent className="p-5">
+                            <div className="space-y-1">
+                                <p className="text-sm text-muted-foreground">Hot Leads</p>
+                                <p className="text-2xl font-bold">{getCount('HOT_LEAD')}</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card className="card-hover">
+                        <CardContent className="p-5">
+                            <div className="space-y-1">
+                                <p className="text-sm text-muted-foreground">Proposal</p>
+                                <p className="text-2xl font-bold">{getCount('PROPOSAL_LEAD')}</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card className="card-hover">
+                        <CardContent className="p-5">
+                            <div className="space-y-1">
+                                <p className="text-sm text-muted-foreground">Closed</p>
+                                <p className="text-2xl font-bold">{getCount('CLOSED_LEAD')}</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
 
             {/* Filters & Search */}
             <Card>
@@ -214,7 +384,11 @@ export default function LeadsPage() {
                                 type="search"
                                 placeholder="Search by name, email, company..."
                                 value={search}
-                                onChange={(e) => setSearch(e.target.value)}
+                                onChange={(e) => {
+                                    setSearch(e.target.value);
+                                    setPage(1);
+                                    clearSelection();
+                                }}
                                 className="pl-10 pr-10"
                             />
                             {isFetching && (
@@ -224,7 +398,11 @@ export default function LeadsPage() {
                         <div className="w-full sm:w-[200px]">
                             <Select
                                 value={statusFilter || 'ALL'}
-                                onValueChange={(val) => setStatusFilter(val === 'ALL' ? null : val)}
+                                onValueChange={(val) => {
+                                    setStatusFilter(val === 'ALL' ? null : val);
+                                    setPage(1);
+                                    clearSelection();
+                                }}
                             >
                                 <SelectTrigger>
                                     <SelectValue placeholder="Filter by Status" />
@@ -249,6 +427,14 @@ export default function LeadsPage() {
                     <Table>
                         <TableHeader>
                             <TableRow>
+                                {user?.role !== 'EMPLOYEE' && (
+                                    <TableHead className="w-[50px]">
+                                        <Checkbox
+                                            checked={leads.length > 0 && selectedIds.size === leads.length}
+                                            onCheckedChange={handleSelectAll}
+                                        />
+                                    </TableHead>
+                                )}
                                 <TableHead className="w-[300px]">Lead</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead>Assignee</TableHead>
@@ -270,18 +456,20 @@ export default function LeadsPage() {
                                 </>
                             )}
                             {/* Show actual data */}
-                            {!isLoading && leads?.map((lead: any) => {
+                            {!isLoading && leads.map((lead: any) => {
                                 const status = statusConfig[lead.status] || statusConfig.COLD_LEAD;
                                 const phoneNumber = lead.phone || lead.mobile;
 
                                 const canViewLead = user?.role !== 'EMPLOYEE' || lead.assigneeId === user?.id;
+                                const isSelected = selectedIds.has(lead.id);
 
                                 return (
                                     <TableRow
                                         key={lead.id}
                                         className={cn(
                                             "transition-colors",
-                                            canViewLead ? "table-row-hover cursor-pointer" : "opacity-90 bg-slate-50/50"
+                                            canViewLead ? "table-row-hover cursor-pointer" : "opacity-90 bg-slate-50/50",
+                                            isSelected && "bg-primary/5"
                                         )}
                                         onClick={() => {
                                             if (canViewLead) {
@@ -292,6 +480,14 @@ export default function LeadsPage() {
                                             }
                                         }}
                                     >
+                                        {user?.role !== 'EMPLOYEE' && (
+                                            <TableCell onClick={(e) => e.stopPropagation()}>
+                                                <Checkbox
+                                                    checked={isSelected}
+                                                    onCheckedChange={(checked) => handleSelectOne(lead.id, checked as boolean)}
+                                                />
+                                            </TableCell>
+                                        )}
                                         <TableCell>
                                             <div className="flex items-center gap-3">
                                                 <Avatar className="h-10 w-10">
@@ -406,9 +602,9 @@ export default function LeadsPage() {
                                     </TableRow>
                                 );
                             })}
-                            {!isLoading && (!leads || leads.length === 0) && (
+                            {!isLoading && leads.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={8} className="h-32 text-center">
+                                    <TableCell colSpan={user?.role !== 'EMPLOYEE' ? 8 : 7} className="h-32 text-center">
                                         <div className="flex flex-col items-center justify-center text-muted-foreground">
                                             <UserPlus className="h-10 w-10 mb-2 opacity-50" />
                                             <p>No leads found</p>
@@ -421,6 +617,54 @@ export default function LeadsPage() {
                     </Table>
                 </CardContent>
             </Card>
+
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="text-sm text-muted-foreground">
+                    {typeof leadsData?.total === 'number'
+                        ? `Showing ${leads.length} of ${leadsData.total}`
+                        : `Showing ${leads.length}`}
+                </div>
+                <div className="flex items-center gap-2">
+                    <Select
+                        value={String(pageSize)}
+                        onValueChange={(val) => {
+                            setPageSize(Number(val));
+                            setPage(1);
+                            clearSelection();
+                        }}
+                    >
+                        <SelectTrigger className="w-[140px]">
+                            <SelectValue placeholder="Page size" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="25">25 / page</SelectItem>
+                            <SelectItem value="50">50 / page</SelectItem>
+                            <SelectItem value="100">100 / page</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <Button
+                        variant="outline"
+                        onClick={() => {
+                            setPage((p) => Math.max(1, p - 1));
+                            clearSelection();
+                        }}
+                        disabled={page <= 1}
+                    >
+                        Prev
+                    </Button>
+                    <div className="text-sm font-medium w-[90px] text-center">Page {page}</div>
+                    <Button
+                        variant="outline"
+                        onClick={() => {
+                            setPage((p) => p + 1);
+                            clearSelection();
+                        }}
+                        disabled={typeof leadsData?.total === 'number' ? page * pageSize >= leadsData.total : leads.length < pageSize}
+                    >
+                        Next
+                    </Button>
+                </div>
+            </div>
 
             {/* Email Compose Dialog */}
             <ComposeEmailDialog
@@ -457,6 +701,38 @@ export default function LeadsPage() {
                 leadId={transferLead?.id || null}
                 leadName={transferLead ? `${transferLead.firstName} ${transferLead.lastName}` : undefined}
             />
+
+            {/* Bulk Assign Dialog */}
+            <BulkAssignDialog
+                open={bulkAssignOpen}
+                onOpenChange={setBulkAssignOpen}
+                selectedLeads={Array.from(selectedIds)}
+                onSuccess={clearSelection}
+            />
+
+            {/* Bulk Delete Confirmation */}
+            <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete {selectedIds.size} Lead(s)?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete all selected leads.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() => bulkDeleteMutation.mutate(Array.from(selectedIds))}
+                            className="bg-red-600 hover:bg-red-700"
+                            disabled={bulkDeleteMutation.isPending}
+                        >
+                            {bulkDeleteMutation.isPending ? 'Deleting...' : 'Delete'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <BulkImportLeadsDialog open={bulkImportOpen} onOpenChange={setBulkImportOpen} />
         </div >
     );
 }
