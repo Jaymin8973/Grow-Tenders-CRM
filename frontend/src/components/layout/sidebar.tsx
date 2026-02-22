@@ -20,6 +20,7 @@ import {
     FileSearch,
     Target,
     Phone,
+    Activity,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -27,7 +28,7 @@ import { getInitials } from '@/lib/utils';
 
 const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Telecalling', href: '/telecalling', icon: Phone },
+    { name: 'Telecalling', href: '/telecalling', icon: Phone, roles: ['SUPER_ADMIN', 'MANAGER'] },
     { name: 'Leads', href: '/leads', icon: UserPlus },
     { name: 'Customers', href: '/customers', icon: Users },
 
@@ -46,6 +47,7 @@ const adminNav = [
     { name: 'Users', href: '/users', icon: Building2, roles: ['SUPER_ADMIN', 'MANAGER'] },
     { name: 'Targets', href: '/targets', icon: Target, roles: ['SUPER_ADMIN', 'MANAGER'] },
     { name: 'Scraper Logs', href: '/scraper-logs', icon: FileSearch, roles: ['SUPER_ADMIN'] },
+    { name: 'Activities', href: '/activities', icon: Activity, roles: ['SUPER_ADMIN'] },
 ];
 
 export function Sidebar() {

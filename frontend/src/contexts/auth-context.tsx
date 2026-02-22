@@ -18,7 +18,8 @@ interface AuthContextType {
     user: User | null;
     isLoading: boolean;
     isAuthenticated: boolean;
-    login: (email: string, password: string) => Promise<void>;
+    login: (email: string, password: string) => Promise<{ otpRequired: boolean; email?: string; otpSessionId?: string }>;
+    verifySuperAdminOtp: (email: string, password: string, otp: string, otpSessionId?: string) => Promise<void>;
     logout: () => Promise<void>;
     checkRole: (allowedRoles: string[]) => boolean;
     refreshUser: () => Promise<void>;
@@ -49,9 +50,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false);
     }, []);
 
-    const login = useCallback(async (email: string, password: string) => {
-        const response = await apiClient.post('/auth/login', { email, password });
-        const { user, accessToken, refreshToken } = response.data;
+    const finalizeLogin = useCallback((payload: any) => {
+        const { user, accessToken, refreshToken } = payload;
 
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('refreshToken', refreshToken);
@@ -60,10 +60,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         setUser(user);
 
-        // Redirect based on role
         const dashboardPath = getDashboardPath(user.role);
         router.push(dashboardPath);
     }, [router]);
+
+    const login = useCallback(async (email: string, password: string) => {
+        const response = await apiClient.post('/auth/login', { email, password });
+        if (response.data?.otpRequired) {
+            return {
+                otpRequired: true,
+                email: response.data?.email,
+                otpSessionId: response.data?.otpSessionId,
+            };
+        }
+        finalizeLogin(response.data);
+        return { otpRequired: false };
+    }, [finalizeLogin]);
+
+    const verifySuperAdminOtp = useCallback(async (email: string, password: string, otp: string, otpSessionId?: string) => {
+        const response = await apiClient.post('/auth/login', { email, password, otp, otpSessionId });
+        if (response.data?.otpRequired) {
+            throw new Error('OTP verification failed');
+        }
+        finalizeLogin(response.data);
+    }, [finalizeLogin]);
 
     const logout = useCallback(async () => {
         try {
@@ -103,6 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 isLoading,
                 isAuthenticated: !!user,
                 login,
+                verifySuperAdminOtp,
                 logout,
                 checkRole,
                 refreshUser,

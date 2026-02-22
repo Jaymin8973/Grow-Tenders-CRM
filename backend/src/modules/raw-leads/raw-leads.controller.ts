@@ -16,6 +16,26 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 export class RawLeadsController {
     constructor(private readonly rawLeadsService: RawLeadsService) { }
 
+    @Get('stats')
+    @ApiOperation({ summary: 'Raw leads stats (date range) for managers/admins' })
+    stats(
+        @Query('from') from?: string,
+        @Query('to') to?: string,
+        @CurrentUser() user?: User,
+    ) {
+        if (user?.role === 'EMPLOYEE') {
+            throw new UnauthorizedException('Employees cannot view raw lead stats.');
+        }
+
+        const fromDate = from ? new Date(from) : undefined;
+        const toDate = to ? new Date(to) : undefined;
+
+        const safeFrom = fromDate && !Number.isNaN(fromDate.getTime()) ? fromDate : undefined;
+        const safeTo = toDate && !Number.isNaN(toDate.getTime()) ? toDate : undefined;
+
+        return this.rawLeadsService.getStats({ from: safeFrom, to: safeTo });
+    }
+
     @Post()
     @ApiOperation({ summary: 'Create a single raw lead manually' })
     create(@Body() createRawLeadDto: CreateRawLeadDto) {
@@ -54,12 +74,20 @@ export class RawLeadsController {
         const skip = (pageNumber - 1) * limitNumber;
 
         const where: any = {};
-        if (status) where.status = status;
+        if (status) {
+            where.status = status;
+        } else {
+            where.status = { not: RawLeadStatus.NOT_INTERESTED };
+        }
 
         if (user?.role === 'EMPLOYEE') {
             where.assigneeId = user.id;
         } else if (assigneeId) {
-            where.assigneeId = assigneeId;
+            if (assigneeId === 'unassigned') {
+                where.assigneeId = null;
+            } else {
+                where.assigneeId = assigneeId;
+            }
         }
 
         return this.rawLeadsService.findAll({
@@ -98,5 +126,18 @@ export class RawLeadsController {
             throw new UnauthorizedException('Employees cannot delete raw leads.');
         }
         return this.rawLeadsService.remove(id);
+    }
+
+    @Delete()
+    @ApiOperation({ summary: 'Bulk delete raw leads' })
+    removeBulk(@Body() body: { ids: string[] }, @CurrentUser() user: User) {
+        if (user.role === 'EMPLOYEE') {
+            throw new UnauthorizedException('Employees cannot delete raw leads.');
+        }
+        const ids = body?.ids || [];
+        if (!Array.isArray(ids) || ids.length === 0) {
+            return { deletedCount: 0 };
+        }
+        return this.rawLeadsService.removeBulk(ids);
     }
 }

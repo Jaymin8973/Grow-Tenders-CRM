@@ -1,5 +1,5 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { Role, ActivityStatus, ActivityType } from '@prisma/client';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger } from '@nestjs/common';
+import { Role, ActivityStatus, ActivityType, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateActivityDto } from './dto/create-activity.dto';
 import { UpdateActivityDto } from './dto/update-activity.dto';
@@ -12,10 +12,34 @@ interface UserContext {
 
 @Injectable()
 export class ActivitiesService {
+    private readonly logger = new Logger(ActivitiesService.name);
+
     constructor(private prisma: PrismaService) { }
+
+    private getSortByOrDefault(sortBy?: string) {
+        const allowed: Array<keyof Prisma.ActivityOrderByWithRelationInput> = [
+            'scheduledAt',
+            'createdAt',
+            'updatedAt',
+            'title',
+            'status',
+            'type',
+        ];
+
+        if (!sortBy) return 'scheduledAt' as const;
+        if (allowed.includes(sortBy as any)) return sortBy as any;
+        return 'scheduledAt' as const;
+    }
 
     async create(createActivityDto: CreateActivityDto, userId: string) {
         const assigneeId = createActivityDto.assigneeId || userId;
+
+        if (assigneeId) {
+            const assignee = await this.prisma.user.findUnique({ where: { id: assigneeId } });
+            if (!assignee) {
+                throw new BadRequestException('Assignee not found');
+            }
+        }
 
         const activity = await this.prisma.activity.create({
             data: {
@@ -61,8 +85,14 @@ export class ActivitiesService {
         type?: ActivityType;
         status?: ActivityStatus;
         assigneeId?: string;
+        search?: string;
         startDate?: Date;
         endDate?: Date;
+        page?: number;
+        pageSize?: number;
+        cursor?: string;
+        sortBy?: string;
+        sortOrder?: 'asc' | 'desc';
     }) {
         let where: any = {};
 
@@ -86,6 +116,12 @@ export class ActivitiesService {
         if (filters?.assigneeId && user.role !== Role.EMPLOYEE) {
             where.assigneeId = filters.assigneeId;
         }
+        if (filters?.search) {
+            where.OR = [
+                { title: { contains: filters.search, mode: 'insensitive' } },
+                { description: { contains: filters.search, mode: 'insensitive' } },
+            ];
+        }
         if (filters?.startDate && filters?.endDate) {
             where.scheduledAt = {
                 gte: filters.startDate,
@@ -93,22 +129,71 @@ export class ActivitiesService {
             };
         }
 
-        return this.prisma.activity.findMany({
-            where,
-            include: {
-                assignee: {
-                    select: { id: true, firstName: true, lastName: true, email: true },
-                },
-                lead: {
-                    select: { id: true, firstName: true, lastName: true, company: true },
-                },
-                customer: {
-                    select: { id: true, firstName: true, lastName: true, company: true },
-                },
+        const pageSize = Math.min(Math.max(filters?.pageSize ?? 25, 1), 100);
+        const sortBy = this.getSortByOrDefault(filters?.sortBy);
+        const sortOrder: 'asc' | 'desc' = filters?.sortOrder ?? 'asc';
 
-            },
-            orderBy: { scheduledAt: 'asc' },
-        });
+        // prefer cursor pagination when provided
+        const cursor = filters?.cursor;
+        if (cursor) {
+            const [total, items] = await Promise.all([
+                this.prisma.activity.count({ where }),
+                this.prisma.activity.findMany({
+                    where,
+                    take: pageSize + 1,
+                    skip: 1,
+                    cursor: { id: cursor },
+                    include: {
+                        assignee: { select: { id: true, firstName: true, lastName: true, email: true } },
+                        lead: { select: { id: true, firstName: true, lastName: true, company: true } },
+                        customer: { select: { id: true, firstName: true, lastName: true, company: true } },
+                    },
+                    orderBy: { [sortBy]: sortOrder },
+                }),
+            ]);
+
+            const hasNext = items.length > pageSize;
+            const sliced = hasNext ? items.slice(0, pageSize) : items;
+            const nextCursor = hasNext ? sliced[sliced.length - 1]?.id : null;
+
+            return {
+                items: sliced,
+                total,
+                page: null,
+                pageSize,
+                nextCursor,
+                sortBy,
+                sortOrder,
+            };
+        }
+
+        const page = Math.max(filters?.page ?? 1, 1);
+        const skip = (page - 1) * pageSize;
+
+        const [total, items] = await Promise.all([
+            this.prisma.activity.count({ where }),
+            this.prisma.activity.findMany({
+                where,
+                skip,
+                take: pageSize,
+                include: {
+                    assignee: { select: { id: true, firstName: true, lastName: true, email: true } },
+                    lead: { select: { id: true, firstName: true, lastName: true, company: true } },
+                    customer: { select: { id: true, firstName: true, lastName: true, company: true } },
+                },
+                orderBy: { [sortBy]: sortOrder },
+            }),
+        ]);
+
+        return {
+            items,
+            total,
+            page,
+            pageSize,
+            nextCursor: null,
+            sortBy,
+            sortOrder,
+        };
     }
 
     async findToday(user: UserContext) {
@@ -238,6 +323,12 @@ export class ActivitiesService {
         }
 
         const data: any = { ...updateActivityDto };
+        if (updateActivityDto.assigneeId) {
+            const assignee = await this.prisma.user.findUnique({ where: { id: updateActivityDto.assigneeId } });
+            if (!assignee) {
+                throw new BadRequestException('Assignee not found');
+            }
+        }
         if (updateActivityDto.scheduledAt) {
             data.scheduledAt = new Date(updateActivityDto.scheduledAt);
         }

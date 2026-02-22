@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -36,6 +37,11 @@ export default function TelecallingPage() {
     const isAdminMode = user?.role === 'SUPER_ADMIN' || user?.role === 'MANAGER';
     const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
 
+    if (user && !isAdminMode) {
+        router.replace('/tasks');
+        return null;
+    }
+
     // Fetch team members for assignment
     const { data: teamMembers } = useQuery({
         queryKey: ['team-members'],
@@ -70,6 +76,41 @@ export default function TelecallingPage() {
             queryClient.invalidateQueries({ queryKey: ['raw-leads'] });
             toast({ title: 'Status updated' });
         }
+    });
+
+    const deleteRawLeadMutation = useMutation({
+        mutationFn: async (id: string) => {
+            return apiClient.delete(`/raw-leads/${id}`);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['raw-leads'] });
+            toast({ title: 'Number deleted successfully' });
+        },
+        onError: (err: any) => {
+            toast({
+                title: 'Failed to delete number',
+                description: err.response?.data?.message || 'Something went wrong',
+                variant: 'destructive',
+            });
+        },
+    });
+
+    const bulkDeleteMutation = useMutation({
+        mutationFn: async (ids: string[]) => {
+            return apiClient.delete(`/raw-leads`, { data: { ids } });
+        },
+        onSuccess: (res: any) => {
+            setSelectedIds([]);
+            queryClient.invalidateQueries({ queryKey: ['raw-leads'] });
+            toast({ title: `Deleted ${res?.data?.deletedCount ?? 0} numbers` });
+        },
+        onError: (err: any) => {
+            toast({
+                title: 'Failed to bulk delete',
+                description: err.response?.data?.message || 'Something went wrong',
+                variant: 'destructive',
+            });
+        },
     });
 
     const getStatusBadge = (status: string) => {
@@ -122,6 +163,18 @@ export default function TelecallingPage() {
                         >
                             <UserPlus className="h-4 w-4 mr-2" />
                             Assign ({selectedIds.length})
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="border-red-200 text-red-700 hover:bg-red-50"
+                            disabled={selectedIds.length === 0 || bulkDeleteMutation.isPending}
+                            onClick={() => {
+                                if (confirm(`Delete ${selectedIds.length} selected numbers permanently?`)) {
+                                    bulkDeleteMutation.mutate(selectedIds);
+                                }
+                            }}
+                        >
+                            Delete ({selectedIds.length})
                         </Button>
                     </div>
                 )}
@@ -253,17 +306,37 @@ export default function TelecallingPage() {
                                             {lead.status === 'INTERESTED' && !lead.convertedLeadId ? (
                                                 <Button
                                                     size="sm"
-                                                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                                                    className="bg-emerald-600 hover:bg-emerald-700 h-8 text-xs"
                                                     onClick={() => router.push(`/leads/new?phone=${encodeURIComponent(lead.phone)}&rawId=${lead.id}`)}
                                                 >
-                                                    <CheckCircle2 className="h-4 w-4 mr-1" />
                                                     Convert to Lead
                                                 </Button>
                                             ) : lead.convertedLeadId ? (
-                                                <Button size="sm" variant="outline" onClick={() => router.push(`/leads/${lead.convertedLeadId}`)}>
-                                                    <LinkIcon className="h-4 w-4 mr-1" />
-                                                    View Lead
-                                                </Button>
+                                                <div className="flex gap-2 justify-end">
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        className="h-8 text-xs"
+                                                        onClick={() => router.push(`/leads/${lead.convertedLeadId}`)}
+                                                    >
+                                                        View Lead
+                                                    </Button>
+                                                    {isAdminMode && (
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            className="h-8 text-xs border-red-200 text-red-700 hover:bg-red-50"
+                                                            disabled={deleteRawLeadMutation.isPending}
+                                                            onClick={() => {
+                                                                if (confirm('Delete this number permanently?')) {
+                                                                    deleteRawLeadMutation.mutate(lead.id);
+                                                                }
+                                                            }}
+                                                        >
+                                                            Delete
+                                                        </Button>
+                                                    )}
+                                                </div>
                                             ) : (
                                                 <div className="flex gap-2 justify-end">
                                                     <Button
@@ -282,6 +355,21 @@ export default function TelecallingPage() {
                                                     >
                                                         Not Interested
                                                     </Button>
+                                                    {isAdminMode && (
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            className="h-8 text-xs border-red-200 text-red-700 hover:bg-red-50"
+                                                            disabled={deleteRawLeadMutation.isPending}
+                                                            onClick={() => {
+                                                                if (confirm('Delete this number permanently?')) {
+                                                                    deleteRawLeadMutation.mutate(lead.id);
+                                                                }
+                                                            }}
+                                                        >
+                                                            Delete
+                                                        </Button>
+                                                    )}
                                                     {/* Future: Edit full notes modal pop-up */}
                                                 </div>
                                             )}

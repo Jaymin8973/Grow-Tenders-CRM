@@ -262,6 +262,9 @@ export class LeadsService {
         }
         // Allow filtering by assignee only if user has permission to see others
         if (filters?.assigneeId) {
+            if (filters.assigneeId === 'unassigned') {
+                where.assigneeId = null;
+            } else {
             // If Manager, ensure the requested assignee is in their team
             if (user.role === Role.MANAGER) {
                 // We already restricted 'where.assigneeId' above. 
@@ -286,6 +289,7 @@ export class LeadsService {
             } else {
                 // Admin and Employee can filter freely (Employee has global read)
                 where.assigneeId = filters.assigneeId;
+            }
             }
         }
 

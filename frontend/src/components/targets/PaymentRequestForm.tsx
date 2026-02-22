@@ -39,8 +39,8 @@ export function PaymentRequestForm() {
     const { data: customers } = useQuery({
         queryKey: ['my-customers'],
         queryFn: async () => {
-            const response = await apiClient.get('/customers');
-            return response.data;
+            const response = await apiClient.get('/customers?page=1&pageSize=100');
+            return response.data?.items ?? [];
         },
     });
 

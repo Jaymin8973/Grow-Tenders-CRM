@@ -182,6 +182,7 @@ model User {
   leadsAssigned         Lead[]         @relation("LeadAssignee")
   leadsCreated          Lead[]         @relation("LeadCreator")
   rawLeadsAssigned      RawLead[]      @relation("RawLeadAssignee")
+  superAdminLoginOtps   SuperAdminLoginOtp[]
   customersAssigned     Customer[]     @relation("CustomerAssignee")
 
   activitiesAssigned    Activity[]     @relation("ActivityAssignee")
@@ -271,6 +272,22 @@ model RawLead {
   updatedAt       DateTime       @updatedAt
 
   @@map("raw_leads")
+}
+
+model SuperAdminLoginOtp {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId
+  user        User     @relation(fields: [userId], references: [id])
+
+  otpHash     String
+  expiresAt   DateTime
+  attempts    Int      @default(0)
+  consumedAt  DateTime?
+
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@map("super_admin_login_otps")
 }
 
 // Separate FollowUp model for timeline

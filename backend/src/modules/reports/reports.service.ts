@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Role, LeadStatus, ActivityStatus } from '@prisma/client';
+import { Role, LeadStatus, ActivityStatus, InvoiceStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
 interface DateRange {
@@ -129,6 +129,7 @@ export class ReportsService {
                     leadsConverted,
                     activitiesTotal,
                     activitiesCompleted,
+                    revenue,
                 ] = await Promise.all([
                     this.prisma.lead.count({
                         where: { assigneeId: employee.id, ...dateFilter }
@@ -141,6 +142,14 @@ export class ReportsService {
                     }),
                     this.prisma.activity.count({
                         where: { assigneeId: employee.id, status: ActivityStatus.COMPLETED, ...dateFilter }
+                    }),
+                    this.prisma.invoice.aggregate({
+                        where: {
+                            status: InvoiceStatus.PAID,
+                            customer: { assigneeId: employee.id },
+                            ...dateFilter,
+                        },
+                        _sum: { total: true },
                     }),
                 ]);
 
@@ -157,6 +166,7 @@ export class ReportsService {
                     activityCompletionRate: activitiesTotal > 0
                         ? Math.round((activitiesCompleted / activitiesTotal) * 100)
                         : 0,
+                    revenue: revenue._sum.total || 0,
                 };
             }),
         );

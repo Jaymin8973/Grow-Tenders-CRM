@@ -8,6 +8,23 @@ import * as path from 'path';
 export class ScrapedTendersService {
     constructor(private prisma: PrismaService) { }
 
+    private getHeaderLogoBuffer(): Buffer | null {
+        const candidates = [
+            path.join(process.cwd(), 'src/assets/logo.jpg'),
+            path.join(__dirname, '../../../assets/logo.jpg'),
+        ];
+
+        for (const p of candidates) {
+            try {
+                if (fs.existsSync(p)) return fs.readFileSync(p);
+            } catch {
+                // ignore
+            }
+        }
+
+        return null;
+    }
+
     private getWatermarkLogoBuffer(): Buffer | null {
         const candidates = [
             path.join(process.cwd(), 'src/assets/Logo-invoice.png'),
@@ -181,6 +198,25 @@ export class ScrapedTendersService {
 
             const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
             const leftX = doc.page.margins.left;
+
+            // Top center logo
+            const headerLogo = this.getHeaderLogoBuffer();
+            if (headerLogo) {
+                try {
+                    const logoMaxWidth = Math.min(pageWidth * 1, 400);
+                    const logoMaxHeight = 90;
+                    const logoX = doc.page.width / 2 - logoMaxWidth / 2;
+                    const logoY = doc.page.margins.top - 10;
+                    doc.image(headerLogo, logoX, Math.max(18, logoY), {
+                        fit: [logoMaxWidth, logoMaxHeight],
+                        align: 'center',
+                        valign: 'center',
+                    });
+                    doc.moveDown(3);
+                } catch {
+                    // ignore header logo failures
+                }
+            }
 
             // Watermark
             const logo = this.getWatermarkLogoBuffer();

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
 import { useAuth } from '@/contexts/auth-context';
@@ -31,10 +31,14 @@ import {
 import { getInitials, formatCurrency, cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ComposeEmailDialog } from '@/components/mail/compose-email-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 export default function TeamsPage() {
     const { user } = useAuth();
     const [expandedTeams, setExpandedTeams] = useState<Record<string, boolean>>({});
+    const { toast } = useToast();
+
+    const canView = user?.role === 'SUPER_ADMIN' || user?.role === 'MANAGER';
 
     // Fetch all users to get hierarchy
     const { data: users, isLoading: usersLoading } = useQuery({
@@ -43,6 +47,8 @@ export default function TeamsPage() {
             const response = await apiClient.get('/users');
             return response.data;
         },
+        enabled: !!canView,
+        placeholderData: (prev) => prev,
     });
 
     // Fetch productivity stats
@@ -52,11 +58,21 @@ export default function TeamsPage() {
             const response = await apiClient.get('/reports/employee-productivity');
             return response.data;
         },
+        enabled: !!canView,
+        placeholderData: (prev) => prev,
     });
 
     const toggleTeam = (managerId: string) => {
         setExpandedTeams(prev => ({ ...prev, [managerId]: !prev[managerId] }));
     };
+
+    if (!canView) {
+        return (
+            <div className="flex h-full flex-col items-center justify-center gap-2">
+                <p className="text-muted-foreground">You do not have permission to view teams.</p>
+            </div>
+        );
+    }
 
     if (usersLoading || statsLoading) {
         return (
@@ -66,43 +82,41 @@ export default function TeamsPage() {
         );
     }
 
-    // Processing Logic (same as before)
-    const managersMap = new Map();
-    const unassignedEmployees: any[] = [];
+    const managers = useMemo(() => {
+        const managersMap = new Map<string, any>();
 
-    users?.forEach((u: any) => {
-        if (u.role === 'MANAGER') {
-            managersMap.set(u.id, { ...u, team: [], totalRevenue: 0, totalLeadsConverted: 0 });
-        }
-    });
-
-    users?.forEach((u: any) => {
-        if (u.role === 'EMPLOYEE') {
-            const stats = productivity?.find((p: any) => p.id === u.id) || {
-                leadsAssigned: 0,
-                leadsConverted: 0,
-                leadConversionRate: 0,
-
-                revenue: 0
-            };
-
-            const employeeWithStats = { ...u, stats };
-
-            if (u.managerId && managersMap.has(u.managerId)) {
-                const manager = managersMap.get(u.managerId);
-                manager.team.push(employeeWithStats);
-                manager.totalRevenue += stats.revenue;
-                manager.totalLeadsConverted += stats.leadsConverted;
-
-            } else {
-                unassignedEmployees.push(employeeWithStats);
+        (users || []).forEach((u: any) => {
+            if (u.role === 'MANAGER') {
+                managersMap.set(u.id, { ...u, team: [], totalRevenue: 0, totalLeadsConverted: 0 });
             }
-        }
-    });
+        });
 
-    const managers = Array.from(managersMap.values())
-        .filter(m => m.team.length > 0 || m.role === 'MANAGER')
-        .sort((a, b) => b.totalRevenue - a.totalRevenue);
+        const productivityById = new Map<string, any>((productivity || []).map((p: any) => [p.id, p]));
+
+        (users || []).forEach((u: any) => {
+            if (u.role === 'EMPLOYEE') {
+                const stats = productivityById.get(u.id) || {
+                    leadsAssigned: 0,
+                    leadsConverted: 0,
+                    leadConversionRate: 0,
+                    revenue: 0,
+                };
+
+                const employeeWithStats = { ...u, stats };
+
+                if (u.managerId && managersMap.has(u.managerId)) {
+                    const manager = managersMap.get(u.managerId);
+                    manager.team.push(employeeWithStats);
+                    manager.totalRevenue += stats.revenue || 0;
+                    manager.totalLeadsConverted += stats.leadsConverted || 0;
+                }
+            }
+        });
+
+        return Array.from(managersMap.values())
+            .filter(m => m.team.length > 0 || m.role === 'MANAGER')
+            .sort((a, b) => (b.totalRevenue || 0) - (a.totalRevenue || 0));
+    }, [users, productivity]);
 
     return (
         <div className="space-y-6 page-enter max-w-7xl mx-auto pb-10">

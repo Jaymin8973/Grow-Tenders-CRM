@@ -10,6 +10,22 @@ import { RawLeadStatus, Prisma, User } from '@prisma/client';
 export class RawLeadsService {
     constructor(private prisma: PrismaService) { }
 
+    private getCompletionFilters() {
+        const completedStatuses: RawLeadStatus[] = [
+            RawLeadStatus.INTERESTED,
+            RawLeadStatus.NOT_INTERESTED,
+            RawLeadStatus.DND,
+            RawLeadStatus.INVALID,
+        ];
+
+        const pendingStatuses: RawLeadStatus[] = [
+            RawLeadStatus.UNTOUCHED,
+            RawLeadStatus.CALL_LATER,
+        ];
+
+        return { completedStatuses, pendingStatuses };
+    }
+
     async create(createRawLeadDto: CreateRawLeadDto) {
         try {
             return await this.prisma.rawLead.create({
@@ -177,5 +193,98 @@ export class RawLeadsService {
         } catch (error) {
             throw new NotFoundException('Raw lead not found');
         }
+    }
+
+    async removeBulk(ids: string[]) {
+        const result = await this.prisma.rawLead.deleteMany({
+            where: { id: { in: ids } }
+        });
+        return { deletedCount: result.count };
+    }
+
+    async getStats(params: { from?: Date; to?: Date }) {
+        const { from, to } = params;
+        const { completedStatuses, pendingStatuses } = this.getCompletionFilters();
+
+        const dateWhere: Prisma.RawLeadWhereInput = {};
+        if (from || to) {
+            dateWhere.createdAt = {
+                ...(from ? { gte: from } : {}),
+                ...(to ? { lte: to } : {}),
+            };
+        }
+
+        const [
+            total,
+            assigned,
+            unassigned,
+            completed,
+            pending,
+            converted,
+            assignedRawLeads,
+        ] = await Promise.all([
+            this.prisma.rawLead.count({ where: dateWhere }),
+            this.prisma.rawLead.count({ where: { ...dateWhere, assigneeId: { not: null } } }),
+            this.prisma.rawLead.count({ where: { ...dateWhere, assigneeId: null } }),
+            this.prisma.rawLead.count({ where: { ...dateWhere, status: { in: completedStatuses } } }),
+            this.prisma.rawLead.count({ where: { ...dateWhere, status: { in: pendingStatuses } } }),
+            this.prisma.rawLead.count({ where: { ...dateWhere, convertedLeadId: { not: null } } }),
+            this.prisma.rawLead.findMany({
+                where: { ...dateWhere, assigneeId: { not: null } },
+                select: { assigneeId: true, status: true, convertedLeadId: true },
+            }),
+        ]);
+
+        const byAssigneeMap = new Map<
+            string,
+            { assigneeId: string; assigned: number; completed: number; pending: number; converted: number }
+        >();
+
+        for (const rl of assignedRawLeads) {
+            const assigneeId = rl.assigneeId as string;
+            const row = byAssigneeMap.get(assigneeId) || {
+                assigneeId,
+                assigned: 0,
+                completed: 0,
+                pending: 0,
+                converted: 0,
+            };
+
+            row.assigned += 1;
+            if (completedStatuses.includes(rl.status)) row.completed += 1;
+            if (pendingStatuses.includes(rl.status)) row.pending += 1;
+            if (rl.convertedLeadId) row.converted += 1;
+
+            byAssigneeMap.set(assigneeId, row);
+        }
+
+        const assigneeIds = Array.from(byAssigneeMap.keys());
+        const assignees = assigneeIds.length
+            ? await this.prisma.user.findMany({
+                where: { id: { in: assigneeIds } },
+                select: { id: true, firstName: true, lastName: true },
+            })
+            : [];
+
+        const assigneeNameMap = new Map(assignees.map(a => [a.id, `${a.firstName} ${a.lastName}`] as const));
+
+        const byAssignee = Array.from(byAssigneeMap.values()).map((row) => ({
+            ...row,
+            name: assigneeNameMap.get(row.assigneeId) || 'Unknown',
+        }));
+
+        byAssignee.sort((a, b) => b.assigned - a.assigned);
+
+        return {
+            totals: {
+                total,
+                assigned,
+                unassigned,
+                completed,
+                pending,
+                converted,
+            },
+            byAssignee,
+        };
     }
 }

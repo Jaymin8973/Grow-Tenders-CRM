@@ -37,22 +37,40 @@ export class ActivitiesController {
     @ApiQuery({ name: 'type', required: false, enum: ActivityType })
     @ApiQuery({ name: 'status', required: false, enum: ActivityStatus })
     @ApiQuery({ name: 'assigneeId', required: false })
+    @ApiQuery({ name: 'search', required: false, type: String, description: 'Search in title/description' })
     @ApiQuery({ name: 'startDate', required: false })
     @ApiQuery({ name: 'endDate', required: false })
+    @ApiQuery({ name: 'page', required: false, type: Number, description: '1-based page number (default: 1)' })
+    @ApiQuery({ name: 'pageSize', required: false, type: Number, description: 'Page size (default: 25, max: 100)' })
+    @ApiQuery({ name: 'cursor', required: false, type: String, description: 'Cursor activity id for keyset pagination' })
+    @ApiQuery({ name: 'sortBy', required: false, type: String, description: 'Field to sort by (default: scheduledAt)' })
+    @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'], description: 'Sort order (default: asc)' })
     findAll(
         @CurrentUser() user: any,
         @Query('type') type?: ActivityType,
         @Query('status') status?: ActivityStatus,
         @Query('assigneeId') assigneeId?: string,
+        @Query('search') search?: string,
         @Query('startDate') startDate?: string,
         @Query('endDate') endDate?: string,
+        @Query('page') page?: string,
+        @Query('pageSize') pageSize?: string,
+        @Query('cursor') cursor?: string,
+        @Query('sortBy') sortBy?: string,
+        @Query('sortOrder') sortOrder?: 'asc' | 'desc',
     ) {
         return this.activitiesService.findAll(user, {
             type,
             status,
             assigneeId,
+            search,
             startDate: startDate ? new Date(startDate) : undefined,
             endDate: endDate ? new Date(endDate) : undefined,
+            page: page ? Number(page) : undefined,
+            pageSize: pageSize ? Number(pageSize) : undefined,
+            cursor,
+            sortBy,
+            sortOrder,
         });
     }
 

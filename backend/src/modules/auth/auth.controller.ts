@@ -15,6 +15,7 @@ export class AuthController {
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'User login' })
     @ApiResponse({ status: 200, description: 'Successfully logged in' })
+    @ApiResponse({ status: 200, description: 'For SUPER_ADMIN, may return otpRequired=true and send OTP to email' })
     @ApiResponse({ status: 401, description: 'Invalid credentials' })
     async login(@Body() loginDto: LoginDto) {
         return this.authService.login(loginDto);
