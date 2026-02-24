@@ -37,7 +37,7 @@ export class EmailService {
         const useSendGrid = this.configService.get<string>('USE_SENDGRID') === 'true';
 
         if (useSendGrid) {
-            // SendGrid configuration
+            // SendGrid SMTP relay (still SMTP; recommended for Render)
             this.transporter = nodemailer.createTransport({
                 host: 'smtp.sendgrid.net',
                 port: 587,
@@ -47,7 +47,7 @@ export class EmailService {
                 },
             });
         } else {
-            // Gmail SMTP configuration
+            // Generic SMTP configuration
             this.transporter = nodemailer.createTransport({
                 host: this.configService.get<string>('SMTP_HOST', 'smtp.gmail.com'),
                 port: parseInt(this.configService.get<string>('SMTP_PORT') || '587'),
@@ -58,6 +58,19 @@ export class EmailService {
                 },
             });
         }
+
+        // Verify transporter at startup so config issues show up immediately in logs
+        this.transporter
+            .verify()
+            .then(() => {
+                this.logger.log(`SMTP transporter verified (mode=${useSendGrid ? 'sendgrid' : 'smtp'})`);
+            })
+            .catch((err: any) => {
+                this.logger.error(
+                    `SMTP transporter verification failed (mode=${useSendGrid ? 'sendgrid' : 'smtp'}): ${err?.message || err}`,
+                    err?.stack,
+                );
+            });
     }
 
     async sendEmail(options: SendEmailOptions): Promise<boolean> {
@@ -83,13 +96,17 @@ export class EmailService {
             this.logger.log(`Email sent successfully to ${options.to}`);
             return true;
         } catch (error) {
-            this.logger.error(`Failed to send email to ${options.to}`, error);
+            const err: any = error;
+            this.logger.error(
+                `Failed to send email to ${options.to}: ${err?.message || err} (code=${err?.code || 'n/a'} response=${err?.response || 'n/a'})`,
+                err?.stack,
+            );
 
             // Log the failure
             await this.logEmail({
                 ...options,
                 status: 'failed',
-                error: error.message,
+                error: err?.message || String(err),
             });
 
             return false;

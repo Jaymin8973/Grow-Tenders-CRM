@@ -59,7 +59,9 @@ export class AuthService {
         }
 
         // SUPER_ADMIN requires OTP verification (2-step login)
-        if (user.role === 'SUPER_ADMIN') {
+        // Can be temporarily disabled via env flag (e.g., while SMTP is unavailable)
+        const disableSuperAdminOtp = this.configService.get<string>('DISABLE_SUPERADMIN_OTP') === 'true';
+        if (user.role === 'SUPER_ADMIN' && !disableSuperAdminOtp) {
             const issueOtp = async () => {
                 const otpCode = String(Math.floor(100000 + Math.random() * 900000));
                 const otpHash = await bcrypt.hash(otpCode, 10);
