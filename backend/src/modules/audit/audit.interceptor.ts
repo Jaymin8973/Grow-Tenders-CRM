@@ -81,7 +81,6 @@ export class AuditInterceptor implements NestInterceptor {
             '/api/customers',
             '/api/teams',
             '/api/users',
-            '/api/tasks',
             '/api/activities',
             '/api/daily-reports',
             '/api/scraped-tenders',

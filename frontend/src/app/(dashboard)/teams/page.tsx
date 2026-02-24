@@ -17,20 +17,13 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import {
-    Users,
-    TrendingUp,
-    Target,
-    Award,
-
     ChevronDown,
     ChevronUp,
     DollarSign,
     PieChart,
-    Mail
 } from 'lucide-react';
 import { getInitials, formatCurrency, cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { ComposeEmailDialog } from '@/components/mail/compose-email-dialog';
 import { useToast } from '@/hooks/use-toast';
 
 export default function TeamsPage() {
@@ -51,36 +44,12 @@ export default function TeamsPage() {
         placeholderData: (prev) => prev,
     });
 
-    // Fetch productivity stats
-    const { data: productivity, isLoading: statsLoading } = useQuery({
-        queryKey: ['reports', 'productivity'],
-        queryFn: async () => {
-            const response = await apiClient.get('/reports/employee-productivity');
-            return response.data;
-        },
-        enabled: !!canView,
-        placeholderData: (prev) => prev,
-    });
+    const productivity: any[] = [];
+    const statsLoading = false;
 
     const toggleTeam = (managerId: string) => {
         setExpandedTeams(prev => ({ ...prev, [managerId]: !prev[managerId] }));
     };
-
-    if (!canView) {
-        return (
-            <div className="flex h-full flex-col items-center justify-center gap-2">
-                <p className="text-muted-foreground">You do not have permission to view teams.</p>
-            </div>
-        );
-    }
-
-    if (usersLoading || statsLoading) {
-        return (
-            <div className="flex h-full items-center justify-center">
-                <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-            </div>
-        );
-    }
 
     const managers = useMemo(() => {
         const managersMap = new Map<string, any>();
@@ -118,9 +87,32 @@ export default function TeamsPage() {
             .sort((a, b) => (b.totalRevenue || 0) - (a.totalRevenue || 0));
     }, [users, productivity]);
 
+    if (!canView) {
+        return (
+            <div className="flex h-full flex-col items-center justify-center gap-2">
+                <p className="text-muted-foreground">You do not have permission to view teams.</p>
+            </div>
+        );
+    }
+
+    if (usersLoading || statsLoading) {
+        return (
+            <div className="flex h-full items-center justify-center">
+                <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+            </div>
+        );
+    }
+
+    const totals = {
+        managers: managers.length,
+        members: managers.reduce((sum, m) => sum + (m.team?.length || 0), 0),
+        revenue: managers.reduce((sum, m) => sum + (m.totalRevenue || 0), 0),
+        conversions: managers.reduce((sum, m) => sum + (m.totalLeadsConverted || 0), 0),
+    };
+
     return (
         <div className="space-y-6 page-enter max-w-7xl mx-auto pb-10">
-            <div className="flex flex-col gap-2 mb-6">
+            <div className="flex flex-col gap-2 mb-2">
                 <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
                     Teams Overview
                 </h1>
@@ -129,12 +121,31 @@ export default function TeamsPage() {
                 </p>
             </div>
 
-            <div className="flex justify-end mb-4">
-                <ComposeEmailDialog>
-                    <Button className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white">
-                        <Mail className="h-4 w-4" /> Compose Email
-                    </Button>
-                </ComposeEmailDialog>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <Card className="border shadow-sm">
+                    <CardContent className="p-4">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Managers</p>
+                        <p className="text-2xl font-bold mt-1">{totals.managers}</p>
+                    </CardContent>
+                </Card>
+                <Card className="border shadow-sm">
+                    <CardContent className="p-4">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Team Members</p>
+                        <p className="text-2xl font-bold mt-1">{totals.members}</p>
+                    </CardContent>
+                </Card>
+                <Card className="border shadow-sm">
+                    <CardContent className="p-4">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Total Conversions</p>
+                        <p className="text-2xl font-bold mt-1">{totals.conversions}</p>
+                    </CardContent>
+                </Card>
+                <Card className="border shadow-sm">
+                    <CardContent className="p-4">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Total Revenue</p>
+                        <p className="text-2xl font-bold mt-1">{formatCurrency(totals.revenue)}</p>
+                    </CardContent>
+                </Card>
             </div>
 
             <div className="grid gap-6">

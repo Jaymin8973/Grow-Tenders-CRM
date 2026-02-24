@@ -4,7 +4,6 @@ import {
     IsString,
     IsEnum,
     IsOptional,
-    IsNumber,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { LeadStatus, LeadSource } from '@prisma/client';
@@ -24,7 +23,6 @@ export class CreateLeadDto {
 
     @ApiProperty({ example: 'john.doe@company.com' })
     @IsEmail()
-    @IsNotEmpty()
     @IsNotEmpty()
     email: string;
 

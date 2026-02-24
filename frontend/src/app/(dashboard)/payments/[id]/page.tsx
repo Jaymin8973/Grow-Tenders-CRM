@@ -40,11 +40,6 @@ const gstTypeConfig: Record<string, { label: string; bg: string; color: string }
     WITHOUT_GST: { label: 'Without GST', bg: 'bg-slate-50 border-slate-200', color: 'text-slate-700' },
 };
 
-const referenceTypeConfig: Record<string, { label: string; bg: string; color: string }> = {
-    INTERNAL: { label: 'Internal Customer', bg: 'bg-blue-50 border-blue-200', color: 'text-blue-700' },
-    EXTERNAL: { label: 'External Customer', bg: 'bg-amber-50 border-amber-200', color: 'text-amber-700' },
-};
-
 export default function PaymentDetailsPage() {
     const router = useRouter();
     const params = useParams();
@@ -86,25 +81,24 @@ export default function PaymentDetailsPage() {
 
     const method = paymentMethodConfig[payment.paymentMethod] || paymentMethodConfig.OTHER;
     const gstType = gstTypeConfig[payment.gstType] || gstTypeConfig.WITHOUT_GST;
-    const refType = referenceTypeConfig[payment.referenceType] || referenceTypeConfig.INTERNAL;
     const MethodIcon = method.icon;
 
     const getDisplayName = () => {
-        if (payment.referenceType === 'INTERNAL' && payment.customer) {
+        if (payment.customer) {
             return `${payment.customer.firstName} ${payment.customer.lastName}`;
         }
-        return payment.customerName || 'N/A';
+        return 'N/A';
     };
 
     const getDisplayCompany = () => {
-        if (payment.referenceType === 'INTERNAL' && payment.customer) {
+        if (payment.customer) {
             return payment.customer.company || '-';
         }
         return payment.companyName || '-';
     };
 
     const getDisplayPhone = () => {
-        if (payment.referenceType === 'INTERNAL' && payment.customer) {
+        if (payment.customer) {
             return payment.customer.phone || '-';
         }
         return payment.phone || '-';
@@ -182,14 +176,11 @@ export default function PaymentDetailsPage() {
                 {/* Customer Details */}
                 <Card className="shadow-sm">
                     <CardContent className="p-4">
-                        <div className="flex items-center gap-2 mb-4">
-                            <div className="p-1.5 rounded-lg bg-blue-50">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="p-2 rounded-lg bg-blue-50">
                                 <User className="h-4 w-4 text-blue-600" />
                             </div>
                             <h3 className="text-sm font-semibold">Customer Details</h3>
-                            <Badge variant="outline" className={cn(refType.bg, refType.color, 'border ml-auto')}>
-                                {refType.label}
-                            </Badge>
                         </div>
 
                         <div className="space-y-3">

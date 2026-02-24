@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { BullModule } from '@nestjs/bull';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
@@ -12,7 +12,6 @@ import { ActivitiesModule } from './modules/activities/activities.module';
 import { InvoicesModule } from './modules/invoices/invoices.module';
 import { TendersModule } from './modules/tenders/tenders.module';
 import { LeaderboardModule } from './modules/leaderboard/leaderboard.module';
-import { ReportsModule } from './modules/reports/reports.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
 import { EmailModule } from './modules/email/email.module';
@@ -28,6 +27,8 @@ import { PaymentRequestsModule } from './modules/payment-requests/payment-reques
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { RawLeadsModule } from './modules/raw-leads/raw-leads.module';
+import { AuditInterceptor } from './modules/audit/audit.interceptor';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 
 @Module({
     imports: [
@@ -61,7 +62,6 @@ import { RawLeadsModule } from './modules/raw-leads/raw-leads.module';
         InvoicesModule,
         TendersModule,
         LeaderboardModule,
-        ReportsModule,
         NotificationsModule,
         AuditLogsModule,
         EmailModule,
@@ -74,12 +74,17 @@ import { RawLeadsModule } from './modules/raw-leads/raw-leads.module';
         TargetsModule,
         PaymentRequestsModule,
         RawLeadsModule,
+        AnalyticsModule,
     ],
     providers: [
         // Apply rate limiting globally
         {
             provide: APP_GUARD,
             useClass: ThrottlerGuard,
+        },
+        {
+            provide: APP_INTERCEPTOR,
+            useClass: AuditInterceptor,
         },
     ],
 })

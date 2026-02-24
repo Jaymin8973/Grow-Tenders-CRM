@@ -57,7 +57,7 @@ export class ScrapedTendersService {
         const limit = filters?.limit || 20;
         const skip = (page - 1) * limit;
 
-        const where: any = { source: 'GEM' };
+        const where: Record<string, any> = { source: 'GEM' };
 
         if (filters?.status) {
             // Map frontend status to backend status

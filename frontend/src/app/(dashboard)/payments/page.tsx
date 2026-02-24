@@ -67,11 +67,6 @@ const gstTypeConfig: Record<string, { label: string; bg: string; color: string }
     WITHOUT_GST: { label: 'Without GST', bg: 'bg-slate-50 border-slate-200', color: 'text-slate-700' },
 };
 
-const referenceTypeConfig: Record<string, { label: string; bg: string; color: string }> = {
-    INTERNAL: { label: 'Internal', bg: 'bg-blue-50 border-blue-200', color: 'text-blue-700' },
-    EXTERNAL: { label: 'External', bg: 'bg-amber-50 border-amber-200', color: 'text-amber-700' },
-};
-
 export default function PaymentsPage() {
     const router = useRouter();
     const { user } = useAuth();
@@ -79,15 +74,13 @@ export default function PaymentsPage() {
     const queryClient = useQueryClient();
     const [search, setSearch] = useState('');
     const [methodFilter, setMethodFilter] = useState<string | null>(null);
-    const [referenceFilter, setReferenceFilter] = useState<string | null>(null);
 
     const { data: payments, isLoading } = useQuery({
-        queryKey: ['payments', search, methodFilter, referenceFilter],
+        queryKey: ['payments', search, methodFilter],
         queryFn: async () => {
             const params = new URLSearchParams();
             if (search) params.append('search', search);
             if (methodFilter) params.append('paymentMethod', methodFilter);
-            if (referenceFilter) params.append('referenceType', referenceFilter);
             const response = await apiClient.get(`/payments?${params.toString()}`);
             return response.data;
         },
@@ -129,28 +122,28 @@ export default function PaymentsPage() {
     }
 
     const getDisplayName = (payment: any) => {
-        if (payment.referenceType === 'INTERNAL' && payment.customer) {
+        if (payment.customer) {
             return `${payment.customer.firstName} ${payment.customer.lastName}`;
         }
-        return payment.customerName || 'N/A';
+        return 'N/A';
     };
 
     const getDisplayCompany = (payment: any) => {
-        if (payment.referenceType === 'INTERNAL' && payment.customer) {
+        if (payment.customer) {
             return payment.customer.company || '-';
         }
         return payment.companyName || '-';
     };
 
     const getDisplayPhone = (payment: any) => {
-        if (payment.referenceType === 'INTERNAL' && payment.customer) {
+        if (payment.customer) {
             return payment.customer.phone || '-';
         }
         return payment.phone || '-';
     };
 
     const getAssignedEmployee = (payment: any) => {
-        if (payment.referenceType === 'INTERNAL' && payment.customer?.assignee) {
+        if (payment.customer?.assignee) {
             return `${payment.customer.assignee.firstName} ${payment.customer.assignee.lastName}`;
         }
         return '-';
@@ -270,19 +263,6 @@ export default function PaymentsPage() {
                                         ))}
                                     </SelectContent>
                                 </Select>
-                                <Select
-                                    value={referenceFilter || 'all'}
-                                    onValueChange={(value) => setReferenceFilter(value === 'all' ? null : value)}
-                                >
-                                    <SelectTrigger className="w-[150px]">
-                                        <SelectValue placeholder="Reference Type" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">All Types</SelectItem>
-                                        <SelectItem value="INTERNAL">Internal</SelectItem>
-                                        <SelectItem value="EXTERNAL">External</SelectItem>
-                                    </SelectContent>
-                                </Select>
                             </div>
                         </CardContent>
                     </Card>
@@ -297,9 +277,8 @@ export default function PaymentsPage() {
                                         <TableHead>Customer / Company</TableHead>
                                         <TableHead>Phone</TableHead>
                                         <TableHead>Assigned To</TableHead>
-                                        <TableHead>Type</TableHead>
+                                        <TableHead>Method</TableHead>
                                         <TableHead>Amount</TableHead>
-                                        <TableHead>Total</TableHead>
                                         <TableHead>Date</TableHead>
                                         <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
@@ -307,8 +286,6 @@ export default function PaymentsPage() {
                                 <TableBody>
                                     {payments?.map((payment: any) => {
                                         const method = paymentMethodConfig[payment.paymentMethod] || paymentMethodConfig.OTHER;
-                                        const gstType = gstTypeConfig[payment.gstType] || gstTypeConfig.WITHOUT_GST;
-                                        const refType = referenceTypeConfig[payment.referenceType] || referenceTypeConfig.INTERNAL;
                                         const MethodIcon = method.icon;
 
                                         return (
@@ -336,15 +313,13 @@ export default function PaymentsPage() {
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Badge variant="outline" className={cn(refType.bg, refType.color, 'border')}>
-                                                        {refType.label}
-                                                    </Badge>
+                                                    <div className="flex items-center gap-2">
+                                                        <MethodIcon className={cn('h-4 w-4', method.color)} />
+                                                        <span>{method.label}</span>
+                                                    </div>
                                                 </TableCell>
                                                 <TableCell className="font-medium">
                                                     {formatCurrency(payment.amount)}
-                                                </TableCell>
-                                                <TableCell className="font-bold text-emerald-600">
-                                                    {formatCurrency(payment.totalAmount)}
                                                 </TableCell>
                                                 <TableCell className="text-muted-foreground">
                                                     {new Date(payment.paymentDate).toLocaleDateString('en-IN', {

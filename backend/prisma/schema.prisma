@@ -230,8 +230,8 @@ model Lead {
   assigneeId    String?     @db.ObjectId
   assignee      User?       @relation("LeadAssignee", fields: [assigneeId], references: [id])
   
-  createdById   String      @db.ObjectId
-  createdBy     User        @relation("LeadCreator", fields: [createdById], references: [id])
+  createdById   String?     @db.ObjectId
+  createdBy     User?       @relation("LeadCreator", fields: [createdById], references: [id])
   
   // Branch relation
   branchId      String?     @db.ObjectId
@@ -262,6 +262,7 @@ model RawLead {
   notes           String?
   source          String?        // e.g., 'CSV Upload', 'Manual'
   batchName       String?        // Identifier for the bulk upload batch
+  assignedAt       DateTime?
   
   assigneeId      String?        @db.ObjectId
   assignee        User?          @relation("RawLeadAssignee", fields: [assigneeId], references: [id])

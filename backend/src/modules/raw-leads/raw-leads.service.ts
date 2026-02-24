@@ -10,6 +10,22 @@ import { RawLeadStatus, Prisma, User } from '@prisma/client';
 export class RawLeadsService {
     constructor(private prisma: PrismaService) { }
 
+    private getStartOfToday(d = new Date()) {
+        const x = new Date(d);
+        x.setHours(0, 0, 0, 0);
+        return x;
+    }
+
+    private getStartOfTomorrow(d = new Date()) {
+        const x = this.getStartOfToday(d);
+        x.setDate(x.getDate() + 1);
+        return x;
+    }
+
+    private getPendingStatuses() {
+        return [RawLeadStatus.UNTOUCHED, RawLeadStatus.CALL_LATER] as const;
+    }
+
     private getCompletionFilters() {
         const completedStatuses: RawLeadStatus[] = [
             RawLeadStatus.INTERESTED,
@@ -64,6 +80,7 @@ export class RawLeadsService {
             source: data.source,
             batchName: data.batchName,
             assigneeId: data.assigneeId,
+            assignedAt: data.assigneeId ? new Date() : undefined,
             status: RawLeadStatus.UNTOUCHED
         }));
 
@@ -84,10 +101,64 @@ export class RawLeadsService {
                 id: { in: data.rawLeadIds }
             },
             data: {
-                assigneeId: data.assigneeId
+                assigneeId: data.assigneeId,
+                assignedAt: new Date(),
             }
         });
         return { updatedCount: result.count };
+    }
+
+    async findAssignedToday(user: User) {
+        const start = this.getStartOfToday();
+        const end = this.getStartOfTomorrow();
+        const pendingStatuses = this.getPendingStatuses();
+
+        return this.prisma.rawLead.findMany({
+            where: {
+                assigneeId: user.id,
+                assignedAt: {
+                    gte: start,
+                    lt: end,
+                },
+                status: { in: [...pendingStatuses] },
+            },
+            orderBy: { assignedAt: 'desc' },
+        });
+    }
+
+    async findBacklog(user: User) {
+        const start = this.getStartOfToday();
+        const pendingStatuses = this.getPendingStatuses();
+
+        return this.prisma.rawLead.findMany({
+            where: {
+                assigneeId: user.id,
+                assignedAt: {
+                    lt: start,
+                },
+                status: { in: [...pendingStatuses] },
+            },
+            orderBy: { assignedAt: 'asc' },
+        });
+    }
+
+    async autoReturnStalePendingToPool(days = 2) {
+        const pendingStatuses = this.getPendingStatuses();
+        const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+        const result = await this.prisma.rawLead.updateMany({
+            where: {
+                assigneeId: { not: null },
+                assignedAt: { not: null, lte: cutoff },
+                status: { in: [...pendingStatuses] },
+            },
+            data: {
+                assigneeId: null,
+                status: RawLeadStatus.UNTOUCHED,
+            },
+        });
+
+        return { returnedCount: result.count, cutoff };
     }
 
     async findAll(params: {

@@ -15,7 +15,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, Loader2 } from 'lucide-react';
+import { Upload, Loader2, CheckCircle } from 'lucide-react';
 
 export function PaymentRequestForm() {
     const { toast } = useToast();
@@ -184,5 +184,3 @@ export function PaymentRequestForm() {
         </Card>
     );
 }
-
-import { CheckCircle } from 'lucide-react';

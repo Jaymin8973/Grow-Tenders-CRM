@@ -23,7 +23,6 @@ import {
     Loader2,
     IndianRupee,
     Building2,
-    Users,
     Phone,
     Calculator,
 } from 'lucide-react';
@@ -45,9 +44,7 @@ export default function NewPaymentPage() {
     const { toast } = useToast();
 
     const [formData, setFormData] = useState({
-        referenceType: 'INTERNAL' as 'INTERNAL' | 'EXTERNAL',
         customerId: '',
-        customerName: '',
         companyName: '',
         phone: '',
         amount: '',
@@ -68,7 +65,17 @@ export default function NewPaymentPage() {
         queryKey: ['customers-list'],
         queryFn: async () => {
             const response = await apiClient.get('/customers');
-            return response.data;
+            const payload = response.data;
+
+            if (Array.isArray(payload)) {
+                return payload;
+            }
+
+            if (payload && Array.isArray(payload.data)) {
+                return payload.data;
+            }
+
+            return [];
         },
     });
 
@@ -98,7 +105,6 @@ export default function NewPaymentPage() {
             setFormData(prev => ({
                 ...prev,
                 invoiceId: qpInvoiceId || prev.invoiceId,
-                referenceType: qpCustomerId ? 'INTERNAL' : prev.referenceType,
                 customerId: qpCustomerId || prev.customerId,
                 amount: qpAmount || prev.amount,
                 companyName: qpCompanyName || prev.companyName,
@@ -110,18 +116,17 @@ export default function NewPaymentPage() {
 
     // Auto-fill customer details when selected
     useEffect(() => {
-        if (formData.referenceType === 'INTERNAL' && formData.customerId && customers) {
+        if (formData.customerId && customers) {
             const customer = customers.find((c: any) => c.id === formData.customerId);
             if (customer) {
                 setFormData(prev => ({
                     ...prev,
-                    customerName: `${customer.firstName} ${customer.lastName}`,
                     companyName: customer.company || '',
                     phone: customer.phone || '',
                 }));
             }
         }
-    }, [formData.customerId, formData.referenceType, customers]);
+    }, [formData.customerId, customers]);
 
     const createMutation = useMutation({
         mutationFn: async (data: any) => {
@@ -149,49 +154,21 @@ export default function NewPaymentPage() {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Validation
-        if (formData.referenceType === 'INTERNAL' && !formData.customerId) {
-            toast({
-                title: 'Validation Error',
-                description: 'Please select a customer',
-                variant: 'destructive',
-            });
-            return;
-        }
-        if (formData.referenceType === 'EXTERNAL' && !formData.customerName) {
-            toast({
-                title: 'Validation Error',
-                description: 'Please enter customer name',
-                variant: 'destructive',
-            });
-            return;
-        }
-        if (!formData.amount || parseFloat(formData.amount) <= 0) {
-            toast({
-                title: 'Validation Error',
-                description: 'Please enter a valid amount',
-                variant: 'destructive',
-            });
-            return;
-        }
+        const selectedCustomer = customers?.find((c: any) => c.id === formData.customerId);
 
-        const payload = {
-            referenceType: formData.referenceType,
-            customerId: formData.referenceType === 'INTERNAL' ? formData.customerId : undefined,
-            customerName: formData.referenceType === 'EXTERNAL' ? formData.customerName : undefined,
-            companyName: formData.referenceType === 'EXTERNAL' ? formData.companyName : undefined,
-            phone: formData.phone || undefined,
-            amount: parseFloat(formData.amount),
+        createMutation.mutate({
+            customerId: formData.customerId,
+            companyName: selectedCustomer?.company || formData.companyName,
+            phone: selectedCustomer?.phone || formData.phone,
+            amount: parseFloat(formData.amount) || 0,
             gstType: formData.gstType,
-            gstPercentage: formData.gstType === 'WITH_GST' ? parseFloat(formData.gstPercentage) : undefined,
+            gstPercentage: parseFloat(formData.gstPercentage) || 18,
             paymentDate: formData.paymentDate,
             paymentMethod: formData.paymentMethod,
             referenceNumber: formData.referenceNumber || undefined,
             notes: formData.notes || undefined,
             invoiceId: formData.invoiceId || undefined,
-        };
-
-        createMutation.mutate(payload);
+        });
     };
 
     return (
@@ -210,43 +187,6 @@ export default function NewPaymentPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Reference Type Selection */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Users className="h-5 w-5" />
-                            Customer Type
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <RadioGroup
-                            value={formData.referenceType}
-                            onValueChange={(value) => setFormData(prev => ({
-                                ...prev,
-                                referenceType: value as 'INTERNAL' | 'EXTERNAL',
-                                customerId: '',
-                                customerName: '',
-                                companyName: '',
-                                phone: '',
-                            }))}
-                            className="flex gap-6"
-                        >
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="INTERNAL" id="internal" />
-                                <Label htmlFor="internal" className="cursor-pointer">
-                                    Internal (Existing Customer)
-                                </Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="EXTERNAL" id="external" />
-                                <Label htmlFor="external" className="cursor-pointer">
-                                    External (Outside Client)
-                                </Label>
-                            </div>
-                        </RadioGroup>
-                    </CardContent>
-                </Card>
-
                 {/* Customer Details */}
                 <Card>
                     <CardHeader>
@@ -256,48 +196,25 @@ export default function NewPaymentPage() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        {formData.referenceType === 'INTERNAL' ? (
-                            <div className="space-y-2">
-                                <Label>Select Customer *</Label>
-                                <Select
-                                    value={formData.customerId}
-                                    onValueChange={(value) => setFormData(prev => ({ ...prev, customerId: value }))}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select a customer" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {customers?.map((customer: any) => (
-                                            <SelectItem key={customer.id} value={customer.id}>
-                                                {customer.firstName} {customer.lastName}
-                                                {customer.company && ` - ${customer.company}`}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        ) : (
-                            <div className="grid gap-4 sm:grid-cols-2">
-                                <div className="space-y-2">
-                                    <Label htmlFor="customerName">Customer Name *</Label>
-                                    <Input
-                                        id="customerName"
-                                        value={formData.customerName}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, customerName: e.target.value }))}
-                                        placeholder="Enter customer name"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="companyName">Company Name</Label>
-                                    <Input
-                                        id="companyName"
-                                        value={formData.companyName}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, companyName: e.target.value }))}
-                                        placeholder="Enter company name"
-                                    />
-                                </div>
-                            </div>
-                        )}
+                        <div className="space-y-2">
+                            <Label>Select Customer *</Label>
+                            <Select
+                                value={formData.customerId}
+                                onValueChange={(value) => setFormData(prev => ({ ...prev, customerId: value }))}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a customer" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {customers?.map((customer: any) => (
+                                        <SelectItem key={customer.id} value={customer.id}>
+                                            {customer.firstName} {customer.lastName}
+                                            {customer.company && ` - ${customer.company}`}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
 
                         <div className="space-y-2">
                             <Label htmlFor="phone">Phone Number</Label>
@@ -309,7 +226,7 @@ export default function NewPaymentPage() {
                                     onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
                                     placeholder="Enter phone number"
                                     className="pl-10"
-                                    disabled={formData.referenceType === 'INTERNAL'}
+                                    disabled
                                 />
                             </div>
                         </div>
@@ -346,7 +263,7 @@ export default function NewPaymentPage() {
                                 <Label>GST Type *</Label>
                                 <RadioGroup
                                     value={formData.gstType}
-                                    onValueChange={(value) => setFormData(prev => ({
+                                    onValueChange={(value: string) => setFormData(prev => ({
                                         ...prev,
                                         gstType: value as 'WITH_GST' | 'WITHOUT_GST'
                                     }))}
@@ -423,21 +340,17 @@ export default function NewPaymentPage() {
                             </div>
                             <div className="space-y-2">
                                 <Label>Payment Method *</Label>
-                                <Select
+                                <select
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                                     value={formData.paymentMethod}
-                                    onValueChange={(value) => setFormData(prev => ({ ...prev, paymentMethod: value }))}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, paymentMethod: e.target.value }))}
                                 >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select method" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {paymentMethods.map((method) => (
-                                            <SelectItem key={method.value} value={method.value}>
-                                                {method.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                    {paymentMethods.map((method) => (
+                                        <option key={method.value} value={method.value}>
+                                            {method.label}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
                         </div>
 

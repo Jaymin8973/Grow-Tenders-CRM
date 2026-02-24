@@ -42,28 +42,26 @@ export default function DashboardPage() {
     const { user } = useAuth();
 
     const { data: stats, isLoading } = useQuery({
-        queryKey: ['dashboard-stats'],
+        queryKey: ['dashboard-analytics'],
         queryFn: async () => {
-            const response = await apiClient.get('/reports/dashboard');
+            const response = await apiClient.get('/analytics/dashboard');
             return response.data;
         },
     });
 
-    const { data: salesData } = useQuery({
-        queryKey: ['sales-performance'],
-        queryFn: async () => {
-            const response = await apiClient.get('/reports/sales-performance');
-            return response.data;
-        },
-    });
+    const salesData = stats?.invoices
+        ? {
+            totalRevenue: stats.invoices.totalRevenue || 0,
+            leadsConverted: stats?.leads?.byStatus?.CLOSED_LEAD || 0,
+            winRate: stats?.leads?.total ? Math.round(((stats?.leads?.byStatus?.CLOSED_LEAD || 0) / stats.leads.total) * 100) : 0,
+            activitiesCompleted: stats?.activities?.completedThisMonth || 0,
+            monthlyRevenue: [],
+        }
+        : undefined;
 
-    const { data: pipelineData } = useQuery({
-        queryKey: ['pipeline-breakdown'],
-        queryFn: async () => {
-            const response = await apiClient.get('/reports/pipeline');
-            return response.data;
-        },
-    });
+    const pipelineData = stats?.leads?.byStatus
+        ? Object.entries(stats.leads.byStatus).map(([stage, count]) => ({ stage, count }))
+        : [];
 
     if (isLoading) {
         return (
@@ -76,8 +74,8 @@ export default function DashboardPage() {
     const statsCards = [
         {
             title: 'Total Leads',
-            value: stats?.totalLeads || 0,
-            change: stats?.newLeadsThisMonth || 0,
+            value: stats?.leads?.total || 0,
+            change: stats?.leads?.newThisMonth || 0,
             changeLabel: 'this month',
             trend: 'up',
             icon: UserPlus,
@@ -87,9 +85,9 @@ export default function DashboardPage() {
         },
         {
             title: 'Customers',
-            value: stats?.totalCustomers || 0,
-            change: stats?.newCustomersThisMonth || 0,
-            changeLabel: 'new customers',
+            value: stats?.customers?.total || 0,
+            change: stats?.customers?.companies || 0,
+            changeLabel: 'companies',
             trend: 'up',
             icon: Users,
             gradient: 'from-emerald-500 to-emerald-600',
@@ -98,8 +96,8 @@ export default function DashboardPage() {
         },
         {
             title: 'Pending Activities',
-            value: stats?.pendingActivities || 0,
-            change: stats?.activitiesToday || 0,
+            value: stats?.activities?.overdue || 0,
+            change: stats?.activities?.dueToday || 0,
             changeLabel: 'due today',
             trend: 'up',
             icon: CheckCircle2,
@@ -109,7 +107,7 @@ export default function DashboardPage() {
         },
         {
             title: 'Revenue',
-            value: formatCurrency(stats?.revenueThisMonth || 0),
+            value: formatCurrency(stats?.invoices?.paidRevenue || 0),
             change: 12,
             changeLabel: 'vs last month',
             trend: 'up',
@@ -120,7 +118,7 @@ export default function DashboardPage() {
         },
         {
             title: 'Activities Today',
-            value: stats?.activitiesToday || 0,
+            value: stats?.activities?.dueToday || 0,
             icon: CalendarDays,
             gradient: 'from-cyan-500 to-cyan-600',
             bg: 'bg-cyan-50',
@@ -128,8 +126,8 @@ export default function DashboardPage() {
         },
         {
             title: 'Overdue Tasks',
-            value: stats?.overdueActivities || 0,
-            trend: stats?.overdueActivities > 0 ? 'down' : 'up',
+            value: stats?.activities?.overdue || 0,
+            trend: (stats?.activities?.overdue || 0) > 0 ? 'down' : 'up',
             icon: AlertCircle,
             gradient: 'from-rose-500 to-rose-600',
             bg: 'bg-rose-50',

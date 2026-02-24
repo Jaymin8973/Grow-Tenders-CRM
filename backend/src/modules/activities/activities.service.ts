@@ -73,7 +73,7 @@ export class ActivitiesService {
                     title: 'New Task Assigned',
                     message: `You have been assigned a new task: ${createActivityDto.title}`,
                     type: 'ACTIVITY_REMINDER',
-                    link: `/tasks`,
+                    link: `/today`,
                 },
             });
         }
@@ -385,7 +385,7 @@ export class ActivitiesService {
         });
     }
 
-    async cancel(id: string, user: UserContext) {
+    async cancel(id: string, _user: UserContext) {
         const activity = await this.prisma.activity.findUnique({ where: { id } });
 
         if (!activity) {

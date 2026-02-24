@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { ReferenceType, GstType, PaymentMethod, Role } from '@prisma/client';
+import { GstType, PaymentMethod, ReferenceType, Role } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
@@ -43,24 +43,15 @@ export class PaymentsService {
     }
 
     async create(createPaymentDto: CreatePaymentDto, userId: string) {
-        // Validate: Internal reference requires customerId
-        if (createPaymentDto.referenceType === ReferenceType.INTERNAL && !createPaymentDto.customerId) {
-            throw new BadRequestException('Customer ID is required for internal reference type');
+        if (!createPaymentDto.customerId) {
+            throw new BadRequestException('Customer ID is required');
         }
 
-        // Validate: External reference requires customerName
-        if (createPaymentDto.referenceType === ReferenceType.EXTERNAL && !createPaymentDto.customerName) {
-            throw new BadRequestException('Customer name is required for external reference type');
-        }
-
-        // If internal, verify customer exists
-        if (createPaymentDto.customerId) {
-            const customer = await this.prisma.customer.findUnique({
-                where: { id: createPaymentDto.customerId },
-            });
-            if (!customer) {
-                throw new NotFoundException('Customer not found');
-            }
+        const customer = await this.prisma.customer.findUnique({
+            where: { id: createPaymentDto.customerId },
+        });
+        if (!customer) {
+            throw new NotFoundException('Customer not found');
         }
 
         // If invoice ID provided, verify it exists
@@ -83,9 +74,7 @@ export class PaymentsService {
         return this.prisma.payment.create({
             data: {
                 paymentNumber,
-                referenceType: createPaymentDto.referenceType,
                 customerId: createPaymentDto.customerId,
-                customerName: createPaymentDto.customerName,
                 companyName: createPaymentDto.companyName,
                 phone: createPaymentDto.phone,
                 amount: createPaymentDto.amount,
@@ -150,7 +139,6 @@ export class PaymentsService {
         if (filters?.search) {
             where.OR = [
                 { paymentNumber: { contains: filters.search, mode: 'insensitive' } },
-                { customerName: { contains: filters.search, mode: 'insensitive' } },
                 { companyName: { contains: filters.search, mode: 'insensitive' } },
                 { referenceNumber: { contains: filters.search, mode: 'insensitive' } },
             ];

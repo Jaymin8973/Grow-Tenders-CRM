@@ -27,13 +27,13 @@ import { Button } from '@/components/ui/button';
 import { getInitials } from '@/lib/utils';
 
 const navigation = [
+    { name: 'Today', href: '/today', icon: CalendarDays, roles: ['EMPLOYEE'] },
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Telecalling', href: '/telecalling', icon: Phone, roles: ['SUPER_ADMIN', 'MANAGER'] },
     { name: 'Leads', href: '/leads', icon: UserPlus },
     { name: 'Customers', href: '/customers', icon: Users },
 
     { name: 'Teams', href: '/teams', icon: Users, roles: ['SUPER_ADMIN', 'MANAGER'] },
-    { name: 'Tasks', href: '/tasks', icon: FileText },
     { name: 'Daily Reports', href: '/daily-reports', icon: BarChart3 },
     { name: 'GeM Tenders', href: '/scraped-tenders', icon: FileSearch },
     { name: 'Leaderboard', href: '/leaderboard', icon: Trophy },
@@ -42,7 +42,6 @@ const navigation = [
 const adminNav = [
     { name: 'Payments', href: '/payments', icon: Wallet, roles: ['SUPER_ADMIN', 'MANAGER'] },
     { name: 'Invoices', href: '/invoices', icon: FileText, roles: ['SUPER_ADMIN', 'MANAGER'] },
-    { name: 'Reports', href: '/reports', icon: BarChart3, roles: ['SUPER_ADMIN', 'MANAGER'] },
     { name: 'Transfer Requests', href: '/leads/transfer-requests', icon: UserPlus, roles: ['SUPER_ADMIN', 'MANAGER'] },
     { name: 'Users', href: '/users', icon: Building2, roles: ['SUPER_ADMIN', 'MANAGER'] },
     { name: 'Targets', href: '/targets', icon: Target, roles: ['SUPER_ADMIN', 'MANAGER'] },

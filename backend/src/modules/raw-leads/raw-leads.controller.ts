@@ -16,6 +16,28 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 export class RawLeadsController {
     constructor(private readonly rawLeadsService: RawLeadsService) { }
 
+    @Get('assigned-today')
+    @ApiOperation({ summary: 'Employee: Get pending raw leads assigned today' })
+    assignedToday(@CurrentUser() user: User) {
+        return this.rawLeadsService.findAssignedToday(user);
+    }
+
+    @Get('backlog')
+    @ApiOperation({ summary: 'Employee: Get pending raw leads assigned before today (backlog)' })
+    backlog(@CurrentUser() user: User) {
+        return this.rawLeadsService.findBacklog(user);
+    }
+
+    @Post('auto-return-stale')
+    @ApiOperation({ summary: 'Admin/Manager: Auto-return stale pending raw leads back to unassigned pool' })
+    autoReturnStale(@CurrentUser() user: User, @Body() body?: { days?: number }) {
+        if (user.role === 'EMPLOYEE') {
+            throw new UnauthorizedException('Employees cannot run auto-return.');
+        }
+        const days = body?.days ?? 2;
+        return this.rawLeadsService.autoReturnStalePendingToPool(days);
+    }
+
     @Get('stats')
     @ApiOperation({ summary: 'Raw leads stats (date range) for managers/admins' })
     stats(

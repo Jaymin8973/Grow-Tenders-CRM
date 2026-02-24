@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsMongoId } from 'class-validator';
+import { IsOptional, IsMongoId } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UploadAttachmentDto {

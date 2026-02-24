@@ -38,7 +38,7 @@ export default function TelecallingPage() {
     const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
 
     if (user && !isAdminMode) {
-        router.replace('/tasks');
+        router.replace('/today');
         return null;
     }
 

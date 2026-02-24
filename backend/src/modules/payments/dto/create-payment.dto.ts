@@ -1,21 +1,11 @@
 import { IsString, IsNumber, IsOptional, IsEnum, IsDateString, Min } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { PaymentMethod, GstType, ReferenceType } from '@prisma/client';
+import { PaymentMethod, GstType } from '@prisma/client';
 
 export class CreatePaymentDto {
-    @ApiProperty({ enum: ReferenceType, description: 'INTERNAL for existing customer, EXTERNAL for outside client' })
-    @IsEnum(ReferenceType)
-    referenceType: ReferenceType;
-
-    @ApiPropertyOptional({ description: 'Customer ID for internal reference' })
-    @IsOptional()
+    @ApiProperty({ description: 'Customer ID for payment' })
     @IsString()
-    customerId?: string;
-
-    @ApiPropertyOptional({ description: 'Customer name for external reference' })
-    @IsOptional()
-    @IsString()
-    customerName?: string;
+    customerId: string;
 
     @ApiPropertyOptional({ description: 'Company name' })
     @IsOptional()
