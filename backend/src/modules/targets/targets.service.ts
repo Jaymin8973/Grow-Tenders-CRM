@@ -10,7 +10,7 @@ export class TargetsService {
         // Ensure month is set to the first day
         const firstDayOfMonth = new Date(month.getFullYear(), month.getMonth(), 1);
 
-        return this.prisma.target.upsert({
+        const target = await this.prisma.target.upsert({
             where: {
                 userId_month: {
                     userId,
@@ -26,6 +26,19 @@ export class TargetsService {
                 month: firstDayOfMonth,
             },
         });
+
+        // Add Notification
+        await this.prisma.notification.create({
+            data: {
+                userId,
+                type: 'TARGET_ASSIGNED',
+                title: 'New Target Assigned',
+                message: `Your target for ${firstDayOfMonth.toLocaleString('default', { month: 'long', year: 'numeric' })} has been set to ₹${amount.toLocaleString('en-IN')}`,
+                link: '/dashboard',
+            }
+        });
+
+        return target;
     }
 
     async getEmployeeStats(userId: string, month: Date) {

@@ -46,16 +46,16 @@ export default function TransferRequestsPage() {
     const { data: requests, isLoading } = useQuery({
         queryKey: ['transfer-requests'],
         queryFn: async () => {
-            const response = await apiClient.get('/lead-transfer-requests?status=PENDING');
-            return response.data;
+            const response = await apiClient.get('/transfer-requests');
+            return response.data.filter((r: any) => r.status === 'PENDING');
         },
     });
 
     const decisionMutation = useMutation({
         mutationFn: async ({ id, decision, notes }: { id: string; decision: 'APPROVE' | 'REJECT'; notes?: string }) => {
-            const response = await apiClient.post(`/lead-transfer-requests/${id}/decision`, {
-                decision,
-                notes,
+            const response = await apiClient.patch(`/transfer-requests/${id}/status`, {
+                status: decision,
+                adminNotes: notes,
             });
             return response.data;
         },

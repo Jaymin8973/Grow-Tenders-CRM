@@ -72,7 +72,7 @@ export class ActivitiesService {
                     userId: assigneeId,
                     title: 'New Task Assigned',
                     message: `You have been assigned a new task: ${createActivityDto.title}`,
-                    type: 'ACTIVITY_REMINDER',
+                    type: 'ACTIVITY_ASSIGNED',
                     link: `/today`,
                 },
             });

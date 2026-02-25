@@ -58,6 +58,7 @@ export class LeadsController {
     @ApiQuery({ name: 'assigneeId', required: false })
     @ApiQuery({ name: 'search', required: false })
     @ApiQuery({ name: 'excludeAssigneeId', required: false })
+    @ApiQuery({ name: 'todayTasks', required: false })
     @ApiQuery({ name: 'page', required: false, type: Number, description: '1-based page number (default: 1). Prefer cursor for large datasets.' })
     @ApiQuery({ name: 'pageSize', required: false, type: Number, description: 'Page size (default: 25, max: 100)' })
     @ApiQuery({ name: 'cursor', required: false, type: String, description: 'Cursor lead id for keyset pagination' })
@@ -70,6 +71,7 @@ export class LeadsController {
         @Query('assigneeId') assigneeId?: string,
         @Query('search') search?: string,
         @Query('excludeAssigneeId') excludeAssigneeId?: string,
+        @Query('todayTasks') todayTasks?: string,
         @Query('page') page?: string,
         @Query('pageSize') pageSize?: string,
         @Query('cursor') cursor?: string,
@@ -82,6 +84,7 @@ export class LeadsController {
             assigneeId,
             search,
             excludeAssigneeId,
+            todayTasks: todayTasks === 'true',
             page: page ? Number(page) : undefined,
             pageSize: pageSize ? Number(pageSize) : undefined,
             cursor,
@@ -142,7 +145,7 @@ export class LeadsController {
     @ApiOperation({ summary: 'Bulk assign leads to a user' })
     @ApiResponse({ status: 200, description: 'Leads assigned successfully' })
     bulkAssign(@Body() dto: BulkAssignLeadsDto, @CurrentUser() user: any) {
-        return this.leadsService.bulkAssignLeads(dto.leadIds, dto.assigneeId, user);
+        return this.leadsService.bulkAssignLeads(dto.leadIds, dto.assigneeId, dto.isDailyTask, user);
     }
 
     @Post('bulk-delete')

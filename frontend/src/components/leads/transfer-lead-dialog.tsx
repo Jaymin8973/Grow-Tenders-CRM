@@ -48,7 +48,7 @@ export function TransferLeadDialog({
 
     const transferMutation = useMutation({
         mutationFn: async () => {
-            return apiClient.post('/lead-transfer-requests', {
+            return apiClient.post('/transfer-requests', {
                 leadId,
                 reason,
                 targetUserId: targetUserId || undefined,

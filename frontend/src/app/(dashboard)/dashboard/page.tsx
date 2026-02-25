@@ -34,6 +34,8 @@ import {
 
 import { TargetStatsCard } from '@/components/targets/TargetStatsCard';
 import { PaymentRequestForm } from '@/components/targets/PaymentRequestForm';
+import { TodayTasksList } from '@/components/dashboard/today-tasks-list';
+import { SubmitEodReportDialog } from '@/components/daily-reports/submit-eod-report-dialog';
 
 
 const COLORS = ['#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
@@ -158,6 +160,9 @@ export default function DashboardPage() {
                             })}
                         </p>
                     </div>
+                    {user?.role === 'EMPLOYEE' && (
+                        <SubmitEodReportDialog />
+                    )}
                 </div>
             </div>
 
@@ -167,14 +172,7 @@ export default function DashboardPage() {
                     <TargetStatsCard />
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <PaymentRequestForm />
-                        {/* Placeholder for maybe recent requests or instruction?? For now just form and empty space or maybe match charts width */}
-                        <Card className="flex items-center justify-center p-6 text-muted-foreground border-dashed">
-                            <div className="text-center">
-                                <p className="font-medium">Payment History & Status</p>
-                                <p className="text-sm mt-1">Check your "My Payments" or "Requests" section for status updates.</p>
-                                {/* Maybe a link to payments page? */}
-                            </div>
-                        </Card>
+                        <TodayTasksList />
                     </div>
                 </div>
             )}

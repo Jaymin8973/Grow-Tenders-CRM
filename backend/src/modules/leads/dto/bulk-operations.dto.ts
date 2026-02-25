@@ -12,6 +12,9 @@ export class BulkAssignLeadsDto {
     @IsNotEmpty()
     @IsString()
     assigneeId: string;
+
+    @ApiProperty({ description: 'If true, sets the next follow up to today', required: false })
+    isDailyTask?: boolean;
 }
 
 export class BulkDeleteLeadsDto {

@@ -91,7 +91,8 @@ export function CreateReportDialog({ onSuccess }: CreateReportDialogProps) {
     const fetchCustomers = async () => {
         try {
             const response = await apiClient.get('/customers');
-            setCustomers(response.data);
+            const data = response.data;
+            setCustomers(Array.isArray(data) ? data : data?.items || []);
         } catch (error) {
             console.error('Failed to fetch customers', error);
         }

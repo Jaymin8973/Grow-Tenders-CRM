@@ -20,6 +20,34 @@ export class DailyReportsService {
         });
     }
 
+    async getTodayMetrics(userId: string) {
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+
+        const todayEnd = new Date();
+        todayEnd.setHours(23, 59, 59, 999);
+
+        // Calculate call count: number of completed CALL activities for today
+        const callCount = await this.prisma.activity.count({
+            where: {
+                assigneeId: userId,
+                type: 'CALL',
+                status: 'COMPLETED',
+                updatedAt: { gte: todayStart, lte: todayEnd }
+            }
+        });
+
+        // Calculate leads generated: number of leads created by this user today
+        const leadsGenerated = await this.prisma.lead.count({
+            where: {
+                createdById: userId,
+                createdAt: { gte: todayStart, lte: todayEnd }
+            }
+        });
+
+        return { callCount, leadsGenerated };
+    }
+
     async findAll(userId: string, role: string, query: any) {
         const { employeeId, date } = query;
         const where: Prisma.DailyReportWhereInput = {};

@@ -22,32 +22,48 @@ import {
     AlertTriangle,
 
     X,
+    Target,
+    CheckCircle2,
+    XCircle,
+    ArrowRightLeft,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/auth-context';
+import { useRouter } from 'next/navigation';
 
 const iconMap: Record<string, any> = {
     LEAD_ASSIGNED: UserPlus,
-
+    ACTIVITY_ASSIGNED: CalendarCheck,
     ACTIVITY_REMINDER: CalendarCheck,
     INVOICE_CREATED: FileText,
     INVOICE_PAID: DollarSign,
     FOLLOW_UP_OVERDUE: AlertTriangle,
+    TARGET_ASSIGNED: Target,
+    PAYMENT_APPROVED: CheckCircle2,
+    PAYMENT_REJECTED: XCircle,
+    LEAD_TRANSFER_APPROVED: ArrowRightLeft,
+    LEAD_TRANSFER_REJECTED: XCircle,
 };
 
 const bgMap: Record<string, string> = {
     LEAD_ASSIGNED: 'bg-blue-100 text-blue-600',
-
+    ACTIVITY_ASSIGNED: 'bg-indigo-100 text-indigo-600',
     ACTIVITY_REMINDER: 'bg-amber-100 text-amber-600',
     INVOICE_CREATED: 'bg-violet-100 text-violet-600',
     INVOICE_PAID: 'bg-green-100 text-green-600',
     FOLLOW_UP_OVERDUE: 'bg-red-100 text-red-600',
+    TARGET_ASSIGNED: 'bg-teal-100 text-teal-600',
+    PAYMENT_APPROVED: 'bg-emerald-100 text-emerald-600',
+    PAYMENT_REJECTED: 'bg-rose-100 text-rose-600',
+    LEAD_TRANSFER_APPROVED: 'bg-cyan-100 text-cyan-600',
+    LEAD_TRANSFER_REJECTED: 'bg-orange-100 text-orange-600',
 };
 
 export function NotificationCenter() {
     const [open, setOpen] = useState(false);
     const queryClient = useQueryClient();
+    const router = useRouter();
     const { isAuthenticated } = useAuth();
     const hasToken = typeof window !== 'undefined' && !!localStorage.getItem('accessToken');
     const isEnabled = isAuthenticated && hasToken;
@@ -138,12 +154,16 @@ export function NotificationCenter() {
                                     <div
                                         key={notification.id}
                                         className={cn(
-                                            "p-4 hover:bg-muted transition-colors cursor-pointer",
-                                            !notification.read && "bg-blue-50/50"
+                                            "p-4 hover:bg-muted/80 transition-all cursor-pointer relative",
+                                            !notification.read ? "bg-primary/5" : "bg-transparent"
                                         )}
                                         onClick={() => {
                                             if (!notification.read) {
                                                 markAsReadMutation.mutate(notification.id);
+                                            }
+                                            if (notification.link) {
+                                                router.push(notification.link);
+                                                setOpen(false); // Close the popover on navigation
                                             }
                                         }}
                                     >
@@ -166,7 +186,7 @@ export function NotificationCenter() {
                                                 </p>
                                             </div>
                                             {!notification.read && (
-                                                <div className="h-2 w-2 rounded-full bg-blue-500 mt-2" />
+                                                <div className="h-2 w-2 rounded-full bg-primary mt-2 flex-shrink-0" />
                                             )}
                                         </div>
                                     </div>

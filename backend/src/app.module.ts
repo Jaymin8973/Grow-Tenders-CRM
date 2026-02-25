@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ConfigModule } from '@nestjs/config';
 import { BullModule } from '@nestjs/bull';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
@@ -29,9 +30,12 @@ import { join } from 'path';
 import { RawLeadsModule } from './modules/raw-leads/raw-leads.module';
 import { AuditInterceptor } from './modules/audit/audit.interceptor';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { TransferRequestsModule } from './modules/transfer-requests/transfer-requests.module';
+import { SchedulerModule } from './modules/scheduler/scheduler.module';
 
 @Module({
     imports: [
+        ScheduleModule.forRoot(),
         ConfigModule.forRoot({
             isGlobal: true,
             envFilePath: '.env',
@@ -75,6 +79,8 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
         PaymentRequestsModule,
         RawLeadsModule,
         AnalyticsModule,
+        TransferRequestsModule,
+        SchedulerModule,
     ],
     providers: [
         // Apply rate limiting globally

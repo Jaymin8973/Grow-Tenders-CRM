@@ -93,9 +93,15 @@ export function TargetStatsCard() {
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold text-purple-600">{percentage}%</div>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground mb-3">
                         Of monthly target
                     </p>
+                    <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
+                        <div
+                            className="h-full bg-purple-500 transition-all duration-500"
+                            style={{ width: `${Math.min(percentage, 100)}%` }}
+                        />
+                    </div>
                 </CardContent>
             </Card>
         </div>

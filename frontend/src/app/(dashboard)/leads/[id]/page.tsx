@@ -62,6 +62,8 @@ import { AssignLeadDialog } from '@/components/leads/assign-lead-dialog';
 import { TransferLeadDialog } from '@/components/leads/transfer-lead-dialog';
 import { formatDistanceToNow, format } from 'date-fns';
 import { getInitials, cn, formatCurrency } from '@/lib/utils';
+import { AddPaymentDialog } from '@/components/payment-requests/add-payment-dialog';
+import { IndianRupee } from 'lucide-react';
 
 const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
     WARM_LEAD: { label: 'Warm Lead', color: 'text-blue-700', bg: 'bg-blue-50' },
@@ -87,6 +89,7 @@ export default function LeadDetailPage() {
     const [emailBody, setEmailBody] = useState('');
     const [assignDialogOpen, setAssignDialogOpen] = useState(false);
     const [transferDialogOpen, setTransferDialogOpen] = useState(false);
+    const [addPaymentOpen, setAddPaymentOpen] = useState(false);
 
 
     const [followUpOpen, setFollowUpOpen] = useState(false);
@@ -386,6 +389,12 @@ export default function LeadDetailPage() {
                 leadId={leadId}
             />
 
+            <AddPaymentDialog
+                open={addPaymentOpen}
+                onOpenChange={setAddPaymentOpen}
+                leadId={leadId}
+            />
+
             <div className="grid gap-6 lg:grid-cols-3">
                 {/* Left Column - Lead Info */}
                 <div className="space-y-6">
@@ -496,6 +505,15 @@ export default function LeadDetailPage() {
                                         Transfer
                                     </Button>
                                 )}
+                                <Button
+                                    variant="default"
+                                    size="sm"
+                                    className="gap-2 bg-emerald-600 hover:bg-emerald-700"
+                                    onClick={() => setAddPaymentOpen(true)}
+                                >
+                                    <IndianRupee className="h-4 w-4" />
+                                    Add Payment
+                                </Button>
                             </div>
                         </CardContent>
                     </Card>

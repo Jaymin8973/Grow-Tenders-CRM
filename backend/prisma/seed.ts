@@ -1,4 +1,4 @@
-import { PrismaClient, Role, LeadStatus, LeadSource, CustomerLifecycle, ActivityType, ActivityStatus } from '@prisma/client';
+import { PrismaClient, Role, LeadStatus, LeadSource, ActivityType, ActivityStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -214,7 +214,6 @@ async function main() {
                 phone: '+1555567890',
                 company: 'ABC Corporation',
                 position: 'VP Operations',
-                lifecycle: CustomerLifecycle.CUSTOMER,
                 city: 'Boston',
                 state: 'MA',
                 country: 'USA',
@@ -231,7 +230,6 @@ async function main() {
                 phone: '+1555678901',
                 company: 'XYZ Industries',
                 position: 'Procurement Manager',
-                lifecycle: CustomerLifecycle.CUSTOMER,
                 city: 'Seattle',
                 state: 'WA',
                 country: 'USA',
@@ -248,7 +246,6 @@ async function main() {
                 phone: '+1555789012',
                 company: 'Delta Services',
                 position: 'General Manager',
-                lifecycle: CustomerLifecycle.PROSPECT,
                 city: 'Denver',
                 state: 'CO',
                 country: 'USA',

@@ -18,6 +18,12 @@ export class DailyReportsController {
         return this.dailyReportsService.create(req.user.id, createDailyReportDto);
     }
 
+    @Get('metrics/today')
+    @ApiOperation({ summary: 'Get auto-calculated metrics for today' })
+    getTodayMetrics(@Request() req: any) {
+        return this.dailyReportsService.getTodayMetrics(req.user.id);
+    }
+
     @Get()
     @ApiOperation({ summary: 'Get daily reports' })
     findAll(@Request() req: any, @Query() query: any) {

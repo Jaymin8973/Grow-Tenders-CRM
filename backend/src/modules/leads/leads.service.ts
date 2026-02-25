@@ -232,6 +232,7 @@ export class LeadsService {
         assigneeId?: string;
         search?: string;
         excludeAssigneeId?: string;
+        todayTasks?: boolean;
         page?: number;
         pageSize?: number;
         cursor?: string;
@@ -265,31 +266,31 @@ export class LeadsService {
             if (filters.assigneeId === 'unassigned') {
                 where.assigneeId = null;
             } else {
-            // If Manager, ensure the requested assignee is in their team
-            if (user.role === Role.MANAGER) {
-                // We already restricted 'where.assigneeId' above. 
-                // If we overwrite it, we might break the restriction.
-                // Instead, we should check if the requested assigneeId is valid within the restricted set.
-                // Simplest way: The 'AND' of the restriction and the filter.
+                // If Manager, ensure the requested assignee is in their team
+                if (user.role === Role.MANAGER) {
+                    // We already restricted 'where.assigneeId' above. 
+                    // If we overwrite it, we might break the restriction.
+                    // Instead, we should check if the requested assigneeId is valid within the restricted set.
+                    // Simplest way: The 'AND' of the restriction and the filter.
 
-                // If the manager filters by themselves, it's fine (user.id is in the list).
-                // If they filter by a team member, it's fine.
-                // If they filter by someone else, it should return empty (intersection).
+                    // If the manager filters by themselves, it's fine (user.id is in the list).
+                    // If they filter by a team member, it's fine.
+                    // If they filter by someone else, it should return empty (intersection).
 
-                // Existing `where.assigneeId` is `{ in: [...] }`
-                const allowedIds = (where.assigneeId as any)?.in as string[];
+                    // Existing `where.assigneeId` is `{ in: [...] }`
+                    const allowedIds = (where.assigneeId as any)?.in as string[];
 
-                if (allowedIds && !allowedIds.includes(filters.assigneeId)) {
-                    // Requested assignee not in team -> return nothing
-                    // We can force a condition that is always false, or just empty array
-                    where.assigneeId = { in: [] };
+                    if (allowedIds && !allowedIds.includes(filters.assigneeId)) {
+                        // Requested assignee not in team -> return nothing
+                        // We can force a condition that is always false, or just empty array
+                        where.assigneeId = { in: [] };
+                    } else {
+                        where.assigneeId = filters.assigneeId;
+                    }
                 } else {
+                    // Admin and Employee can filter freely (Employee has global read)
                     where.assigneeId = filters.assigneeId;
                 }
-            } else {
-                // Admin and Employee can filter freely (Employee has global read)
-                where.assigneeId = filters.assigneeId;
-            }
             }
         }
 
@@ -298,11 +299,18 @@ export class LeadsService {
             // For managers, we need to be careful not to break the `in` clause if it exists
             if (where.assigneeId && typeof where.assigneeId === 'object' && where.assigneeId.in) {
                 // If we have an IN clause, we just filter the list
-                where.assigneeId.in = (where.assigneeId.in as string[]).filter(id => id !== filters.excludeAssigneeId);
+                where.assigneeId.in = (where.assigneeId.in as string[]).filter((id: string) => id !== filters.excludeAssigneeId);
             } else {
                 // Standard exclusion
                 where.assigneeId = { not: filters.excludeAssigneeId };
             }
+        }
+
+        if (filters?.todayTasks) {
+            const todayEnd = new Date();
+            todayEnd.setHours(23, 59, 59, 999);
+            where.nextFollowUp = { lte: todayEnd };
+            where.status = { not: 'CLOSED_LEAD' };
         }
 
         if (filters?.search) {
@@ -477,6 +485,18 @@ export class LeadsService {
             );
         }
 
+        if (updateLeadDto.assigneeId && updateLeadDto.assigneeId !== lead.assigneeId) {
+            await this.prisma.notification.create({
+                data: {
+                    userId: updateLeadDto.assigneeId,
+                    type: 'LEAD_ASSIGNED',
+                    title: 'New Lead Assigned',
+                    message: `You have been assigned a lead: ${updatedLead.firstName} ${updatedLead.lastName}`,
+                    link: `/leads/${updatedLead.id}`,
+                }
+            });
+        }
+
         return updatedLead;
     }
 
@@ -512,7 +532,7 @@ export class LeadsService {
             throw new NotFoundException('Assignee not found');
         }
 
-        return this.prisma.lead.update({
+        const updatedLead = await this.prisma.lead.update({
             where: { id },
             data: { assigneeId },
             include: {
@@ -521,6 +541,20 @@ export class LeadsService {
                 },
             },
         });
+
+        if (assigneeId !== lead.assigneeId) {
+            await this.prisma.notification.create({
+                data: {
+                    userId: assigneeId,
+                    type: 'LEAD_ASSIGNED',
+                    title: 'New Lead Assigned',
+                    message: `You have been assigned a lead: ${updatedLead.firstName} ${updatedLead.lastName}`,
+                    link: `/leads/${updatedLead.id}`,
+                }
+            });
+        }
+
+        return updatedLead;
     }
 
     async updateStatus(id: string, status: LeadStatus, user: UserContext) {
@@ -556,7 +590,7 @@ export class LeadsService {
         return updatedLead;
     }
 
-    async bulkAssignLeads(leadIds: string[], assigneeId: string, user: UserContext) {
+    async bulkAssignLeads(leadIds: string[], assigneeId: string, isDailyTask: boolean | undefined, user: UserContext) {
         if (user.role === Role.EMPLOYEE) {
             throw new ForbiddenException('Employees cannot reassign leads');
         }
@@ -567,12 +601,17 @@ export class LeadsService {
             throw new NotFoundException('Assignee not found');
         }
 
+        const data: any = { assigneeId };
+        if (isDailyTask) {
+            data.nextFollowUp = new Date();
+        }
+
         // Update all leads
         const result = await this.prisma.lead.updateMany({
             where: {
                 id: { in: leadIds },
             },
-            data: { assigneeId },
+            data,
         });
 
         return {
