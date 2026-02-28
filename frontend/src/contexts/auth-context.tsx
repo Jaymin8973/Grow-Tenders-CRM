@@ -14,6 +14,31 @@ interface User {
     phone?: string;
 }
 
+type ScreenKey =
+    | 'today'
+    | 'dashboard'
+    | 'leads'
+    | 'customers'
+    | 'teams'
+    | 'dailyReports'
+    | 'scrapedTenders'
+    | 'leaderboard'
+    | 'payments'
+    | 'invoices'
+    | 'transferRequests'
+    | 'users'
+    | 'targets'
+    | 'scraperLogs'
+    | 'activities'
+    | 'settings';
+
+type ScreenAccessMap = Record<ScreenKey, boolean>;
+
+interface ScreenAccessBundle {
+    manager: { role: 'MANAGER'; screens: ScreenAccessMap };
+    employee: { role: 'EMPLOYEE'; screens: ScreenAccessMap };
+}
+
 interface AuthContextType {
     user: User | null;
     isLoading: boolean;
@@ -23,6 +48,8 @@ interface AuthContextType {
     logout: () => Promise<void>;
     checkRole: (allowedRoles: string[]) => boolean;
     refreshUser: () => Promise<void>;
+    screenAccess: ScreenAccessMap | null;
+    refreshScreenAccess: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,25 +57,56 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [screenAccess, setScreenAccess] = useState<ScreenAccessMap | null>(null);
     const router = useRouter();
 
     useEffect(() => {
         // Check for existing session
         const storedUser = localStorage.getItem('user');
         const accessToken = localStorage.getItem('accessToken');
+        const storedScreenAccess = localStorage.getItem('screenAccess');
 
         if (storedUser && accessToken) {
             try {
-                setUser(JSON.parse(storedUser));
+                const parsedUser = JSON.parse(storedUser);
+                setUser(parsedUser);
+
+                // Apply last known screen access immediately for smoother direct-URL loads
+                if (parsedUser?.role !== 'SUPER_ADMIN' && storedScreenAccess) {
+                    try {
+                        setScreenAccess(JSON.parse(storedScreenAccess));
+                    } catch {
+                        // ignore
+                    }
+                }
             } catch (e) {
                 localStorage.removeItem('user');
                 localStorage.removeItem('accessToken');
                 localStorage.removeItem('refreshToken');
                 localStorage.removeItem('userId');
+                localStorage.removeItem('screenAccess');
             }
         }
         setIsLoading(false);
     }, []);
+
+    useEffect(() => {
+        // Whenever we have a user (session restore or login), refresh screen access in the background.
+        if (!user) return;
+        if (user.role === 'SUPER_ADMIN') return;
+
+        apiClient
+            .get('/permissions/screen-access')
+            .then((res) => {
+                const bundle = res.data as ScreenAccessBundle;
+                const next = user.role === 'MANAGER' ? bundle.manager.screens : bundle.employee.screens;
+                setScreenAccess(next);
+                localStorage.setItem('screenAccess', JSON.stringify(next));
+            })
+            .catch(() => {
+                // keep last known value if any
+            });
+    }, [user]);
 
     const finalizeLogin = useCallback((payload: any) => {
         const { user, accessToken, refreshToken } = payload;
@@ -59,6 +117,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem('user', JSON.stringify(user));
 
         setUser(user);
+
+        // Load role-level screen access configuration (best effort)
+        // SUPER_ADMIN does not need it.
+        if (user.role === 'SUPER_ADMIN') {
+            setScreenAccess(null);
+        } else {
+            apiClient
+                .get('/permissions/screen-access')
+                .then((res) => {
+                    const bundle = res.data as ScreenAccessBundle;
+                    const next = user.role === 'MANAGER' ? bundle.manager.screens : bundle.employee.screens;
+                    setScreenAccess(next);
+                    localStorage.setItem('screenAccess', JSON.stringify(next));
+                })
+                .catch(() => {
+                    setScreenAccess(null);
+                    localStorage.removeItem('screenAccess');
+                });
+        }
 
         const dashboardPath = getDashboardPath(user.role);
         router.push(dashboardPath);
@@ -95,7 +172,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             localStorage.removeItem('refreshToken');
             localStorage.removeItem('userId');
             localStorage.removeItem('user');
+            localStorage.removeItem('screenAccess');
             setUser(null);
+            setScreenAccess(null);
             router.push('/login');
         }
     }, [router]);
@@ -116,6 +195,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     }, []);
 
+    const refreshScreenAccess = useCallback(async () => {
+        if (!user) return;
+        if (user.role === 'SUPER_ADMIN') {
+            setScreenAccess(null);
+            return;
+        }
+
+        try {
+            const res = await apiClient.get('/permissions/screen-access');
+            const bundle = res.data as ScreenAccessBundle;
+            const next = user.role === 'MANAGER' ? bundle.manager.screens : bundle.employee.screens;
+            setScreenAccess(next);
+            localStorage.setItem('screenAccess', JSON.stringify(next));
+        } catch {
+            setScreenAccess(null);
+            localStorage.removeItem('screenAccess');
+        }
+    }, [user]);
+
     return (
         <AuthContext.Provider
             value={{
@@ -127,6 +225,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 logout,
                 checkRole,
                 refreshUser,
+                screenAccess,
+                refreshScreenAccess,
             }}
         >
             {children}

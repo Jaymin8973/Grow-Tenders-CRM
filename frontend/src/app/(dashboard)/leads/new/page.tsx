@@ -113,21 +113,8 @@ export default function NewLeadPage() {
             return apiClient.post('/leads', data);
         },
         onSuccess: async (response) => {
-            if (typeof window !== 'undefined') {
-                const params = new URLSearchParams(window.location.search);
-                const rawId = params.get('rawId');
-                if (rawId && response?.data?.id) {
-                    try {
-                        await apiClient.post(`/raw-leads/${rawId}/convert`, { convertedLeadId: response.data.id });
-                    } catch (e) {
-                        console.error("Failed to mark raw lead as converted", e);
-                    }
-                }
-            }
-
             queryClient.invalidateQueries({ queryKey: ['leads'] });
             queryClient.invalidateQueries({ queryKey: ['lead-stats'] });
-            queryClient.invalidateQueries({ queryKey: ['raw-leads'] });
             toast({
                 title: 'Success',
                 description: 'Lead created successfully.',

@@ -144,12 +144,20 @@ export class PaymentRequestsService {
                     // Create/Ensure TenderSubscription
                     await prisma.tenderSubscription.upsert({
                         where: { customerId: finalCustomerId },
-                        update: { isActive: true },
+                        update: {
+                            isActive: true,
+                            startDate: new Date(),
+                            durationMonths: 12,
+                            endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
+                        },
                         create: {
                             customerId: finalCustomerId,
                             isActive: true,
                             categories: [],
                             states: [],
+                            startDate: new Date(),
+                            durationMonths: 12,
+                            endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
                         }
                     });
                 }

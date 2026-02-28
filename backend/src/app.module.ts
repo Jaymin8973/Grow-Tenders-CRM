@@ -27,11 +27,11 @@ import { TargetsModule } from './modules/targets/targets.module';
 import { PaymentRequestsModule } from './modules/payment-requests/payment-requests.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
-import { RawLeadsModule } from './modules/raw-leads/raw-leads.module';
 import { AuditInterceptor } from './modules/audit/audit.interceptor';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { TransferRequestsModule } from './modules/transfer-requests/transfer-requests.module';
 import { SchedulerModule } from './modules/scheduler/scheduler.module';
+import { PermissionsModule } from './modules/permissions/permissions.module';
 
 @Module({
     imports: [
@@ -77,10 +77,10 @@ import { SchedulerModule } from './modules/scheduler/scheduler.module';
         DailyReportsModule,
         TargetsModule,
         PaymentRequestsModule,
-        RawLeadsModule,
         AnalyticsModule,
         TransferRequestsModule,
         SchedulerModule,
+        PermissionsModule,
     ],
     providers: [
         // Apply rate limiting globally

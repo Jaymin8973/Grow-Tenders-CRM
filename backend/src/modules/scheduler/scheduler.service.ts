@@ -12,9 +12,54 @@ export class SchedulerService {
         private emailService: EmailService,
     ) { }
 
+    private addMonths(date: Date, months: number) {
+        const d = new Date(date);
+        d.setMonth(d.getMonth() + months);
+        return d;
+    }
+
+    @Cron(CronExpression.EVERY_DAY_AT_1AM)
+    async deactivateExpiredTenderSubscriptions() {
+        this.logger.log('Running tender subscription expiry cron job...');
+
+        const now = new Date();
+        const activeSubs = await this.prisma.tenderSubscription.findMany({
+            where: { isActive: true },
+            select: { id: true, endDate: true, startDate: true, durationMonths: true, createdAt: true },
+        });
+
+        if (activeSubs.length === 0) {
+            return;
+        }
+
+        const expiredIds: string[] = [];
+        for (const s of activeSubs) {
+            const safeStartDate = s.startDate ? new Date(s.startDate) : new Date(s.createdAt);
+            const safeDurationMonths = typeof s.durationMonths === 'number' && s.durationMonths > 0 ? s.durationMonths : 1;
+            const computedEndDate = s.endDate || this.addMonths(safeStartDate, safeDurationMonths);
+            if (computedEndDate < now) {
+                expiredIds.push(s.id);
+            }
+        }
+
+        if (expiredIds.length === 0) {
+            return;
+        }
+
+        const result = await this.prisma.tenderSubscription.updateMany({
+            where: { id: { in: expiredIds } },
+            data: { isActive: false },
+        });
+
+        this.logger.log(`Marked ${result.count} tender subscriptions inactive (expired).`);
+    }
+
     @Cron(CronExpression.EVERY_DAY_AT_10AM)
     async handleDailyTenderAlerts() {
         this.logger.log('Running daily tender alerts cron job...');
+
+        // Ensure expired subscriptions are inactive before sending any emails.
+        await this.deactivateExpiredTenderSubscriptions();
 
         // 1. Get tenders published in the last 24 hours
         // If testing, we might want to just get recent ones if none were published exactly today

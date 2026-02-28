@@ -307,9 +307,14 @@ export class LeadsService {
         }
 
         if (filters?.todayTasks) {
+            const todayStart = new Date();
+            todayStart.setHours(0, 0, 0, 0);
             const todayEnd = new Date();
             todayEnd.setHours(23, 59, 59, 999);
-            where.nextFollowUp = { lte: todayEnd };
+            where.nextFollowUp = {
+                gte: todayStart,
+                lte: todayEnd,
+            };
             where.status = { not: 'CLOSED_LEAD' };
         }
 

@@ -108,7 +108,7 @@ export default function LeadDetailPage() {
     });
 
     const updateLeadMutation = useMutation({
-        mutationFn: async (payload: { status?: string }) => {
+        mutationFn: async (payload: { status?: string; nextFollowUp?: string | null }) => {
             const res = await apiClient.patch(`/leads/${leadId}`, payload);
             return res.data;
         },
@@ -264,7 +264,14 @@ export default function LeadDetailPage() {
             });
         },
         onSuccess: () => {
+            if (!followUpDate) return;
             queryClient.invalidateQueries({ queryKey: ['follow-ups', 'lead', leadId] });
+            updateLeadMutation.mutate({ nextFollowUp: followUpDate.toISOString() });
+            queryClient.invalidateQueries({ queryKey: ['lead', leadId] });
+            queryClient.invalidateQueries({ queryKey: ['leads'] });
+            queryClient.invalidateQueries({ queryKey: ['leads', 'today-tasks'] });
+            queryClient.invalidateQueries({ queryKey: ['leads', 'today-tasks-view'] });
+            queryClient.invalidateQueries({ queryKey: ['leads', 'today-tasks-list'] });
             setFollowUpOpen(false);
             setFollowUpDate(undefined);
             setFollowUpDescription('');

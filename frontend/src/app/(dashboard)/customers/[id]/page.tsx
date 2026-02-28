@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -60,6 +61,7 @@ export default function CustomerDetailPage() {
     const [selectedStates, setSelectedStates] = useState<string[]>([]);
     const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
     const [subscriptionActive, setSubscriptionActive] = useState(true);
+    const [subscriptionMonths, setSubscriptionMonths] = useState<number>(1);
 
     // Fetch customer details
     const { data: customer, isLoading } = useQuery({
@@ -136,13 +138,19 @@ export default function CustomerDetailPage() {
     });
 
     // Initialize subscription state when data loads
-    useState(() => {
-        if (subscription) {
-            setSelectedStates(subscription.states || []);
-            setSelectedCategories(subscription.categories || []);
-            setSubscriptionActive(subscription.isActive ?? true);
-        }
-    });
+    useEffect(() => {
+        if (!subscription) return;
+        setSelectedStates(subscription.states || []);
+        setSelectedCategories(subscription.categories || []);
+        setSubscriptionActive(subscription.isActive ?? true);
+        setSubscriptionMonths(subscription.durationMonths ?? 1);
+    }, [subscription]);
+
+    const computedSubscriptionEndDate = subscription?.endDate
+        ? new Date(subscription.endDate)
+        : subscription?.startDate && subscription?.durationMonths
+            ? new Date(new Date(subscription.startDate).setMonth(new Date(subscription.startDate).getMonth() + subscription.durationMonths))
+            : null;
 
     // Add note mutation
     const addNoteMutation = useMutation({
@@ -181,6 +189,7 @@ export default function CustomerDetailPage() {
                 categories: selectedCategories,
                 states: selectedStates,
                 isActive: subscriptionActive,
+                durationMonths: subscriptionMonths,
             });
         },
         onSuccess: () => {
@@ -433,6 +442,47 @@ export default function CustomerDetailPage() {
                                     </div>
                                 </CardHeader>
                                 <CardContent className="space-y-6">
+                                    <div className="grid gap-4 md:grid-cols-3">
+                                        <div className="space-y-2">
+                                            <Label>Package (Months)</Label>
+                                            <Input
+                                                type="number"
+                                                min={1}
+                                                value={subscriptionMonths}
+                                                onChange={(e) => setSubscriptionMonths(Math.max(1, Number(e.target.value) || 1))}
+                                                className="max-w-[220px]"
+                                            />
+                                            <p className="text-xs text-muted-foreground">
+                                                Example: 3 months package will expire automatically after 3 calendar months.
+                                            </p>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label>Start Date</Label>
+                                            <div className="text-sm">
+                                                {subscription?.startDate ? new Date(subscription.startDate).toLocaleDateString() : '—'}
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label>End Date</Label>
+                                            <div className="text-sm">
+                                                {computedSubscriptionEndDate ? computedSubscriptionEndDate.toLocaleDateString() : '—'}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {computedSubscriptionEndDate && (
+                                        <div className="flex items-center gap-2 text-sm">
+                                            <Badge variant={subscriptionActive ? 'default' : 'secondary'}>
+                                                {subscriptionActive ? 'Active' : 'Inactive'}
+                                            </Badge>
+                                            {!subscriptionActive && (
+                                                <span className="text-muted-foreground">Subscription expired or paused</span>
+                                            )}
+                                        </div>
+                                    )}
+
                                     <div className="grid gap-6 md:grid-cols-2">
                                         {/* States Selection */}
                                         <div className="space-y-4">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, keepPreviousData, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
@@ -70,6 +70,16 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { BulkAssignDialog } from '@/components/leads/bulk-assign-dialog';
 import { BulkImportLeadsDialog } from '@/components/leads/bulk-import-leads-dialog';
 
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+
 
 const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
     WARM_LEAD: { label: 'Warm Lead', color: 'text-blue-700', bg: 'bg-blue-50 border-blue-200' },
@@ -110,7 +120,7 @@ export default function LeadsPage() {
     const { user } = useAuth();
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState('all'); // 'all' or 'my'
+    const [activeTab, setActiveTab] = useState('all'); // 'all' | 'my'
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(25);
     const [emailDialogOpen, setEmailDialogOpen] = useState(false);
@@ -127,6 +137,12 @@ export default function LeadsPage() {
     const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
     const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
     const [bulkImportOpen, setBulkImportOpen] = useState(false);
+
+    const [scheduleOpen, setScheduleOpen] = useState(false);
+    const [scheduleTarget, setScheduleTarget] = useState<any>(null);
+    const [followUpDate, setFollowUpDate] = useState<string>('');
+    const [followUpTime, setFollowUpTime] = useState<string>('');
+    const [followUpNotes, setFollowUpNotes] = useState<string>('');
 
     // Debounce search input to avoid excessive API calls
     const debouncedSearch = useDebounce(search, 300);
@@ -155,7 +171,8 @@ export default function LeadsPage() {
             const response = await apiClient.get(`/leads?${params.toString()}`);
             return response.data;
         },
-        placeholderData: keepPreviousData, // Keep showing old data while fetching new
+        placeholderData: keepPreviousData,
+        enabled: true,
     });
 
     const leads = leadsData?.items ?? [];
@@ -445,7 +462,6 @@ export default function LeadsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {/* Show skeleton rows on initial load only */}
                             {isLoading && (
                                 <>
                                     <TableRowSkeleton />
@@ -455,10 +471,8 @@ export default function LeadsPage() {
                                     <TableRowSkeleton />
                                 </>
                             )}
-                            {/* Show actual data */}
                             {!isLoading && leads.map((lead: any) => {
                                 const status = statusConfig[lead.status] || statusConfig.COLD_LEAD;
-                                const phoneNumber = lead.phone || lead.mobile;
 
                                 const canViewLead = user?.role !== 'EMPLOYEE' || lead.assigneeId === user?.id;
                                 const isSelected = selectedIds.has(lead.id);
@@ -576,7 +590,6 @@ export default function LeadsPage() {
                                                             View Details
                                                         </DropdownMenuItem>
 
-                                                        {/* Edit/Delete only for Owners or Managers/Admins */}
                                                         {(user?.role !== 'EMPLOYEE' || lead.assigneeId === user?.id) && (
                                                             <>
                                                                 <DropdownMenuItem onClick={(e) => {
@@ -617,54 +630,6 @@ export default function LeadsPage() {
                     </Table>
                 </CardContent>
             </Card>
-
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-                <div className="text-sm text-muted-foreground">
-                    {typeof leadsData?.total === 'number'
-                        ? `Showing ${leads.length} of ${leadsData.total}`
-                        : `Showing ${leads.length}`}
-                </div>
-                <div className="flex items-center gap-2">
-                    <Select
-                        value={String(pageSize)}
-                        onValueChange={(val) => {
-                            setPageSize(Number(val));
-                            setPage(1);
-                            clearSelection();
-                        }}
-                    >
-                        <SelectTrigger className="w-[140px]">
-                            <SelectValue placeholder="Page size" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="25">25 / page</SelectItem>
-                            <SelectItem value="50">50 / page</SelectItem>
-                            <SelectItem value="100">100 / page</SelectItem>
-                        </SelectContent>
-                    </Select>
-                    <Button
-                        variant="outline"
-                        onClick={() => {
-                            setPage((p) => Math.max(1, p - 1));
-                            clearSelection();
-                        }}
-                        disabled={page <= 1}
-                    >
-                        Prev
-                    </Button>
-                    <div className="text-sm font-medium w-[90px] text-center">Page {page}</div>
-                    <Button
-                        variant="outline"
-                        onClick={() => {
-                            setPage((p) => p + 1);
-                            clearSelection();
-                        }}
-                        disabled={typeof leadsData?.total === 'number' ? page * pageSize >= leadsData.total : leads.length < pageSize}
-                    >
-                        Next
-                    </Button>
-                </div>
-            </div>
 
             {/* Email Compose Dialog */}
             <ComposeEmailDialog

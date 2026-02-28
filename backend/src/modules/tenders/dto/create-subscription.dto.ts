@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsArray, IsOptional, IsBoolean } from 'class-validator';
+import { IsNotEmpty, IsString, IsArray, IsOptional, IsBoolean, IsInt, Min, IsDateString } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateSubscriptionDto {
@@ -21,5 +21,16 @@ export class CreateSubscriptionDto {
     @IsOptional()
     @IsBoolean()
     isActive?: boolean;
+
+    @ApiPropertyOptional({ description: 'Subscription duration in calendar months', default: 1 })
+    @IsOptional()
+    @IsInt()
+    @Min(1)
+    durationMonths?: number;
+
+    @ApiPropertyOptional({ description: 'Subscription start date (ISO). Defaults to now.' })
+    @IsOptional()
+    @IsDateString()
+    startDate?: string;
 }
 

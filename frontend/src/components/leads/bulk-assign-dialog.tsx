@@ -37,7 +37,6 @@ export function BulkAssignDialog({
     const { toast } = useToast();
     const queryClient = useQueryClient();
     const [selectedUserId, setSelectedUserId] = useState('');
-    const [isDailyTask, setIsDailyTask] = useState(false);
 
     // Fetch employees
     const { data: employees, isLoading } = useQuery({
@@ -54,7 +53,6 @@ export function BulkAssignDialog({
             return apiClient.post('/leads/bulk-assign', {
                 leadIds: selectedLeads,
                 assigneeId: userId,
-                isDailyTask,
             });
         },
         onSuccess: (response) => {
@@ -67,7 +65,6 @@ export function BulkAssignDialog({
             onSuccess();
             onOpenChange(false);
             setSelectedUserId('');
-            setIsDailyTask(false);
         },
         onError: (error: any) => {
             toast({
@@ -112,21 +109,6 @@ export function BulkAssignDialog({
                                 )}
                             </SelectContent>
                         </Select>
-                    </div>
-                    <div className="flex items-center space-x-2 pt-2">
-                        <Checkbox
-                            id="dailyTask"
-                            checked={isDailyTask}
-                            onCheckedChange={(checked) => setIsDailyTask(checked as boolean)}
-                        />
-                        <div className="grid gap-1.5 leading-none">
-                            <Label htmlFor="dailyTask" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                                Make this a Daily Calling Task
-                            </Label>
-                            <p className="text-xs text-muted-foreground">
-                                This will set the next follow-up date for all selected leads to today.
-                            </p>
-                        </div>
                     </div>
                 </div>
                 <DialogFooter>

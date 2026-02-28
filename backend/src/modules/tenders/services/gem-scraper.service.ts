@@ -1,8 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 
+
+
 // puppeteer-extra for stealth
- 
+
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 
@@ -245,7 +247,9 @@ export class GemScraperService {
                             continue;
                         }
 
-                        const state = this.extractState(tender.department);
+                        let state = this.extractState(tender.department);
+
+
 
                         const newTender = await this.prisma.tender.create({
                             data: {
@@ -327,6 +331,8 @@ export class GemScraperService {
         }
     }
 
+
+
     private formatDate(date: Date): string {
         return `${date.getDate().toString().padStart(2, '0')}-${(date.getMonth() + 1)
             .toString()
@@ -386,6 +392,46 @@ export class GemScraperService {
         }
         return null;
     }
+
+    private getStatesList(): string[] {
+        return [
+            'Andhra Pradesh',
+            'Arunachal Pradesh',
+            'Assam',
+            'Bihar',
+            'Chhattisgarh',
+            'Goa',
+            'Gujarat',
+            'Haryana',
+            'Himachal Pradesh',
+            'Jharkhand',
+            'Karnataka',
+            'Kerala',
+            'Madhya Pradesh',
+            'Maharashtra',
+            'Manipur',
+            'Meghalaya',
+            'Mizoram',
+            'Nagaland',
+            'Odisha',
+            'Punjab',
+            'Rajasthan',
+            'Sikkim',
+            'Tamil Nadu',
+            'Telangana',
+            'Tripura',
+            'Uttar Pradesh',
+            'Uttarakhand',
+            'West Bengal',
+            'Delhi',
+            'Chandigarh',
+            'Puducherry',
+            'Jammu and Kashmir',
+            'Ladakh',
+        ];
+    }
+
+
 
     private async launchBrowser() {
         const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH ||

@@ -65,17 +65,8 @@ export default function NewPaymentPage() {
         queryKey: ['customers-list'],
         queryFn: async () => {
             const response = await apiClient.get('/customers');
-            const payload = response.data;
-
-            if (Array.isArray(payload)) {
-                return payload;
-            }
-
-            if (payload && Array.isArray(payload.data)) {
-                return payload.data;
-            }
-
-            return [];
+            const data = response.data;
+            return Array.isArray(data) ? data : data?.items || [];
         },
     });
 

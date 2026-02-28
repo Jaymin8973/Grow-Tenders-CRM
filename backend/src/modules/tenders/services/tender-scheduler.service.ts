@@ -32,6 +32,7 @@ export class TenderSchedulerService {
             const result = await this.gemScraperService.scrapeTenders(0, today);
             this.logger.log(`Scraping complete: ${result.added} added, ${result.skipped} duplicates, ${result.skippedOld} old skipped, ${result.pagesScraped} pages scraped`);
 
+
             // Update expired tenders
             const expired = await this.gemScraperService.updateExpiredTenders();
             this.logger.log(`Marked ${expired} tenders as expired`);

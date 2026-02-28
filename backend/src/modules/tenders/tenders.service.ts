@@ -1,14 +1,20 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { TenderStatus } from '@prisma/client';
-import { PrismaService } from '../../prisma/prisma.service';
 import { CreateTenderDto } from './dto/create-tender.dto';
 import { UpdateTenderDto } from './dto/update-tender.dto';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
+import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class TendersService {
     constructor(private prisma: PrismaService) { }
+
+    private addMonths(date: Date, months: number) {
+        const d = new Date(date);
+        d.setMonth(d.getMonth() + months);
+        return d;
+    }
 
     // Tender CRUD
     async createTender(createTenderDto: CreateTenderDto, userId: string) {
@@ -151,6 +157,10 @@ export class TendersService {
 
     // Subscriptions
     async createSubscription(createSubscriptionDto: CreateSubscriptionDto) {
+        const startDate = createSubscriptionDto.startDate ? new Date(createSubscriptionDto.startDate) : new Date();
+        const durationMonths = createSubscriptionDto.durationMonths ?? 1;
+        const endDate = this.addMonths(startDate, durationMonths);
+
         const existing = await this.prisma.tenderSubscription.findUnique({
             where: { customerId: createSubscriptionDto.customerId },
         });
@@ -162,6 +172,9 @@ export class TendersService {
                     categories: createSubscriptionDto.categories,
                     states: createSubscriptionDto.states,
                     isActive: createSubscriptionDto.isActive ?? true,
+                    startDate,
+                    durationMonths,
+                    endDate,
                 },
                 include: { customer: true },
             });
@@ -173,15 +186,30 @@ export class TendersService {
                 categories: createSubscriptionDto.categories,
                 states: createSubscriptionDto.states,
                 isActive: createSubscriptionDto.isActive ?? true,
+                startDate,
+                durationMonths,
+                endDate,
             },
             include: { customer: true },
         });
     }
 
     async findCustomerSubscription(customerId: string) {
-        return this.prisma.tenderSubscription.findUnique({
+        const sub = await this.prisma.tenderSubscription.findUnique({
             where: { customerId },
         });
+
+        if (!sub) return sub;
+
+        const safeStartDate = sub.startDate ? new Date(sub.startDate) : new Date(sub.createdAt);
+        const safeDurationMonths = typeof sub.durationMonths === 'number' && sub.durationMonths > 0 ? sub.durationMonths : 1;
+        const computedEndDate = sub.endDate || this.addMonths(safeStartDate, safeDurationMonths);
+        const isExpired = computedEndDate < new Date();
+        return {
+            ...sub,
+            endDate: computedEndDate,
+            isActive: isExpired ? false : sub.isActive,
+        };
     }
 
     async findSubscribedCustomers(categoryId: string) {
@@ -197,7 +225,7 @@ export class TendersService {
             },
         });
 
-        return subscriptions.map(s => s.customer);
+        return subscriptions.map((s: any) => s.customer);
     }
 
     async updateSubscription(customerId: string, categories: string[], states: string[], isActive: boolean = true) {

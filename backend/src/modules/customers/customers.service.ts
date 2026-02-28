@@ -64,6 +64,7 @@ export class CustomersService {
                 company: lead.company,
                 assigneeId: lead.assigneeId || userId,
                 leadId: lead.id,
+                passwordHash: lead.passwordHash,
             },
             include: {
                 assignee: {

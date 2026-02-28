@@ -19,45 +19,83 @@ import {
     Wallet,
     FileSearch,
     Target,
-    Phone,
     Activity,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { getInitials } from '@/lib/utils';
 
-const navigation = [
-    { name: 'Today', href: '/today', icon: CalendarDays, roles: ['EMPLOYEE'] },
-    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Telecalling', href: '/telecalling', icon: Phone, roles: ['SUPER_ADMIN', 'MANAGER'] },
-    { name: 'Leads', href: '/leads', icon: UserPlus },
-    { name: 'Customers', href: '/customers', icon: Users },
+type ScreenKey =
+    | 'today'
+    | 'dashboard'
+    | 'leads'
+    | 'customers'
+    | 'teams'
+    | 'dailyReports'
+    | 'scrapedTenders'
+    | 'leaderboard'
+    | 'payments'
+    | 'invoices'
+    | 'transferRequests'
+    | 'users'
+    | 'targets'
+    | 'scraperLogs'
+    | 'activities'
+    | 'settings';
 
-    { name: 'Teams', href: '/teams', icon: Users, roles: ['SUPER_ADMIN', 'MANAGER'] },
-    { name: 'Daily Reports', href: '/daily-reports', icon: BarChart3 },
-    { name: 'GeM Tenders', href: '/scraped-tenders', icon: FileSearch },
-    { name: 'Leaderboard', href: '/leaderboard', icon: Trophy },
+type NavItem = {
+    name: string;
+    href: string;
+    icon: any;
+    roles?: Array<'SUPER_ADMIN' | 'MANAGER' | 'EMPLOYEE'>;
+    screenKey?: ScreenKey;
+};
+
+const navigation: NavItem[] = [
+    { name: 'Today', href: '/today', icon: CalendarDays, roles: ['EMPLOYEE'], screenKey: 'today' },
+    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, screenKey: 'dashboard' },
+    { name: 'Leads', href: '/leads', icon: UserPlus, screenKey: 'leads' },
+    { name: 'Customers', href: '/customers', icon: Users, screenKey: 'customers' },
+
+    { name: 'Teams', href: '/teams', icon: Users, roles: ['SUPER_ADMIN', 'MANAGER'], screenKey: 'teams' },
+    { name: 'Daily Reports', href: '/daily-reports', icon: BarChart3, screenKey: 'dailyReports' },
+    { name: 'GeM Tenders', href: '/scraped-tenders', icon: FileSearch, screenKey: 'scrapedTenders' },
+    { name: 'Leaderboard', href: '/leaderboard', icon: Trophy, screenKey: 'leaderboard' },
 ];
 
-const adminNav = [
-    { name: 'Payments', href: '/payments', icon: Wallet, roles: ['SUPER_ADMIN', 'MANAGER'] },
-    { name: 'Invoices', href: '/invoices', icon: FileText, roles: ['SUPER_ADMIN', 'MANAGER'] },
-    { name: 'Transfer Requests', href: '/leads/transfer-requests', icon: UserPlus, roles: ['SUPER_ADMIN', 'MANAGER'] },
-    { name: 'Users', href: '/users', icon: Building2, roles: ['SUPER_ADMIN', 'MANAGER'] },
-    { name: 'Targets', href: '/targets', icon: Target, roles: ['SUPER_ADMIN', 'MANAGER'] },
-    { name: 'Scraper Logs', href: '/scraper-logs', icon: FileSearch, roles: ['SUPER_ADMIN'] },
-    { name: 'Activities', href: '/activities', icon: Activity, roles: ['SUPER_ADMIN'] },
+const adminNav: NavItem[] = [
+    { name: 'Payments', href: '/payments', icon: Wallet, roles: ['SUPER_ADMIN', 'MANAGER'], screenKey: 'payments' },
+    { name: 'Invoices', href: '/invoices', icon: FileText, roles: ['SUPER_ADMIN', 'MANAGER'], screenKey: 'invoices' },
+    { name: 'Transfer Requests', href: '/leads/transfer-requests', icon: UserPlus, roles: ['SUPER_ADMIN', 'MANAGER'], screenKey: 'transferRequests' },
+    { name: 'Users', href: '/users', icon: Building2, roles: ['SUPER_ADMIN', 'MANAGER'], screenKey: 'users' },
+    { name: 'Targets', href: '/targets', icon: Target, roles: ['SUPER_ADMIN', 'MANAGER'], screenKey: 'targets' },
+    { name: 'Scraper Logs', href: '/scraper-logs', icon: FileSearch, roles: ['SUPER_ADMIN'], screenKey: 'scraperLogs' },
+    { name: 'Activities', href: '/activities', icon: Activity, roles: ['SUPER_ADMIN'], screenKey: 'activities' },
 ];
 
 export function Sidebar() {
     const pathname = usePathname();
-    const { user, logout } = useAuth();
+    const { user, logout, screenAccess } = useAuth();
 
-    const filteredAdminNav = adminNav.filter(
-        (item) => user && item.roles.includes(user.role)
-    );
+    const isAllowedByScreen = (item: NavItem) => {
+        if (!screenAccess) return true;
+        if (!item.screenKey) return true;
+        return screenAccess[item.screenKey as keyof typeof screenAccess] !== false;
+    };
 
-    const NavLink = ({ item }: { item: typeof navigation[0] }) => {
+    const filteredAdminNav = adminNav.filter((item) => {
+        if (!user) return false;
+        if (!item.roles?.includes(user.role)) return false;
+        return isAllowedByScreen(item);
+    });
+
+    const filteredNavigation = navigation.filter((item) => {
+        if (!user) return false;
+        if (item.roles && !item.roles.includes(user.role)) return false;
+        return isAllowedByScreen(item);
+    });
+
+    const NavLink = ({ item }: { item: NavItem }) => {
         const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
         const IconComponent = item.icon;
 
@@ -107,7 +145,7 @@ export function Sidebar() {
             <div className="flex-1 overflow-y-auto px-4 py-6">
                 <div className="space-y-1.5">
                     <div className="space-y-1.5">
-                        {navigation.filter(item => !item.roles || (user && item.roles.includes(user.role))).map((item) => (
+                        {filteredNavigation.map((item) => (
                             <NavLink key={item.name} item={item} />
                         ))}
                     </div>

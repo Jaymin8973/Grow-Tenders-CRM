@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -10,13 +10,14 @@ import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { getInitials } from '@/lib/utils';
-import { User, Lock, Bell, Loader2 } from 'lucide-react';
+import { User, Lock, Bell, Loader2, Shield } from 'lucide-react';
 import apiClient from '@/lib/api-client';
 
 export default function SettingsPage() {
     const { user, refreshUser } = useAuth();
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
+    const isSuperAdmin = user?.role === 'SUPER_ADMIN';
 
     // Profile form state
     const [profileData, setProfileData] = useState({
@@ -32,6 +33,110 @@ export default function SettingsPage() {
         newPassword: '',
         confirmPassword: '',
     });
+
+    type ScreenKey =
+        | 'today'
+        | 'dashboard'
+        | 'leads'
+        | 'customers'
+        | 'teams'
+        | 'dailyReports'
+        | 'scrapedTenders'
+        | 'leaderboard'
+        | 'payments'
+        | 'invoices'
+        | 'transferRequests'
+        | 'users'
+        | 'targets'
+        | 'scraperLogs'
+        | 'activities'
+        | 'settings';
+
+    type ScreenAccessMap = Record<ScreenKey, boolean>;
+
+    type ScreenAccessBundle = {
+        manager: { role: 'MANAGER'; screens: ScreenAccessMap };
+        employee: { role: 'EMPLOYEE'; screens: ScreenAccessMap };
+    };
+
+    const screenList = useMemo<Array<{ key: ScreenKey; label: string }>>(
+        () => [
+            { key: 'today', label: 'Today' },
+            { key: 'dashboard', label: 'Dashboard' },
+            { key: 'leads', label: 'Leads' },
+            { key: 'customers', label: 'Customers' },
+            { key: 'teams', label: 'Teams' },
+            { key: 'dailyReports', label: 'Daily Reports' },
+            { key: 'scrapedTenders', label: 'GeM Tenders' },
+            { key: 'leaderboard', label: 'Leaderboard' },
+            { key: 'payments', label: 'Payments' },
+            { key: 'invoices', label: 'Invoices' },
+            { key: 'transferRequests', label: 'Transfer Requests' },
+            { key: 'users', label: 'Users' },
+            { key: 'targets', label: 'Targets' },
+            { key: 'scraperLogs', label: 'Scraper Logs' },
+            { key: 'activities', label: 'Activities' },
+            { key: 'settings', label: 'Settings' },
+        ],
+        [],
+    );
+
+    const [screenBundle, setScreenBundle] = useState<ScreenAccessBundle | null>(null);
+    const [isScreenLoading, setIsScreenLoading] = useState(false);
+
+    useEffect(() => {
+        if (!isSuperAdmin) return;
+        setIsScreenLoading(true);
+        apiClient
+            .get('/permissions/screen-access')
+            .then((res) => setScreenBundle(res.data))
+            .catch((err: any) => {
+                toast({
+                    title: 'Error',
+                    description: err.response?.data?.message || 'Failed to load screen access',
+                    variant: 'destructive',
+                });
+            })
+            .finally(() => setIsScreenLoading(false));
+    }, [isSuperAdmin, toast]);
+
+    const toggleRoleScreen = (role: 'MANAGER' | 'EMPLOYEE', key: ScreenKey) => {
+        setScreenBundle((prev) => {
+            if (!prev) return prev;
+            const current = role === 'MANAGER' ? prev.manager.screens : prev.employee.screens;
+            const nextScreens = { ...current, [key]: !current[key] } as ScreenAccessMap;
+            return role === 'MANAGER'
+                ? { ...prev, manager: { ...prev.manager, screens: nextScreens } }
+                : { ...prev, employee: { ...prev.employee, screens: nextScreens } };
+        });
+    };
+
+    const saveScreenAccess = async () => {
+        if (!screenBundle) return;
+        setIsScreenLoading(true);
+        try {
+            await Promise.all([
+                apiClient.put('/permissions/screen-access', {
+                    role: 'MANAGER',
+                    screens: screenBundle.manager.screens,
+                }),
+                apiClient.put('/permissions/screen-access', {
+                    role: 'EMPLOYEE',
+                    screens: screenBundle.employee.screens,
+                }),
+            ]);
+
+            toast({ title: 'Saved', description: 'Screen access updated successfully' });
+        } catch (err: any) {
+            toast({
+                title: 'Error',
+                description: err.response?.data?.message || 'Failed to save screen access',
+                variant: 'destructive',
+            });
+        } finally {
+            setIsScreenLoading(false);
+        }
+    };
 
     const handleProfileUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -111,7 +216,7 @@ export default function SettingsPage() {
             </div>
 
             <Tabs defaultValue="profile" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className={isSuperAdmin ? 'grid w-full grid-cols-4' : 'grid w-full grid-cols-3'}>
                     <TabsTrigger value="profile" className="flex items-center gap-2">
                         <User className="h-4 w-4" />
                         Profile
@@ -124,6 +229,12 @@ export default function SettingsPage() {
                         <Bell className="h-4 w-4" />
                         Notifications
                     </TabsTrigger>
+                    {isSuperAdmin && (
+                        <TabsTrigger value="screen-access" className="flex items-center gap-2">
+                            <Shield className="h-4 w-4" />
+                            Screen Access
+                        </TabsTrigger>
+                    )}
                 </TabsList>
 
                 {/* Profile Tab */}
@@ -329,6 +440,72 @@ export default function SettingsPage() {
                         </CardContent>
                     </Card>
                 </TabsContent>
+
+                {isSuperAdmin && (
+                    <TabsContent value="screen-access">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Screen Access</CardTitle>
+                                <CardDescription>
+                                    Control which screens are available to managers and employees. Disabled screens will not appear in the sidebar.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                {isScreenLoading && !screenBundle ? (
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        Loading...
+                                    </div>
+                                ) : !screenBundle ? (
+                                    <div className="text-sm text-muted-foreground">No configuration found.</div>
+                                ) : (
+                                    <div className="space-y-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="space-y-3">
+                                                <div className="font-semibold">Manager Screens</div>
+                                                <div className="space-y-2">
+                                                    {screenList.map((s) => (
+                                                        <label key={`manager-${s.key}`} className="flex items-center justify-between rounded-md border p-3">
+                                                            <span className="text-sm">{s.label}</span>
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={!!screenBundle.manager.screens[s.key]}
+                                                                onChange={() => toggleRoleScreen('MANAGER', s.key)}
+                                                            />
+                                                        </label>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-3">
+                                                <div className="font-semibold">Employee Screens</div>
+                                                <div className="space-y-2">
+                                                    {screenList.map((s) => (
+                                                        <label key={`employee-${s.key}`} className="flex items-center justify-between rounded-md border p-3">
+                                                            <span className="text-sm">{s.label}</span>
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={!!screenBundle.employee.screens[s.key]}
+                                                                onChange={() => toggleRoleScreen('EMPLOYEE', s.key)}
+                                                            />
+                                                        </label>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <Button onClick={saveScreenAccess} disabled={isScreenLoading}>
+                                                {isScreenLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                Save Screen Access
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                )}
             </Tabs>
         </div>
     );

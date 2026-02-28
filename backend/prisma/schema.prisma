@@ -37,15 +37,6 @@ enum LeadSource {
   OTHER
 }
 
-enum RawLeadStatus {
-  UNTOUCHED
-  CALL_LATER
-  INTERESTED
-  NOT_INTERESTED
-  INVALID
-  DND
-}
-
 enum CustomerLifecycle {
   LEAD
   PROSPECT
@@ -186,7 +177,6 @@ model User {
   // Relations
   leadsAssigned         Lead[]         @relation("LeadAssignee")
   leadsCreated          Lead[]         @relation("LeadCreator")
-  rawLeadsAssigned      RawLead[]      @relation("RawLeadAssignee")
   superAdminLoginOtps   SuperAdminLoginOtp[]
   customersAssigned     Customer[]     @relation("CustomerAssignee")
 
@@ -216,6 +206,8 @@ model Lead {
   email         String
   company       String?
   gstin         String?
+
+  passwordHash  String?
 
   status        LeadStatus  @default(COLD_LEAD)
   source        LeadSource  @default(OTHER)
@@ -260,24 +252,14 @@ model Lead {
   @@map("leads")
 }
 
-model RawLead {
-  id              String         @id @default(auto()) @map("_id") @db.ObjectId
-  phone           String         @unique
-  status          RawLeadStatus  @default(UNTOUCHED)
-  notes           String?
-  source          String?        // e.g., 'CSV Upload', 'Manual'
-  batchName       String?        // Identifier for the bulk upload batch
-  assignedAt       DateTime?
-  
-  assigneeId      String?        @db.ObjectId
-  assignee        User?          @relation("RawLeadAssignee", fields: [assigneeId], references: [id])
-  
-  convertedLeadId String?        @db.ObjectId
-  
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+model RoleScreenAccess {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  role      Role     @unique
+  screens   Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  @@map("raw_leads")
+  @@map("role_screen_access")
 }
 
 model SuperAdminLoginOtp {
@@ -331,7 +313,9 @@ model Customer {
   industry      String?
   annualRevenue Float?
   notes         String?
-  
+
+  passwordHash  String?
+
   assigneeId    String?           @db.ObjectId
   assignee      User?             @relation("CustomerAssignee", fields: [assigneeId], references: [id])
   
@@ -538,6 +522,9 @@ model TenderSubscription {
   categories  String[]  // Array of category keywords
   states      String[]  // Array of state names for matching
   isActive    Boolean   @default(true)
+  startDate   DateTime?
+  durationMonths Int?
+  endDate     DateTime?
   
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt

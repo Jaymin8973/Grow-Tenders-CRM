@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { RefreshCw, Phone, CheckCircle2, Link as LinkIcon, Loader2, ClipboardList } from 'lucide-react';
+import { RefreshCw, Phone, Loader2, ClipboardList, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 
@@ -30,56 +30,35 @@ export default function TodayPage() {
         return undefined;
     }, [user, isAdminMode]);
 
-    const [activeTab, setActiveTab] = useState<'today' | 'backlog'>('today');
     const [statusFilter, setStatusFilter] = useState<string>('all');
 
     const { data, isLoading } = useQuery({
-        queryKey: ['raw-leads', 'today-view', activeTab, statusFilter, effectiveAssigneeId],
+        queryKey: ['leads', 'today-tasks-view', statusFilter, effectiveAssigneeId],
         queryFn: async () => {
-            // A2 policy:
-            // - Today tab: only numbers assigned today
-            // - Backlog tab: pending numbers assigned before today
-            const basePath = activeTab === 'today' ? '/raw-leads/assigned-today' : '/raw-leads/backlog';
-
-            // statusFilter is applied client-side for now since endpoints return small lists.
-            // If needed, we can add a `status` query param later.
-            const res = await apiClient.get(basePath);
+            if (!effectiveAssigneeId) return { items: [] };
+            const params = new URLSearchParams();
+            params.append('assigneeId', effectiveAssigneeId);
+            params.append('todayTasks', 'true');
+            const res = await apiClient.get(`/leads?${params.toString()}`);
             return res.data;
         },
         enabled: !!user,
     });
 
-    const updateStatusMutation = useMutation({
-        mutationFn: async ({ id, status }: { id: string; status: string }) => {
-            return apiClient.patch(`/raw-leads/${id}`, { status });
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['raw-leads'] });
-            toast({ title: 'Status updated' });
-        },
-        onError: (err: any) => {
-            toast({
-                title: 'Failed to update status',
-                description: err.response?.data?.message || 'Something went wrong',
-                variant: 'destructive',
-            });
-        },
-    });
+    const leadCount = (data?.items?.length || 0);
 
-    const getStatusBadge = (status: string) => {
+    const getLeadStatusBadge = (status: string) => {
         switch (status) {
-            case 'UNTOUCHED':
-                return <Badge variant="secondary">Untouched</Badge>;
-            case 'CALL_LATER':
-                return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">Call Later</Badge>;
-            case 'INTERESTED':
-                return <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">Interested</Badge>;
-            case 'NOT_INTERESTED':
-                return <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200">Not Interested</Badge>;
-            case 'DND':
-                return <Badge variant="outline" className="bg-gray-100 text-gray-700 border-gray-300">DND</Badge>;
-            case 'INVALID':
-                return <Badge variant="destructive">Invalid</Badge>;
+            case 'HOT_LEAD':
+                return <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">Hot</Badge>;
+            case 'WARM_LEAD':
+                return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">Warm</Badge>;
+            case 'COLD_LEAD':
+                return <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200">Cold</Badge>;
+            case 'PROPOSAL_LEAD':
+                return <Badge variant="outline" className="bg-violet-50 text-violet-700 border-violet-200">Proposal</Badge>;
+            case 'CLOSED_LEAD':
+                return <Badge variant="secondary">Closed</Badge>;
             default:
                 return <Badge>{status}</Badge>;
         }
@@ -94,14 +73,16 @@ export default function TodayPage() {
                         Today
                     </h1>
                     <p className="text-muted-foreground">
-                        Your assigned calling list for today.
+                        Your follow-ups due today.
                     </p>
                 </div>
 
                 <div className="flex gap-2">
                     <Button
                         variant="outline"
-                        onClick={() => queryClient.invalidateQueries({ queryKey: ['raw-leads'] })}
+                        onClick={() => {
+                            queryClient.invalidateQueries({ queryKey: ['leads'] });
+                        }}
                     >
                         <RefreshCw className="h-4 w-4 mr-2" />
                         Refresh
@@ -113,16 +94,15 @@ export default function TodayPage() {
                 </div>
             </div>
 
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
-                <TabsList>
-                    <TabsTrigger value="today">Today</TabsTrigger>
-                    <TabsTrigger value="backlog">Backlog</TabsTrigger>
-                </TabsList>
-            </Tabs>
-
             <Card>
                 <CardContent className="p-4">
                     <div className="flex flex-col sm:flex-row gap-4 items-center">
+                        <Tabs value="leads">
+                            <TabsList>
+                                <TabsTrigger value="leads">Leads ({leadCount})</TabsTrigger>
+                            </TabsList>
+                        </Tabs>
+
                         <div className="w-full sm:w-56">
                             <Select value={statusFilter} onValueChange={setStatusFilter}>
                                 <SelectTrigger>
@@ -130,17 +110,18 @@ export default function TodayPage() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">All Statuses</SelectItem>
-                                    <SelectItem value="UNTOUCHED">Untouched</SelectItem>
-                                    <SelectItem value="CALL_LATER">Call Later</SelectItem>
-                                    <SelectItem value="INTERESTED">Interested</SelectItem>
-                                    <SelectItem value="NOT_INTERESTED">Not Interested</SelectItem>
+                                    <SelectItem value="COLD_LEAD">Cold Lead</SelectItem>
+                                    <SelectItem value="WARM_LEAD">Warm Lead</SelectItem>
+                                    <SelectItem value="HOT_LEAD">Hot Lead</SelectItem>
+                                    <SelectItem value="PROPOSAL_LEAD">Proposal Lead</SelectItem>
+                                    <SelectItem value="CLOSED_LEAD">Closed Lead</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
 
                         {isAdminMode && (
                             <div className="text-sm text-muted-foreground">
-                                This page is optimized for employees. Use Telecalling page for assignment.
+                                This page is optimized for employees.
                             </div>
                         )}
                     </div>
@@ -151,17 +132,17 @@ export default function TodayPage() {
                 <CardHeader className="pb-2">
                     <CardTitle className="text-base flex items-center gap-2">
                         <Phone className="h-4 w-4" />
-                        {activeTab === 'today' ? 'Today Calling List' : 'Backlog Calling List'}
+                        Lead Follow-ups (Today)
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
                     <Table>
                         <TableHeader className="bg-muted/50">
                             <TableRow>
-                                <TableHead className="w-[150px]">Date Added</TableHead>
-                                <TableHead>Phone Number</TableHead>
+                                <TableHead className="w-[160px]">Due</TableHead>
+                                <TableHead>Lead</TableHead>
                                 <TableHead>Status</TableHead>
-                                <TableHead>Source / Batch</TableHead>
+                                <TableHead className="w-[220px]">Phone</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -172,70 +153,51 @@ export default function TodayPage() {
                                         <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
                                     </TableCell>
                                 </TableRow>
-                            ) : (Array.isArray(data) ? data.length === 0 : data?.items?.length === 0) ? (
+                            ) : ((data?.items?.length || 0) === 0) ? (
                                 <TableRow>
                                     <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                                        No numbers assigned.
+                                        No lead follow-ups due today.
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                (Array.isArray(data) ? data : data?.items || []).filter((lead: any) => {
+                                (data?.items || []).filter((lead: any) => {
                                     if (statusFilter === 'all') return true;
                                     return lead.status === statusFilter;
                                 }).map((lead: any) => (
-                                    <TableRow key={lead.id} className="hover:bg-muted/30">
+                                    <TableRow
+                                        key={lead.id}
+                                        className="hover:bg-muted/30 cursor-pointer"
+                                        onClick={() => router.push(`/leads/${lead.id}`)}
+                                    >
                                         <TableCell className="text-sm font-medium">
-                                            {format(new Date(lead.createdAt), 'MMM d, yyyy')}
+                                            {lead.nextFollowUp ? format(new Date(lead.nextFollowUp), 'MMM d, yyyy') : '-'}
                                         </TableCell>
                                         <TableCell>
-                                            <a href={`tel:${lead.phone}`} className="font-semibold text-primary hover:underline">
-                                                {lead.phone}
-                                            </a>
-                                        </TableCell>
-                                        <TableCell>{getStatusBadge(lead.status)}</TableCell>
-                                        <TableCell>
-                                            <div className="text-xs text-muted-foreground">
-                                                <div>{lead.source || '-'}</div>
-                                                <div className="font-medium">{lead.batchName}</div>
+                                            <div className="space-y-0.5">
+                                                <div className="font-semibold">
+                                                    {lead.firstName} {lead.lastName}
+                                                </div>
+                                                <div className="text-xs text-muted-foreground">
+                                                    {lead.company || '—'}
+                                                </div>
                                             </div>
                                         </TableCell>
+                                        <TableCell>{getLeadStatusBadge(lead.status)}</TableCell>
+                                        <TableCell onClick={(e) => e.stopPropagation()}>
+                                            <a href={`tel:${lead.mobile || lead.phone}`} className="font-semibold text-primary hover:underline">
+                                                {lead.mobile || lead.phone || '-'}
+                                            </a>
+                                        </TableCell>
                                         <TableCell className="text-right">
-                                            {lead.status === 'INTERESTED' && !lead.convertedLeadId ? (
-                                                <Button
-                                                    size="sm"
-                                                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                                                    onClick={() => router.push(`/leads/new?phone=${encodeURIComponent(lead.phone)}&rawId=${lead.id}`)}
-                                                >
-                                                    <CheckCircle2 className="h-4 w-4 mr-1" />
-                                                    Convert to Lead
-                                                </Button>
-                                            ) : lead.convertedLeadId ? (
-                                                <Button size="sm" variant="outline" onClick={() => router.push(`/leads/${lead.convertedLeadId}`)}>
-                                                    <LinkIcon className="h-4 w-4 mr-1" />
-                                                    View Lead
-                                                </Button>
-                                            ) : (
-                                                <div className="flex gap-2 justify-end">
-                                                    <Button
-                                                        size="sm"
-                                                        variant="outline"
-                                                        className="h-8 text-xs border-emerald-200 text-emerald-700 hover:bg-emerald-50"
-                                                        onClick={() => updateStatusMutation.mutate({ id: lead.id, status: 'INTERESTED' })}
-                                                        disabled={updateStatusMutation.isPending}
-                                                    >
-                                                        Interested
-                                                    </Button>
-                                                    <Button
-                                                        size="sm"
-                                                        variant="outline"
-                                                        className="h-8 text-xs border-rose-200 text-rose-700 hover:bg-rose-50"
-                                                        onClick={() => updateStatusMutation.mutate({ id: lead.id, status: 'NOT_INTERESTED' })}
-                                                        disabled={updateStatusMutation.isPending}
-                                                    >
-                                                        Not Interested
-                                                    </Button>
-                                                </div>
-                                            )}
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="h-8 text-xs"
+                                                onClick={() => router.push(`/leads/${lead.id}`)}
+                                            >
+                                                View
+                                                <ChevronRight className="h-4 w-4 ml-1" />
+                                            </Button>
                                         </TableCell>
                                     </TableRow>
                                 ))
@@ -247,7 +209,7 @@ export default function TodayPage() {
 
             <div className="flex justify-between items-center text-sm text-muted-foreground">
                 <div>
-                    Showing {Array.isArray(data) ? data.length : (data?.items?.length || 0)} numbers
+                    Showing {leadCount} tasks
                 </div>
             </div>
         </div>
