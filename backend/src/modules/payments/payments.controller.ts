@@ -41,6 +41,8 @@ export class PaymentsController {
     @ApiQuery({ name: 'startDate', required: false })
     @ApiQuery({ name: 'endDate', required: false })
     @ApiQuery({ name: 'search', required: false })
+    @ApiQuery({ name: 'page', required: false, type: Number, description: '1-based page number (default: 1)' })
+    @ApiQuery({ name: 'pageSize', required: false, type: Number, description: 'Page size (default: 25, max: 100)' })
     findAll(
         @Query('customerId') customerId?: string,
         @Query('referenceType') referenceType?: ReferenceType,
@@ -48,6 +50,8 @@ export class PaymentsController {
         @Query('startDate') startDate?: string,
         @Query('endDate') endDate?: string,
         @Query('search') search?: string,
+        @Query('page') page?: string,
+        @Query('pageSize') pageSize?: string,
     ) {
         return this.paymentsService.findAll({
             customerId,
@@ -56,6 +60,8 @@ export class PaymentsController {
             startDate,
             endDate,
             search,
+            page: page ? Number(page) : undefined,
+            pageSize: pageSize ? Number(pageSize) : undefined,
         });
     }
 

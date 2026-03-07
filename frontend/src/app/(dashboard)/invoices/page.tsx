@@ -2,11 +2,18 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import {
     Table,
     TableBody,
@@ -22,22 +29,30 @@ import {
     DollarSign,
     MoreHorizontal,
     Download,
+    Loader2,
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 
 export default function InvoicesPage() {
     const router = useRouter();
     const [search, setSearch] = useState('');
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(25);
 
-    const { data: invoices, isLoading } = useQuery({
-        queryKey: ['invoices', search],
+    const { data: invoicesData, isLoading, isFetching } = useQuery({
+        queryKey: ['invoices', search, page, pageSize],
         queryFn: async () => {
             const params = new URLSearchParams();
             if (search) params.append('search', search);
+            params.append('page', String(page));
+            params.append('pageSize', String(pageSize));
             const response = await apiClient.get(`/invoices?${params.toString()}`);
             return response.data;
         },
+        placeholderData: keepPreviousData,
     });
+
+    const invoices = invoicesData?.items ?? [];
 
     if (isLoading) {
         return (
@@ -107,9 +122,15 @@ export default function InvoicesPage() {
                                 type="search"
                                 placeholder="Search invoices..."
                                 value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                className="pl-10"
+                                onChange={(e) => {
+                                    setSearch(e.target.value);
+                                    setPage(1);
+                                }}
+                                className="pl-10 pr-10"
                             />
+                            {isFetching && (
+                                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                            )}
                         </div>
                     </div>
                 </CardContent>
@@ -187,6 +208,48 @@ export default function InvoicesPage() {
                     </Table>
                 </CardContent>
             </Card>
+
+            {/* Pagination */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="text-sm text-muted-foreground">
+                    {typeof invoicesData?.total === 'number'
+                        ? `Showing ${invoices.length} of ${invoicesData.total}`
+                        : `Showing ${invoices.length}`}
+                </div>
+                <div className="flex items-center gap-2">
+                    <Select
+                        value={String(pageSize)}
+                        onValueChange={(val: string) => {
+                            setPageSize(Number(val));
+                            setPage(1);
+                        }}
+                    >
+                        <SelectTrigger className="w-[140px]">
+                            <SelectValue placeholder="Page size" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="25">25 / page</SelectItem>
+                            <SelectItem value="50">50 / page</SelectItem>
+                            <SelectItem value="100">100 / page</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <Button
+                        variant="outline"
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        disabled={page <= 1}
+                    >
+                        Prev
+                    </Button>
+                    <div className="text-sm font-medium w-[90px] text-center">Page {page}</div>
+                    <Button
+                        variant="outline"
+                        onClick={() => setPage((p) => p + 1)}
+                        disabled={typeof invoicesData?.total === 'number' ? page * pageSize >= invoicesData.total : invoices.length < pageSize}
+                    >
+                        Next
+                    </Button>
+                </div>
+            </div>
         </div>
     );
 }

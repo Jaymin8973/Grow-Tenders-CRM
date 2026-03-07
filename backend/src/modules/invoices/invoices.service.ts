@@ -95,6 +95,8 @@ export class InvoicesService {
         status?: InvoiceStatus;
         customerId?: string;
         search?: string;
+        page?: number;
+        pageSize?: number;
     }) {
         let where: any = {};
 
@@ -111,22 +113,31 @@ export class InvoicesService {
             ];
         }
 
-        return this.prisma.invoice.findMany({
-            where,
-            include: {
-                customer: {
-                    select: { id: true, firstName: true, lastName: true, email: true, company: true },
-                },
+        const pageSize = Math.min(Math.max(filters?.pageSize ?? 25, 1), 100);
+        const page = Math.max(filters?.page ?? 1, 1);
 
-                createdBy: {
-                    select: { id: true, firstName: true, lastName: true },
+        const [items, total] = await Promise.all([
+            this.prisma.invoice.findMany({
+                where,
+                skip: (page - 1) * pageSize,
+                take: pageSize,
+                include: {
+                    customer: {
+                        select: { id: true, firstName: true, lastName: true, email: true, company: true },
+                    },
+                    createdBy: {
+                        select: { id: true, firstName: true, lastName: true },
+                    },
+                    _count: {
+                        select: { lineItems: true },
+                    },
                 },
-                _count: {
-                    select: { lineItems: true },
-                },
-            },
-            orderBy: { createdAt: 'desc' },
-        });
+                orderBy: { createdAt: 'desc' },
+            }),
+            this.prisma.invoice.count({ where }),
+        ]);
+
+        return { items, page, pageSize, total };
     }
 
     async findOne(id: string) {

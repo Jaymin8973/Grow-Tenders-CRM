@@ -698,6 +698,48 @@ export default function LeadsPage() {
             </AlertDialog>
 
             <BulkImportLeadsDialog open={bulkImportOpen} onOpenChange={setBulkImportOpen} />
+
+            {/* Pagination */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="text-sm text-muted-foreground">
+                    {typeof leadsData?.total === 'number'
+                        ? `Showing ${leads.length} of ${leadsData.total}`
+                        : `Showing ${leads.length}`}
+                </div>
+                <div className="flex items-center gap-2">
+                    <Select
+                        value={String(pageSize)}
+                        onValueChange={(val: string) => {
+                            setPageSize(Number(val));
+                            setPage(1);
+                        }}
+                    >
+                        <SelectTrigger className="w-[140px]">
+                            <SelectValue placeholder="Page size" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="25">25 / page</SelectItem>
+                            <SelectItem value="50">50 / page</SelectItem>
+                            <SelectItem value="100">100 / page</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <Button
+                        variant="outline"
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        disabled={page <= 1}
+                    >
+                        Prev
+                    </Button>
+                    <div className="text-sm font-medium w-[90px] text-center">Page {page}</div>
+                    <Button
+                        variant="outline"
+                        onClick={() => setPage((p) => p + 1)}
+                        disabled={typeof leadsData?.total === 'number' ? page * pageSize >= leadsData.total : leads.length < pageSize}
+                    >
+                        Next
+                    </Button>
+                </div>
+            </div>
         </div >
     );
 }

@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { GemScraperService } from './gem-scraper.service';
 import { TenderNotificationService } from './tender-notification.service';
+import { TenderAlertService } from '../../alerts/services/tender-alert.service';
 
 @Injectable()
 export class TenderSchedulerService {
@@ -11,10 +12,11 @@ export class TenderSchedulerService {
     constructor(
         private gemScraperService: GemScraperService,
         private notificationService: TenderNotificationService,
+        private tenderAlertService: TenderAlertService,
     ) { }
 
     // Run every hour
-    @Cron(CronExpression.EVERY_10_HOURS)
+    @Cron(CronExpression.EVERY_MINUTE)
     async handleCron() {
         if (this.isRunning) {
             this.logger.warn('Scraper already running, skipping...');
@@ -40,6 +42,10 @@ export class TenderSchedulerService {
             // Send notifications for new tenders
             if (result.added > 0 && result.newTenders.length > 0) {
                 await this.notificationService.sendNewTenderAlerts(result.newTenders);
+
+                // Send customer alerts based on preferences
+                this.logger.log('Checking customer alert preferences...');
+                await this.tenderAlertService.checkNewTendersAndSendAlerts();
             }
         } catch (error) {
             this.logger.error(`Scheduled scraping failed: ${error.message}`);

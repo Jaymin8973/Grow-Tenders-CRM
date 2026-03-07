@@ -20,6 +20,7 @@ import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
 import { AssignLeadDto, UpdateLeadStatusDto } from './dto/assign-lead.dto';
 import { BulkAssignLeadsDto, BulkDeleteLeadsDto } from './dto/bulk-operations.dto';
+import { BulkImportPhonesDto } from './dto/bulk-import-phones.dto';
 import { JwtAuthGuard, RolesGuard } from '../../common/guards';
 import { CurrentUser } from '../../common/decorators';
 
@@ -49,6 +50,22 @@ export class LeadsController {
             throw new UnauthorizedException('Employees cannot bulk import leads');
         }
         return this.leadsService.bulkImportFromFile(file, user);
+    }
+
+    @Post('bulk-import-phones')
+    @ApiOperation({ summary: 'Bulk import leads from phone numbers only (for telecalling)' })
+    @ApiResponse({ status: 200, description: 'Leads created from phone numbers' })
+    bulkImportPhones(
+        @Body() dto: BulkImportPhonesDto,
+        @CurrentUser('id') userId: string,
+    ) {
+        return this.leadsService.bulkImportPhones(
+            dto.phones,
+            dto.source || LeadSource.COLD_CALL,
+            dto.description || 'Imported from telecalling campaign',
+            dto.assigneeId,
+            userId,
+        );
     }
 
     @Get()

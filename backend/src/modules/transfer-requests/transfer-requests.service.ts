@@ -35,7 +35,15 @@ export class TransferRequestsService {
     if (role === 'SUPER_ADMIN' || role === 'MANAGER') {
       return this.prisma.leadTransferRequest.findMany({
         include: {
-          lead: { select: { id: true, firstName: true, lastName: true, company: true } },
+          lead: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              company: true,
+              assignee: { select: { id: true, firstName: true, lastName: true, email: true } },
+            },
+          },
           requester: { select: { id: true, firstName: true, lastName: true, email: true } },
           targetUser: { select: { id: true, firstName: true, lastName: true, email: true } },
         },
@@ -46,7 +54,15 @@ export class TransferRequestsService {
     return this.prisma.leadTransferRequest.findMany({
       where: { requesterId: userId },
       include: {
-        lead: { select: { id: true, firstName: true, lastName: true, company: true } },
+        lead: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            company: true,
+            assignee: { select: { id: true, firstName: true, lastName: true, email: true } },
+          },
+        },
         targetUser: { select: { id: true, firstName: true, lastName: true, email: true } },
       },
       orderBy: { createdAt: 'desc' },

@@ -20,7 +20,6 @@ type ScreenKey =
     | 'users'
     | 'targets'
     | 'scraperLogs'
-    | 'activities'
     | 'settings';
 
 function pathToScreenKey(pathname: string): ScreenKey | null {
@@ -38,7 +37,6 @@ function pathToScreenKey(pathname: string): ScreenKey | null {
     if (pathname === '/users' || pathname.startsWith('/users/')) return 'users';
     if (pathname === '/targets' || pathname.startsWith('/targets/')) return 'targets';
     if (pathname === '/scraper-logs' || pathname.startsWith('/scraper-logs/')) return 'scraperLogs';
-    if (pathname === '/activities' || pathname.startsWith('/activities/')) return 'activities';
     if (pathname === '/settings' || pathname.startsWith('/settings/')) return 'settings';
     return null;
 }

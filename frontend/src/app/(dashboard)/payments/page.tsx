@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -41,6 +41,7 @@ import {
     Edit,
     Trash2,
     UserCircle,
+    Loader2,
 } from 'lucide-react';
 import {
     DropdownMenu,
@@ -74,17 +75,24 @@ export default function PaymentsPage() {
     const queryClient = useQueryClient();
     const [search, setSearch] = useState('');
     const [methodFilter, setMethodFilter] = useState<string | null>(null);
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(25);
 
-    const { data: payments, isLoading } = useQuery({
-        queryKey: ['payments', search, methodFilter],
+    const { data: paymentsData, isLoading, isFetching } = useQuery({
+        queryKey: ['payments', search, methodFilter, page, pageSize],
         queryFn: async () => {
             const params = new URLSearchParams();
             if (search) params.append('search', search);
             if (methodFilter) params.append('paymentMethod', methodFilter);
+            params.append('page', String(page));
+            params.append('pageSize', String(pageSize));
             const response = await apiClient.get(`/payments?${params.toString()}`);
             return response.data;
         },
+        placeholderData: keepPreviousData,
     });
+
+    const payments = paymentsData?.items ?? [];
 
     const { data: stats } = useQuery({
         queryKey: ['payments-stats'],
@@ -172,38 +180,12 @@ export default function PaymentsPage() {
                 <Card className="card-hover">
                     <CardContent className="p-5">
                         <div className="flex items-center gap-4">
-                            <div className="stat-icon bg-blue-50">
-                                <Receipt className="h-6 w-6 text-blue-500" />
-                            </div>
-                            <div>
-                                <p className="text-2xl font-bold">{stats?.totalPayments || 0}</p>
-                                <p className="text-sm text-muted-foreground">Total Payments</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card className="card-hover">
-                    <CardContent className="p-5">
-                        <div className="flex items-center gap-4">
-                            <div className="stat-icon bg-emerald-50">
-                                <IndianRupee className="h-6 w-6 text-emerald-500" />
-                            </div>
-                            <div>
-                                <p className="text-2xl font-bold">{formatCurrency(stats?.totalAmount || 0)}</p>
-                                <p className="text-sm text-muted-foreground">Total Collected</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card className="card-hover">
-                    <CardContent className="p-5">
-                        <div className="flex items-center gap-4">
                             <div className="stat-icon bg-violet-50">
                                 <Calendar className="h-6 w-6 text-violet-500" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold">{stats?.todayPayments || 0}</p>
-                                <p className="text-sm text-muted-foreground">Today's Payments</p>
+                                <p className="text-2xl font-bold">{formatCurrency(stats?.todayAmount || 0)}</p>
+                                <p className="text-sm text-muted-foreground">Today's Collection</p>
                             </div>
                         </div>
                     </CardContent>
@@ -215,8 +197,34 @@ export default function PaymentsPage() {
                                 <Wallet className="h-6 w-6 text-amber-500" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold">{formatCurrency(stats?.todayAmount || 0)}</p>
-                                <p className="text-sm text-muted-foreground">Today's Collection</p>
+                                <p className="text-2xl font-bold">{formatCurrency(stats?.monthlyAmount || 0)}</p>
+                                <p className="text-sm text-muted-foreground">Monthly Collection</p>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card className="card-hover">
+                    <CardContent className="p-5">
+                        <div className="flex items-center gap-4">
+                            <div className="stat-icon bg-emerald-50">
+                                <IndianRupee className="h-6 w-6 text-emerald-500" />
+                            </div>
+                            <div>
+                                <p className="text-2xl font-bold">{formatCurrency(stats?.yearlyAmount || 0)}</p>
+                                <p className="text-sm text-muted-foreground">Yearly Collection</p>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card className="card-hover">
+                    <CardContent className="p-5">
+                        <div className="flex items-center gap-4">
+                            <div className="stat-icon bg-blue-50">
+                                <IndianRupee className="h-6 w-6 text-blue-500" />
+                            </div>
+                            <div>
+                                <p className="text-2xl font-bold">{formatCurrency(stats?.totalAmount || 0)}</p>
+                                <p className="text-sm text-muted-foreground">Total Collection</p>
                             </div>
                         </div>
                     </CardContent>
@@ -245,13 +253,22 @@ export default function PaymentsPage() {
                                         type="search"
                                         placeholder="Search by payment ID, customer, company..."
                                         value={search}
-                                        onChange={(e) => setSearch(e.target.value)}
-                                        className="pl-10"
+                                        onChange={(e) => {
+                                            setSearch(e.target.value);
+                                            setPage(1);
+                                        }}
+                                        className="pl-10 pr-10"
                                     />
+                                    {isFetching && (
+                                        <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                                    )}
                                 </div>
                                 <Select
                                     value={methodFilter || 'all'}
-                                    onValueChange={(value) => setMethodFilter(value === 'all' ? null : value)}
+                                    onValueChange={(value) => {
+                                        setMethodFilter(value === 'all' ? null : value);
+                                        setPage(1);
+                                    }}
                                 >
                                     <SelectTrigger className="w-[180px]">
                                         <SelectValue placeholder="Payment Method" />
@@ -385,6 +402,48 @@ export default function PaymentsPage() {
                             </Table>
                         </CardContent>
                     </Card>
+
+                    {/* Pagination */}
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                        <div className="text-sm text-muted-foreground">
+                            {typeof paymentsData?.total === 'number'
+                                ? `Showing ${payments.length} of ${paymentsData.total}`
+                                : `Showing ${payments.length}`}
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Select
+                                value={String(pageSize)}
+                                onValueChange={(val: string) => {
+                                    setPageSize(Number(val));
+                                    setPage(1);
+                                }}
+                            >
+                                <SelectTrigger className="w-[140px]">
+                                    <SelectValue placeholder="Page size" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="25">25 / page</SelectItem>
+                                    <SelectItem value="50">50 / page</SelectItem>
+                                    <SelectItem value="100">100 / page</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Button
+                                variant="outline"
+                                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                disabled={page <= 1}
+                            >
+                                Prev
+                            </Button>
+                            <div className="text-sm font-medium w-[90px] text-center">Page {page}</div>
+                            <Button
+                                variant="outline"
+                                onClick={() => setPage((p) => p + 1)}
+                                disabled={typeof paymentsData?.total === 'number' ? page * pageSize >= paymentsData.total : payments.length < pageSize}
+                            >
+                                Next
+                            </Button>
+                        </div>
+                    </div>
                 </TabsContent>
 
                 <TabsContent value="requests">

@@ -316,6 +316,14 @@ model Customer {
 
   passwordHash  String?
 
+  // Public Auth Fields
+  emailVerified     Boolean       @default(false)
+  verificationToken String?
+  resetToken        String?
+  resetTokenExpiry  DateTime?
+  refreshToken      String?
+  lastLoginAt       DateTime?
+
   assigneeId    String?           @db.ObjectId
   assignee      User?             @relation("CustomerAssignee", fields: [assigneeId], references: [id])
   
@@ -348,12 +356,29 @@ model Customer {
   tenderSubscriptions TenderSubscription[]
   customerNotes      Note[]
   dispatchQueue      TenderDispatchQueue[]
+  savedTenders       SavedTender[]
+  tenderAlerts       TenderAlert[]
+  tenderHistory      TenderHistory[]
 
   paymentReceivedReportIds String[] @db.ObjectId
   paymentReceivedReports   DailyReport[] @relation(fields: [paymentReceivedReportIds], references: [id])
   paymentRequests          PaymentRequest[]
 
   @@map("customers")
+}
+
+model SavedTender {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  customerId  String   @db.ObjectId
+  tenderId    String   @db.ObjectId
+  notes       String?
+  createdAt   DateTime @default(now())
+  
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  tender      Tender   @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+  
+  @@unique([customerId, tenderId]) // One save per customer per tender
+  @@map("saved_tenders")
 }
 
 
@@ -487,6 +512,8 @@ model Tender {
   referenceId   String?      @unique // Bid Number for GEM
   tenderUrl     String?
   state         String?
+  city          String?
+  address       String?
   categoryName  String?      // If categoryId is not mapped yet
 
   publishDate   DateTime?
@@ -510,6 +537,9 @@ model Tender {
   // Relations
   attachments   Attachment[]
   emailLogs     EmailLog[]
+  savedBy       SavedTender[]
+  alerts        TenderAlert[]
+  history       TenderHistory[]
 
   @@map("tenders")
 }
@@ -533,7 +563,43 @@ model TenderSubscription {
   @@map("tender_subscriptions")
 }
 
+model TenderAlert {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  customerId  String    @db.ObjectId
+  customer    Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  
+  tenderId    String    @db.ObjectId
+  tender      Tender    @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+  
+  sentAt      DateTime  @default(now())
+  openedAt    DateTime?
+  
+  @@unique([customerId, tenderId])
+  @@index([customerId])
+  @@index([sentAt])
+  @@map("tender_alerts")
+}
 
+model TenderHistory {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  tenderId    String    @db.ObjectId
+  tender      Tender    @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+  
+  customerId  String?   @db.ObjectId
+  customer    Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  
+  action      String    // viewed, saved, unsaved, bid_submitted, status_changed, note_added
+  oldValue    String?   // Previous value (for status changes)
+  newValue    String?   // New value (for status changes)
+  notes       String?   // Additional notes
+  
+  createdAt   DateTime  @default(now())
+
+  @@index([tenderId])
+  @@index([customerId])
+  @@index([createdAt])
+  @@map("tender_history")
+}
 
 model EmailTemplate {
   id          String    @id @default(auto()) @map("_id") @db.ObjectId
@@ -751,7 +817,9 @@ model TenderDispatchQueue {
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
+  @@unique([tenderId, customerId])
   @@index([status])
+  @@index([customerId, status])
   @@map("tender_dispatch_queue")
 }
 
@@ -801,7 +869,16 @@ model Target {
   user        User      @relation(fields: [userId], references: [id])
   
   month       DateTime  // First day of the month
-  amount      Float     @default(0)
+  amount      Float     @default(0)      // Total target amount assigned
+  
+  // Hierarchical target support
+  parentTargetId  String?   @db.ObjectId
+  parentTarget    Target?   @relation("ParentChildTarget", fields: [parentTargetId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  childTargets    Target[]  @relation("ParentChildTarget")
+  
+  // Allocation tracking (for managers)
+  allocatedAmount Float     @default(0)     // Amount distributed to team members
+  remainingAmount Float     @default(0)     // Amount left to distribute
   
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt

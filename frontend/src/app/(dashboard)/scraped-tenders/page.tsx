@@ -45,6 +45,7 @@ interface ScrapedTender {
     title: string;
     category: string | null;
     state: string | null;
+    city: string | null;
     department: string | null;
     quantity: string | null;
     startDate: string | null;
@@ -324,6 +325,7 @@ export default function ScrapedTendersPage() {
                             <TableHead>Bid No</TableHead>
                             <TableHead className="max-w-[300px]">Title</TableHead>
                             <TableHead>State</TableHead>
+                            <TableHead>City</TableHead>
                             <TableHead>End Date</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
@@ -361,6 +363,7 @@ export default function ScrapedTendersPage() {
                                         {tender.title || 'N/A'}
                                     </TableCell>
                                     <TableCell>{tender.state || 'N/A'}</TableCell>
+                                    <TableCell>{tender.city || 'N/A'}</TableCell>
                                     <TableCell>{formatDate(tender.endDate)}</TableCell>
                                     <TableCell>{getStatusBadge(tender.status)}</TableCell>
                                     <TableCell className="text-right">
@@ -379,9 +382,25 @@ export default function ScrapedTendersPage() {
                                                 <Button
                                                     size="sm"
                                                     variant="ghost"
-                                                    onClick={(e) => {
+                                                    onClick={async (e) => {
                                                         e.stopPropagation();
-                                                        window.open(tender.sourceUrl!, '_blank');
+                                                        try {
+                                                            const res = await apiClient.get(`/scraped-tenders/${tender.id}/gem-document`, {
+                                                                responseType: 'blob',
+                                                            });
+                                                            const blob = new Blob([res.data], { type: 'application/pdf' });
+                                                            const url = window.URL.createObjectURL(blob);
+                                                            const link = document.createElement('a');
+                                                            link.href = url;
+                                                            link.setAttribute('download', `GeM-Bidding-${tender.bidNo.replace(/[/\\:*?"<>|]+/g, '-')}.pdf`);
+                                                            document.body.appendChild(link);
+                                                            link.click();
+                                                            link.remove();
+                                                            window.URL.revokeObjectURL(url);
+                                                        } catch (err: any) {
+                                                            const msg = err?.response?.data?.message || 'Document not available on GeM portal.';
+                                                            toast({ title: 'GeM Document Unavailable', description: msg, variant: 'destructive' });
+                                                        }
                                                     }}
                                                 >
                                                     <ExternalLink className="w-4 h-4" />

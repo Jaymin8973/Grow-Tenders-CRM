@@ -31,7 +31,14 @@ apiClient.interceptors.response.use(
     async (error) => {
         const originalRequest = error.config;
 
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        // Skip auto-redirect for auth endpoints (login, register, etc.)
+        const isAuthEndpoint = originalRequest.url?.includes('/auth/login') ||
+            originalRequest.url?.includes('/auth/register') ||
+            originalRequest.url?.includes('/auth/verify-otp') ||
+            originalRequest.url?.includes('/auth/forgot-password') ||
+            originalRequest.url?.includes('/auth/reset-password');
+
+        if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
             originalRequest._retry = true;
 
             try {
@@ -61,16 +68,19 @@ apiClient.interceptors.response.use(
                     localStorage.removeItem('refreshToken');
                     localStorage.removeItem('userId');
                     localStorage.removeItem('user');
+                    localStorage.removeItem('screenAccess');
                     window.location.href = '/login';
                 }
+                return Promise.reject(refreshError);
             }
-        } else if (error.response?.status === 401 && originalRequest._retry) {
+        } else if (error.response?.status === 401 && originalRequest._retry && !isAuthEndpoint) {
             // If it's already a retry and we still get 401, redirect to login to avoid loops
             if (typeof window !== 'undefined') {
                 localStorage.removeItem('accessToken');
                 localStorage.removeItem('refreshToken');
                 localStorage.removeItem('userId');
                 localStorage.removeItem('user');
+                localStorage.removeItem('screenAccess');
                 window.location.href = '/login';
             }
         }

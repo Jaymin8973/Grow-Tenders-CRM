@@ -1,14 +1,61 @@
 
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { Role } from '@prisma/client';
 
 @Injectable()
 export class TargetsService {
     constructor(private prisma: PrismaService) { }
 
-    async setTarget(userId: string, amount: number, month: Date) {
+    /**
+     * Set target for a user (Super Admin assigns to Managers, Managers assign to team)
+     * @param userId - The user receiving the target
+     * @param amount - Target amount
+     * @param month - Month for the target
+     * @param assignedById - ID of the user assigning the target
+     * @param parentTargetId - Optional parent target ID (for team member targets)
+     */
+    async setTarget(userId: string, amount: number, month: Date, assignedById?: string, parentTargetId?: string, assignedByRole?: Role) {
         // Ensure month is set to the first day
         const firstDayOfMonth = new Date(month.getFullYear(), month.getMonth(), 1);
+
+        // Get the user being assigned the target
+        const targetUser = await this.prisma.user.findUnique({
+            where: { id: userId },
+            include: { manager: true },
+        });
+
+        if (!targetUser) {
+            throw new BadRequestException('User not found');
+        }
+
+        // If parentTargetId is provided, validate allocation
+        if (parentTargetId) {
+            const parentTarget = await this.prisma.target.findUnique({
+                where: { id: parentTargetId },
+            });
+
+            if (!parentTarget) {
+                throw new BadRequestException('Parent target not found');
+            }
+
+            // Check if there's enough remaining amount
+            const newRemaining = parentTarget.remainingAmount - amount;
+            if (newRemaining < 0) {
+                throw new BadRequestException(
+                    `Insufficient remaining target. Available: ₹${parentTarget.remainingAmount.toLocaleString('en-IN')}`
+                );
+            }
+
+            // Update parent's allocation tracking
+            await this.prisma.target.update({
+                where: { id: parentTargetId },
+                data: {
+                    allocatedAmount: parentTarget.allocatedAmount + amount,
+                    remainingAmount: newRemaining,
+                },
+            });
+        }
 
         const target = await this.prisma.target.upsert({
             where: {
@@ -19,11 +66,15 @@ export class TargetsService {
             },
             update: {
                 amount,
+                parentTargetId,
+                remainingAmount: amount, // Reset remaining for this target
             },
             create: {
                 userId,
                 amount,
                 month: firstDayOfMonth,
+                parentTargetId,
+                remainingAmount: amount,
             },
         });
 
@@ -120,5 +171,232 @@ export class TargetsService {
         }));
 
         return enrichedTargets;
+    }
+
+    /**
+     * Get a user's target for a specific month
+     */
+    async getUserTarget(userId: string, month: Date) {
+        const firstDayOfMonth = new Date(month.getFullYear(), month.getMonth(), 1);
+        
+        const target = await this.prisma.target.findUnique({
+            where: {
+                userId_month: {
+                    userId,
+                    month: firstDayOfMonth,
+                },
+            },
+            include: {
+                parentTarget: {
+                    include: {
+                        user: {
+                            select: { id: true, firstName: true, lastName: true, role: true }
+                        }
+                    }
+                },
+                childTargets: {
+                    include: {
+                        user: {
+                            select: { id: true, firstName: true, lastName: true, role: true }
+                        }
+                    }
+                },
+            },
+        });
+
+        if (!target) {
+            return null;
+        }
+
+        const stats = await this.getEmployeeStats(userId, month);
+        
+        return {
+            ...target,
+            achieved: stats.achieved,
+            percentage: stats.percentage,
+        };
+    }
+
+    /**
+     * Get manager's target with team allocation details
+     */
+    async getManagerAllocation(managerId: string, month: Date) {
+        const firstDayOfMonth = new Date(month.getFullYear(), month.getMonth(), 1);
+
+        // Get manager's target
+        const managerTarget = await this.prisma.target.findUnique({
+            where: {
+                userId_month: {
+                    userId: managerId,
+                    month: firstDayOfMonth,
+                },
+            },
+            include: {
+                childTargets: {
+                    include: {
+                        user: {
+                            select: { id: true, firstName: true, lastName: true, role: true }
+                        }
+                    }
+                }
+            }
+        });
+
+        if (!managerTarget) {
+            return {
+                hasTarget: false,
+                message: 'No target assigned for this month',
+            };
+        }
+
+        // Get team members
+        const teamMembers = await this.prisma.user.findMany({
+            where: { managerId },
+            select: { id: true, firstName: true, lastName: true, role: true }
+        });
+
+        // Get each team member's stats
+        const teamStats = await Promise.all(
+            teamMembers.map(async (member) => {
+                const stats = await this.getEmployeeStats(member.id, month);
+                const memberTarget = await this.prisma.target.findUnique({
+                    where: {
+                        userId_month: {
+                            userId: member.id,
+                            month: firstDayOfMonth,
+                        }
+                    }
+                });
+                return {
+                    ...member,
+                    target: memberTarget?.amount || 0,
+                    achieved: stats.achieved,
+                    percentage: stats.percentage,
+                    hasTarget: !!memberTarget,
+                };
+            })
+        );
+
+        return {
+            hasTarget: true,
+            managerTarget: {
+                total: managerTarget.amount,
+                allocated: managerTarget.allocatedAmount,
+                remaining: managerTarget.remainingAmount,
+                achieved: (await this.getEmployeeStats(managerId, month)).achieved,
+            },
+            teamMembers: teamStats,
+            allocatedTargets: managerTarget.childTargets,
+        };
+    }
+
+    /**
+     * Get team members for a manager (for target assignment)
+     */
+    async getTeamMembers(managerId: string) {
+        const teamMembers = await this.prisma.user.findMany({
+            where: { 
+                managerId,
+                isActive: true,
+            },
+            select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                role: true,
+            }
+        });
+
+        return teamMembers;
+    }
+
+    /**
+     * Update target amount
+     */
+    async updateTarget(targetId: string, newAmount: number, userId: string, role: Role) {
+        const target = await this.prisma.target.findUnique({
+            where: { id: targetId },
+            include: { parentTarget: true }
+        });
+
+        if (!target) {
+            throw new BadRequestException('Target not found');
+        }
+
+        // If this target has a parent, we need to adjust the parent's allocation
+        if (target.parentTargetId && target.parentTarget) {
+            const parent = target.parentTarget;
+            const amountDiff = newAmount - target.amount;
+            
+            // Check if parent has enough remaining for the increase
+            if (amountDiff > 0 && parent.remainingAmount < amountDiff) {
+                throw new BadRequestException(
+                    `Insufficient remaining target in parent. Available: ₹${parent.remainingAmount.toLocaleString('en-IN')}`
+                );
+            }
+
+            // Update parent's allocation
+            await this.prisma.target.update({
+                where: { id: parent.id },
+                data: {
+                    allocatedAmount: parent.allocatedAmount + amountDiff,
+                    remainingAmount: parent.remainingAmount - amountDiff,
+                }
+            });
+        }
+
+        const updated = await this.prisma.target.update({
+            where: { id: targetId },
+            data: {
+                amount: newAmount,
+                remainingAmount: newAmount, // Reset remaining for this target
+            }
+        });
+
+        return updated;
+    }
+
+    /**
+     * Delete target (only if no child targets)
+     */
+    async deleteTarget(targetId: string) {
+        const target = await this.prisma.target.findUnique({
+            where: { id: targetId },
+            include: { childTargets: true }
+        });
+
+        if (!target) {
+            throw new BadRequestException('Target not found');
+        }
+
+        if (target.childTargets.length > 0) {
+            throw new BadRequestException(
+                'Cannot delete target with allocated child targets. Delete child targets first.'
+            );
+        }
+
+        // If this target has a parent, restore the allocation to parent
+        if (target.parentTargetId) {
+            const parent = await this.prisma.target.findUnique({
+                where: { id: target.parentTargetId }
+            });
+
+            if (parent) {
+                await this.prisma.target.update({
+                    where: { id: parent.id },
+                    data: {
+                        allocatedAmount: parent.allocatedAmount - target.amount,
+                        remainingAmount: parent.remainingAmount + target.amount,
+                    }
+                });
+            }
+        }
+
+        await this.prisma.target.delete({
+            where: { id: targetId }
+        });
+
+        return { message: 'Target deleted successfully' };
     }
 }

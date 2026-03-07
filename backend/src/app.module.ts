@@ -9,7 +9,6 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { LeadsModule } from './modules/leads/leads.module';
 import { CustomersModule } from './modules/customers/customers.module';
-import { ActivitiesModule } from './modules/activities/activities.module';
 import { InvoicesModule } from './modules/invoices/invoices.module';
 import { TendersModule } from './modules/tenders/tenders.module';
 import { LeaderboardModule } from './modules/leaderboard/leaderboard.module';
@@ -25,6 +24,7 @@ import { FollowUpsModule } from './modules/follow-ups/follow-ups.module';
 import { DailyReportsModule } from './modules/daily-reports/daily-reports.module';
 import { TargetsModule } from './modules/targets/targets.module';
 import { PaymentRequestsModule } from './modules/payment-requests/payment-requests.module';
+import { ReportsModule } from './modules/reports/reports.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { AuditInterceptor } from './modules/audit/audit.interceptor';
@@ -32,6 +32,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { TransferRequestsModule } from './modules/transfer-requests/transfer-requests.module';
 import { SchedulerModule } from './modules/scheduler/scheduler.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
+import { AlertsModule } from './modules/alerts/alerts.module';
 
 @Module({
     imports: [
@@ -62,7 +63,6 @@ import { PermissionsModule } from './modules/permissions/permissions.module';
         BranchesModule,
         LeadsModule,
         CustomersModule,
-        ActivitiesModule,
         InvoicesModule,
         TendersModule,
         LeaderboardModule,
@@ -77,10 +77,12 @@ import { PermissionsModule } from './modules/permissions/permissions.module';
         DailyReportsModule,
         TargetsModule,
         PaymentRequestsModule,
+        ReportsModule,
         AnalyticsModule,
         TransferRequestsModule,
         SchedulerModule,
         PermissionsModule,
+        AlertsModule,
     ],
     providers: [
         // Apply rate limiting globally

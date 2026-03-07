@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
 import { apiClient } from '@/lib/api-client';
 
 interface ScrapedTender {
@@ -25,6 +26,8 @@ interface ScrapedTender {
     description: string | null;
     category: string | null;
     state: string | null;
+    city: string | null;
+    address?: string | null;
     location: string | null;
     department: string | null;
     items: number | null;
@@ -42,6 +45,7 @@ export default function TenderDetailsPage() {
     const router = useRouter();
     const params = useParams();
     const id = params.id as string;
+    const { toast } = useToast();
 
     const { data: tender, isLoading } = useQuery<ScrapedTender>({
         queryKey: ['scraped-tender', id],
@@ -66,6 +70,29 @@ export default function TenderDetailsPage() {
             link.remove();
         } catch (error) {
             console.error('Failed to download PDF:', error);
+            toast({ title: 'Failed to download PDF', variant: 'destructive' });
+        }
+    };
+
+    const handleViewOnGem = async () => {
+        if (!tender) return;
+        try {
+            const res = await apiClient.get(`/scraped-tenders/${id}/gem-document`, {
+                responseType: 'blob',
+            });
+            const blob = new Blob([res.data], { type: 'application/pdf' });
+            // Download the original GeM PDF
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `GeM-Bidding-${tender.bidNo.replace(/[/\\:*?"<>|]+/g, '-')}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (error: any) {
+            const msg = error?.response?.data?.message || 'This tender document is not available on GeM portal.';
+            toast({ title: 'GeM Document Unavailable', description: msg, variant: 'destructive' });
         }
     };
 
@@ -138,7 +165,7 @@ export default function TenderDetailsPage() {
                         Download PDF
                     </Button>
                     {tender.sourceUrl && (
-                        <Button onClick={() => window.open(tender.sourceUrl!, '_blank')}>
+                        <Button onClick={handleViewOnGem}>
                             <ExternalLink className="w-4 h-4 mr-2" />
                             View on GeM
                         </Button>
@@ -200,6 +227,24 @@ export default function TenderDetailsPage() {
                                     <div>
                                         <h3 className="text-sm font-medium text-gray-500">State</h3>
                                         <p className="mt-1 text-gray-900">{tender.state}</p>
+                                    </div>
+                                </div>
+                            )}
+                            {tender.city && (
+                                <div className="flex items-start gap-3">
+                                    <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
+                                    <div>
+                                        <h3 className="text-sm font-medium text-gray-500">City</h3>
+                                        <p className="mt-1 text-gray-900">{tender.city}</p>
+                                    </div>
+                                </div>
+                            )}
+                            {tender.address && (
+                                <div className="flex items-start gap-3">
+                                    <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
+                                    <div>
+                                        <h3 className="text-sm font-medium text-gray-500">Address</h3>
+                                        <p className="mt-1 text-gray-900">{tender.address}</p>
                                     </div>
                                 </div>
                             )}

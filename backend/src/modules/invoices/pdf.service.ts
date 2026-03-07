@@ -14,25 +14,19 @@ export class PdfService {
     try {
       // Try resolving relative to the compiled file location
       let logoPath = path.join(__dirname, '../../assets/logo-invoice.png');
-      console.log('Attempting to load logo from:', logoPath);
 
       if (!fs.existsSync(logoPath)) {
-        console.warn('Logo not found at relative path. Trying project root assets...');
         // Fallback: Try project root (useful for dev mode if dist structure differs)
         logoPath = path.join(process.cwd(), 'src/assets/logo.jpg');
-        console.log('Attempting to load logo from root:', logoPath);
       }
 
       if (fs.existsSync(logoPath)) {
-        console.log('Logo found at:', logoPath);
         const logoBuffer = fs.readFileSync(logoPath);
         this.logoBase64 = `data:image/jpeg;base64,${logoBuffer.toString('base64')}`;
       } else {
-        console.error('Logo file NOT found at any checked path.');
         this.logoBase64 = '';
       }
     } catch (error) {
-      console.error('Error loading logo:', error);
       this.logoBase64 = '';
     }
 

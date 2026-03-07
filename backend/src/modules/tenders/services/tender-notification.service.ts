@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { EmailService } from '../../email/email.service';
-import { TenderStatus } from '@prisma/client';
 
 @Injectable()
 export class TenderNotificationService {
@@ -52,12 +51,25 @@ export class TenderNotificationService {
 
         if (newTenders.length === 0) return;
 
-        let queuedCount = 0;
+        const activeSubscriptions = subscriptions.filter(s => s.customer?.subscriptionActive);
+        if (activeSubscriptions.length === 0) return;
 
-        for (const subscription of subscriptions) {
-            // Check if customer subscription is active (billing wise)
-            if (!subscription.customer.subscriptionActive) continue;
+        const tenderIds = newTenders.map(t => t.id).filter(Boolean);
+        const customerIds = activeSubscriptions.map(s => s.customer.id);
 
+        // Prefetch already queued pairs for this batch to avoid N*M queries
+        const existingPairs = await this.prisma.tenderDispatchQueue.findMany({
+            where: {
+                tenderId: { in: tenderIds },
+                customerId: { in: customerIds },
+            },
+            select: { tenderId: true, customerId: true },
+        });
+        const existingSet = new Set(existingPairs.map(p => `${p.tenderId}::${p.customerId}`));
+
+        const toInsert: Array<{ tenderId: string; customerId: string; status: 'PENDING' }> = [];
+
+        for (const subscription of activeSubscriptions) {
             const matchingTenders = newTenders.filter(tender => {
                 const stateMatch = subscription.states.length === 0 ||
                     (tender.state && subscription.states.some(s =>
@@ -75,27 +87,29 @@ export class TenderNotificationService {
             });
 
             for (const tender of matchingTenders) {
-                // Check if already queued
-                const existing = await this.prisma.tenderDispatchQueue.findFirst({
-                    where: {
-                        tenderId: tender.id,
-                        customerId: subscription.customer.id,
-                    },
+                const key = `${tender.id}::${subscription.customer.id}`;
+                if (existingSet.has(key)) continue;
+                existingSet.add(key);
+                toInsert.push({
+                    tenderId: tender.id,
+                    customerId: subscription.customer.id,
+                    status: 'PENDING',
                 });
-
-                if (!existing) {
-                    await this.prisma.tenderDispatchQueue.create({
-                        data: {
-                            tenderId: tender.id,
-                            customerId: subscription.customer.id,
-                            status: 'PENDING',
-                        },
-                    });
-                    queuedCount++;
-                }
             }
         }
-        this.logger.log(`Queued ${queuedCount} new dispatch items.`);
+
+        if (toInsert.length === 0) {
+            this.logger.log('No new dispatch items to queue.');
+            return;
+        }
+
+        // Batch insert; unique constraint (tenderId, customerId) prevents duplicates
+        const result = await this.prisma.tenderDispatchQueue.createMany({
+            data: toInsert,
+            ...(process.env.PRISMA_SKIP_DUPLICATES === 'false' ? {} : ({ skipDuplicates: true } as any)),
+        } as any);
+
+        this.logger.log(`Queued ${result.count} new dispatch items.`);
     }
 
     private async processDispatchQueue(): Promise<number> {
@@ -116,14 +130,10 @@ export class TenderNotificationService {
         const customerBatches = new Map<string, typeof pendingItems>();
 
         for (const item of pendingItems) {
-            const customerId = item.customerId;
-            if (!customerBatches.has(customerId)) {
-                customerBatches.set(customerId, []);
-            }
-            customerBatches.get(customerId)?.push(item);
+            customerBatches.set(item.customerId, (customerBatches.get(item.customerId) || []).concat(item));
         }
 
-        for (const [customerId, items] of customerBatches) {
+        for (const items of customerBatches.values()) {
             const customer = items[0].customer; // All items have same customer
             if (!customer || !customer.email) {
                 // Mark as failed

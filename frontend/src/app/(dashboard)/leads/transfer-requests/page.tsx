@@ -127,7 +127,9 @@ export default function TransferRequestsPage() {
                                         <span className="text-muted-foreground">From:</span>
                                     </div>
                                     <span className="font-medium">
-                                        {request.requester.firstName} {request.requester.lastName}
+                                        {request.lead?.assignee
+                                            ? `${request.lead.assignee.firstName} ${request.lead.assignee.lastName}`
+                                            : 'Unassigned / Pool'}
                                     </span>
                                 </div>
                                 <div className="flex items-center justify-between text-sm border-b pb-2">

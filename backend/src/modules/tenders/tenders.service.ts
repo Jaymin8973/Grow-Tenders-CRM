@@ -5,10 +5,15 @@ import { UpdateTenderDto } from './dto/update-tender.dto';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { PrismaService } from '../../prisma/prisma.service';
+import { ConfigService } from '@nestjs/config';
+import * as jwt from 'jsonwebtoken';
 
 @Injectable()
 export class TendersService {
-    constructor(private prisma: PrismaService) { }
+    constructor(
+        private prisma: PrismaService,
+        private configService: ConfigService,
+    ) { }
 
     private addMonths(date: Date, months: number) {
         const d = new Date(date);
@@ -241,5 +246,361 @@ export class TendersService {
             where: { customerId },
             data: { isActive: false },
         });
+    }
+
+    // Public API methods (no auth required)
+    async findPublicTenders(filters?: {
+        category?: string;
+        search?: string;
+        state?: string;
+        ministry?: string;
+        status?: string;
+        limit?: number;
+        offset?: number;
+    }) {
+        const where: any = {
+            status: 'PUBLISHED',
+        };
+
+        if (filters?.category) {
+            where.OR = [
+                { categoryName: { contains: filters.category, mode: 'insensitive' } },
+                { category: { name: { contains: filters.category, mode: 'insensitive' } } },
+            ];
+        }
+        if (filters?.search) {
+            where.OR = [
+                { title: { contains: filters.search, mode: 'insensitive' } },
+                { description: { contains: filters.search, mode: 'insensitive' } },
+                { referenceId: { contains: filters.search, mode: 'insensitive' } },
+            ];
+        }
+        if (filters?.state) {
+            where.state = { contains: filters.state, mode: 'insensitive' };
+        }
+
+        const limit = filters?.limit || 20;
+        const offset = filters?.offset || 0;
+
+        const [tenders, total] = await Promise.all([
+            this.prisma.tender.findMany({
+                where,
+                include: {
+                    category: {
+                        select: { id: true, name: true },
+                    },
+                    attachments: {
+                        select: { id: true, filename: true, url: true },
+                    },
+                    _count: {
+                        select: { attachments: true },
+                    },
+                },
+                orderBy: { publishDate: 'desc' },
+                take: limit,
+                skip: offset,
+            }),
+            this.prisma.tender.count({ where }),
+        ]);
+
+        return {
+            data: tenders,
+            pagination: {
+                total,
+                limit,
+                offset,
+                hasMore: offset + limit < total,
+            },
+        };
+    }
+
+    async findOnePublicTender(id: string) {
+        const tender = await this.prisma.tender.findUnique({
+            where: { id, status: 'PUBLISHED' },
+            include: {
+                category: {
+                    select: { id: true, name: true },
+                },
+                attachments: {
+                    select: { id: true, filename: true, url: true, mimeType: true, size: true },
+                },
+            },
+        });
+
+        if (!tender) {
+            throw new NotFoundException('Tender not found');
+        }
+
+        return tender;
+    }
+
+    async getPublicStats() {
+        const [totalTenders, activeTenders, categories, states] = await Promise.all([
+            this.prisma.tender.count({ where: { status: 'PUBLISHED' } }),
+            this.prisma.tender.count({
+                where: {
+                    status: 'PUBLISHED',
+                    closingDate: { gte: new Date() },
+                },
+            }),
+            this.prisma.tenderCategory.findMany({
+                where: { isActive: true },
+                include: {
+                    _count: { select: { tenders: { where: { status: 'PUBLISHED' } } } },
+                },
+            }),
+            this.prisma.tender.groupBy({
+                by: ['state'],
+                where: { status: 'PUBLISHED', state: { not: null } },
+                _count: true,
+            }),
+        ]);
+
+        return {
+            totalTenders,
+            activeTenders,
+            categories: categories.map(c => ({
+                id: c.id,
+                name: c.name,
+                count: c._count.tenders,
+            })),
+            states: states.map(s => ({
+                name: s.state,
+                count: s._count,
+            })),
+        };
+    }
+
+    async verifyCustomerFromToken(token: string) {
+        try {
+            const secret = this.configService.get<string>('JWT_SECRET') || 'default-secret-change-in-production';
+            const decoded = jwt.verify(token, secret) as any;
+            
+            if (decoded.type !== 'customer') {
+                return null;
+            }
+
+            const customer = await this.prisma.customer.findUnique({
+                where: { id: decoded.sub },
+                select: {
+                    id: true,
+                    email: true,
+                    firstName: true,
+                    lastName: true,
+                    subscriptionActive: true,
+                    planType: true,
+                },
+            });
+
+            return customer;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    // Saved Tenders Methods
+    async saveTender(customerId: string, tenderId: string, notes?: string) {
+        // Check if already saved
+        const existing = await this.prisma.savedTender.findUnique({
+            where: {
+                customerId_tenderId: { customerId, tenderId },
+            },
+        });
+
+        if (existing) {
+            // Update notes if provided
+            if (notes !== undefined) {
+                return this.prisma.savedTender.update({
+                    where: { id: existing.id },
+                    data: { notes },
+                    include: {
+                        tender: {
+                            select: {
+                                id: true,
+                                title: true,
+                                status: true,
+                                value: true,
+                                closingDate: true,
+                                state: true,
+                                category: { select: { id: true, name: true } },
+                            },
+                        },
+                    },
+                });
+            }
+            return existing;
+        }
+
+        return this.prisma.savedTender.create({
+            data: { customerId, tenderId, notes },
+            include: {
+                tender: {
+                    select: {
+                        id: true,
+                        title: true,
+                        status: true,
+                        value: true,
+                        closingDate: true,
+                        state: true,
+                        category: { select: { id: true, name: true } },
+                    },
+                },
+            },
+        });
+    }
+
+    async unsaveTender(customerId: string, tenderId: string) {
+        await this.prisma.savedTender.delete({
+            where: {
+                customerId_tenderId: { customerId, tenderId },
+            },
+        });
+
+        return { message: 'Tender removed from saved list' };
+    }
+
+    async getSavedTenders(customerId: string, limit: number = 20, offset: number = 0) {
+        const [saved, total] = await Promise.all([
+            this.prisma.savedTender.findMany({
+                where: { customerId },
+                include: {
+                    tender: {
+                        select: {
+                            id: true,
+                            title: true,
+                            description: true,
+                            status: true,
+                            value: true,
+                            publishDate: true,
+                            closingDate: true,
+                            state: true,
+                            city: true,
+                            categoryName: true,
+                            category: { select: { id: true, name: true } },
+                            referenceId: true,
+                        },
+                    },
+                },
+                orderBy: { createdAt: 'desc' },
+                take: limit,
+                skip: offset,
+            }),
+            this.prisma.savedTender.count({ where: { customerId } }),
+        ]);
+
+        return {
+            data: saved.map((s: any) => ({
+                id: s.id,
+                createdAt: s.createdAt,
+                notes: s.notes,
+                tender: {
+                    ...s.tender,
+                    accessLevel: 'full', // Saved tenders always show full access
+                },
+            })),
+            pagination: {
+                total,
+                limit,
+                offset,
+                hasMore: offset + limit < total,
+            },
+        };
+    }
+
+    async checkIfTenderSaved(customerId: string, tenderId: string) {
+        const saved = await this.prisma.savedTender.findUnique({
+            where: {
+                customerId_tenderId: { customerId, tenderId },
+            },
+        });
+
+        return {
+            isSaved: !!saved,
+            savedAt: saved?.createdAt || null,
+            notes: saved?.notes || null,
+        };
+    }
+
+    // Tender History
+    async addTenderHistory(
+        tenderId: string,
+        action: string,
+        customerId?: string,
+        oldValue?: string,
+        newValue?: string,
+        notes?: string,
+    ) {
+        return this.prisma.tenderHistory.create({
+            data: {
+                tenderId,
+                customerId: customerId || null,
+                action,
+                oldValue,
+                newValue,
+                notes,
+            },
+        });
+    }
+
+    async getTenderHistory(tenderId: string, limit: number = 20, offset: number = 0) {
+        const [history, total] = await Promise.all([
+            this.prisma.tenderHistory.findMany({
+                where: { tenderId },
+                include: {
+                    customer: {
+                        select: { id: true, firstName: true, lastName: true, email: true },
+                    },
+                },
+                orderBy: { createdAt: 'desc' },
+                take: limit,
+                skip: offset,
+            }),
+            this.prisma.tenderHistory.count({ where: { tenderId } }),
+        ]);
+
+        return {
+            data: history,
+            pagination: {
+                total,
+                limit,
+                offset,
+                hasMore: offset + limit < total,
+            },
+        };
+    }
+
+    async getCustomerTenderHistory(customerId: string, limit: number = 20, offset: number = 0) {
+        const [history, total] = await Promise.all([
+            this.prisma.tenderHistory.findMany({
+                where: { customerId },
+                include: {
+                    tender: {
+                        select: {
+                            id: true,
+                            title: true,
+                            status: true,
+                            value: true,
+                            closingDate: true,
+                            state: true,
+                            category: { select: { id: true, name: true } },
+                        },
+                    },
+                },
+                orderBy: { createdAt: 'desc' },
+                take: limit,
+                skip: offset,
+            }),
+            this.prisma.tenderHistory.count({ where: { customerId } }),
+        ]);
+
+        return {
+            data: history,
+            pagination: {
+                total,
+                limit,
+                offset,
+                hasMore: offset + limit < total,
+            },
+        };
     }
 }

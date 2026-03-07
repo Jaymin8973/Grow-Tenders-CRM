@@ -14,7 +14,6 @@ import { Role, TenderStatus } from '@prisma/client';
 import { TendersService } from './tenders.service';
 import { CreateTenderDto } from './dto/create-tender.dto';
 import { UpdateTenderDto } from './dto/update-tender.dto';
-import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { JwtAuthGuard, RolesGuard } from '../../common/guards';
 import { Roles, CurrentUser } from '../../common/decorators';
 

@@ -43,12 +43,22 @@ export class InvoicesController {
     @ApiQuery({ name: 'status', required: false, enum: InvoiceStatus })
     @ApiQuery({ name: 'customerId', required: false })
     @ApiQuery({ name: 'search', required: false })
+    @ApiQuery({ name: 'page', required: false, type: Number, description: '1-based page number (default: 1)' })
+    @ApiQuery({ name: 'pageSize', required: false, type: Number, description: 'Page size (default: 25, max: 100)' })
     findAll(
         @Query('status') status?: InvoiceStatus,
         @Query('customerId') customerId?: string,
         @Query('search') search?: string,
+        @Query('page') page?: string,
+        @Query('pageSize') pageSize?: string,
     ) {
-        return this.invoicesService.findAll({ status, customerId, search });
+        return this.invoicesService.findAll({
+            status,
+            customerId,
+            search,
+            page: page ? Number(page) : undefined,
+            pageSize: pageSize ? Number(pageSize) : undefined,
+        });
     }
 
     @Get('stats')

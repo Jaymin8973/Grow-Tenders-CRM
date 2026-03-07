@@ -107,6 +107,8 @@ export class PaymentsService {
         endDate?: string;
         search?: string;
         createdById?: string;
+        page?: number;
+        pageSize?: number;
     }) {
         const where: any = {};
 
@@ -144,30 +146,40 @@ export class PaymentsService {
             ];
         }
 
-        return this.prisma.payment.findMany({
-            where,
-            include: {
-                customer: {
-                    select: {
-                        id: true,
-                        firstName: true,
-                        lastName: true,
-                        company: true,
-                        phone: true,
-                        assignee: {
-                            select: { id: true, firstName: true, lastName: true },
+        const pageSize = Math.min(Math.max(filters?.pageSize ?? 25, 1), 100);
+        const page = Math.max(filters?.page ?? 1, 1);
+
+        const [items, total] = await Promise.all([
+            this.prisma.payment.findMany({
+                where,
+                skip: (page - 1) * pageSize,
+                take: pageSize,
+                include: {
+                    customer: {
+                        select: {
+                            id: true,
+                            firstName: true,
+                            lastName: true,
+                            company: true,
+                            phone: true,
+                            assignee: {
+                                select: { id: true, firstName: true, lastName: true },
+                            },
                         },
                     },
+                    invoice: {
+                        select: { id: true, invoiceNumber: true },
+                    },
+                    createdBy: {
+                        select: { id: true, firstName: true, lastName: true },
+                    },
                 },
-                invoice: {
-                    select: { id: true, invoiceNumber: true },
-                },
-                createdBy: {
-                    select: { id: true, firstName: true, lastName: true },
-                },
-            },
-            orderBy: { createdAt: 'desc' },
-        });
+                orderBy: { createdAt: 'desc' },
+            }),
+            this.prisma.payment.count({ where }),
+        ]);
+
+        return { items, page, pageSize, total };
     }
 
     async findOne(id: string) {
@@ -237,21 +249,45 @@ export class PaymentsService {
     }
 
     async getStats() {
-        const [total, todayPayments, allPayments] = await Promise.all([
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+        const yearStart = new Date(now.getFullYear(), 0, 1);
+        const yearEnd = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+
+        const [total, todayPayments, allPayments, monthlyPayments, yearlyPayments] = await Promise.all([
             this.prisma.payment.count(),
             this.prisma.payment.findMany({
                 where: {
                     paymentDate: {
-                        gte: new Date(new Date().setHours(0, 0, 0, 0)),
-                        lte: new Date(new Date().setHours(23, 59, 59, 999)),
+                        gte: new Date(now.setHours(0, 0, 0, 0)),
+                        lte: new Date(now.setHours(23, 59, 59, 999)),
                     },
                 },
             }),
             this.prisma.payment.findMany(),
+            this.prisma.payment.findMany({
+                where: {
+                    paymentDate: {
+                        gte: monthStart,
+                        lte: monthEnd,
+                    },
+                },
+            }),
+            this.prisma.payment.findMany({
+                where: {
+                    paymentDate: {
+                        gte: yearStart,
+                        lte: yearEnd,
+                    },
+                },
+            }),
         ]);
 
         const totalAmount = allPayments.reduce((sum, p) => sum + p.totalAmount, 0);
         const todayAmount = todayPayments.reduce((sum, p) => sum + p.totalAmount, 0);
+        const monthlyAmount = monthlyPayments.reduce((sum, p) => sum + p.totalAmount, 0);
+        const yearlyAmount = yearlyPayments.reduce((sum, p) => sum + p.totalAmount, 0);
 
         const methodStats = await this.prisma.payment.groupBy({
             by: ['paymentMethod'],
@@ -270,6 +306,8 @@ export class PaymentsService {
             totalAmount,
             todayPayments: todayPayments.length,
             todayAmount,
+            monthlyAmount,
+            yearlyAmount,
             byMethod: methodStats,
             byGstType: gstStats,
         };

@@ -40,29 +40,43 @@ import { SubmitEodReportDialog } from '@/components/daily-reports/submit-eod-rep
 
 const COLORS = ['#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
+const PIPELINE_COLORS: Record<string, string> = {
+    WARM_LEAD: '#3b82f6',
+    HOT_LEAD: '#22c55e',
+    COLD_LEAD: '#ef4444',
+    CLOSED_LEAD: '#000000',
+    PROPOSAL_LEAD: '#8b5cf6',
+};
+
 export default function DashboardPage() {
     const { user } = useAuth();
 
     const { data: stats, isLoading } = useQuery({
         queryKey: ['dashboard-analytics'],
         queryFn: async () => {
-            const response = await apiClient.get('/analytics/dashboard');
+            const response = await apiClient.get('/reports/dashboard');
             return response.data;
         },
     });
 
-    const salesData = stats?.invoices
+    const salesData = stats?.monthlyRevenue
         ? {
-            totalRevenue: stats.invoices.totalRevenue || 0,
-            leadsConverted: stats?.leads?.byStatus?.CLOSED_LEAD || 0,
-            winRate: stats?.leads?.total ? Math.round(((stats?.leads?.byStatus?.CLOSED_LEAD || 0) / stats.leads.total) * 100) : 0,
-            activitiesCompleted: stats?.activities?.completedThisMonth || 0,
-            monthlyRevenue: [],
+            totalRevenue: 0,
+            leadsConverted: 0,
+            winRate: 0,
+            activitiesCompleted: 0,
+            monthlyRevenue: stats.monthlyRevenue,
         }
         : undefined;
 
-    const pipelineData = stats?.leads?.byStatus
-        ? Object.entries(stats.leads.byStatus).map(([stage, count]) => ({ stage, count }))
+    const pipelineData: Array<{ stage: string; count: number; color: string }> = stats?.leadsByStatus
+        ? Object.entries(stats.leadsByStatus)
+            .map(([stage, count]) => ({
+                stage,
+                count: Number(count) || 0,
+                color: PIPELINE_COLORS[stage] || COLORS[0],
+            }))
+            .filter((x) => x.count > 0)
         : [];
 
     if (isLoading) {
@@ -76,60 +90,54 @@ export default function DashboardPage() {
     const statsCards = [
         {
             title: 'Total Leads',
-            value: stats?.leads?.total || 0,
-            change: stats?.leads?.newThisMonth || 0,
+            value: stats?.totalLeads || 0,
+            change: stats?.newLeadsThisMonth || 0,
             changeLabel: 'this month',
             trend: 'up',
             icon: UserPlus,
-            gradient: 'from-blue-500 to-blue-600',
-            bg: 'bg-blue-50',
-            iconColor: 'text-blue-500',
+            gradient: 'from-slate-600 to-slate-700',
+            bg: 'bg-slate-50',
+            iconColor: 'text-slate-600',
         },
         {
-            title: 'Customers',
-            value: stats?.customers?.total || 0,
-            change: stats?.customers?.companies || 0,
-            changeLabel: 'companies',
-            trend: 'up',
+            title: 'Cold Leads',
+            value: stats?.coldLeads || 0,
             icon: Users,
+            trend: 'up',
+            gradient: 'from-red-500 to-red-600',
+            bg: 'bg-red-50',
+            iconColor: 'text-red-600',
+        },
+        {
+            title: 'Hot Leads',
+            value: stats?.hotLeads || 0,
+            icon: CheckCircle2,
+            trend: 'up',
             gradient: 'from-emerald-500 to-emerald-600',
             bg: 'bg-emerald-50',
-            iconColor: 'text-emerald-500',
+            iconColor: 'text-emerald-600',
         },
         {
-            title: 'Pending Activities',
-            value: stats?.activities?.overdue || 0,
-            change: stats?.activities?.dueToday || 0,
-            changeLabel: 'due today',
-            trend: 'up',
-            icon: CheckCircle2,
-            gradient: 'from-violet-500 to-violet-600',
-            bg: 'bg-violet-50',
-            iconColor: 'text-violet-500',
-        },
-        {
-            title: 'Revenue',
-            value: formatCurrency(stats?.invoices?.paidRevenue || 0),
-            change: 12,
-            changeLabel: 'vs last month',
+            title: 'Warm Leads',
+            value: stats?.warmLeads || 0,
             trend: 'up',
             icon: DollarSign,
-            gradient: 'from-amber-500 to-amber-600',
-            bg: 'bg-amber-50',
-            iconColor: 'text-amber-500',
+            gradient: 'from-blue-500 to-blue-600',
+            bg: 'bg-blue-50',
+            iconColor: 'text-blue-600',
         },
         {
-            title: 'Activities Today',
-            value: stats?.activities?.dueToday || 0,
+            title: 'Assigned Leads',
+            value: stats?.assignedLeads || 0,
             icon: CalendarDays,
             gradient: 'from-cyan-500 to-cyan-600',
             bg: 'bg-cyan-50',
             iconColor: 'text-cyan-500',
         },
         {
-            title: 'Overdue Tasks',
-            value: stats?.activities?.overdue || 0,
-            trend: (stats?.activities?.overdue || 0) > 0 ? 'down' : 'up',
+            title: 'Unassigned Leads',
+            value: stats?.unassignedLeads || 0,
+            trend: (stats?.unassignedLeads || 0) > 0 ? 'down' : 'up',
             icon: AlertCircle,
             gradient: 'from-rose-500 to-rose-600',
             bg: 'bg-rose-50',
@@ -291,7 +299,7 @@ export default function DashboardPage() {
                                                 {(pipelineData || []).map((entry: any, index: number) => (
                                                     <Cell
                                                         key={`cell-${index}`}
-                                                        fill={COLORS[index % COLORS.length]}
+                                                        fill={entry.color || COLORS[index % COLORS.length]}
                                                         className="stroke-2 stroke-card"
                                                     />
                                                 ))}
@@ -312,7 +320,7 @@ export default function DashboardPage() {
                                         <div key={entry.stage} className="flex items-center gap-2">
                                             <div
                                                 className="w-3 h-3 rounded-full"
-                                                style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                                                style={{ backgroundColor: entry.color || COLORS[index % COLORS.length] }}
                                             />
                                             <span className="text-xs text-muted-foreground">{entry.stage}</span>
                                         </div>
@@ -323,34 +331,34 @@ export default function DashboardPage() {
                     </div>
 
                     {/* Quick Stats for Admin/Manager */}
-                    {salesData && (
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                            <Card className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white">
-                                <CardContent className="p-6">
-                                    <p className="text-indigo-100 text-sm font-medium">Total Revenue</p>
-                                    <p className="text-3xl font-bold mt-2">{formatCurrency(salesData.totalRevenue || 0)}</p>
-                                </CardContent>
-                            </Card>
-                            <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
-                                <CardContent className="p-6">
-                                    <p className="text-emerald-100 text-sm font-medium">Leads Converted</p>
-                                    <p className="text-3xl font-bold mt-2">{salesData.leadsConverted || 0}</p>
-                                </CardContent>
-                            </Card>
-                            <Card className="bg-gradient-to-br from-amber-500 to-amber-600 text-white">
-                                <CardContent className="p-6">
-                                    <p className="text-amber-100 text-sm font-medium">Win Rate</p>
-                                    <p className="text-3xl font-bold mt-2">{salesData.winRate || 0}%</p>
-                                </CardContent>
-                            </Card>
-                            <Card className="bg-gradient-to-br from-rose-500 to-rose-600 text-white">
-                                <CardContent className="p-6">
-                                    <p className="text-rose-100 text-sm font-medium">Activities Completed</p>
-                                    <p className="text-3xl font-bold mt-2">{salesData.activitiesCompleted || 0}</p>
-                                </CardContent>
-                            </Card>
-                        </div>
-                    )}
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        <Card className="bg-gradient-to-br from-slate-600 to-slate-700 text-white">
+                            <CardContent className="p-6">
+                                <p className="text-slate-100 text-sm font-medium">New Leads This Month</p>
+                                <p className="text-3xl font-bold mt-2">{stats?.newLeadsThisMonth || 0}</p>
+                            </CardContent>
+                        </Card>
+                        <Card className="bg-gradient-to-br from-cyan-500 to-cyan-600 text-white">
+                            <CardContent className="p-6">
+                                <p className="text-cyan-100 text-sm font-medium">Assigned vs Unassigned</p>
+                                <p className="text-3xl font-bold mt-2">
+                                    {(stats?.assignedLeads || 0)} / {(stats?.unassignedLeads || 0)}
+                                </p>
+                            </CardContent>
+                        </Card>
+                        <Card className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white">
+                            <CardContent className="p-6">
+                                <p className="text-indigo-100 text-sm font-medium">Follow-ups Today</p>
+                                <p className="text-3xl font-bold mt-2">{stats?.followUpsToday || 0}</p>
+                            </CardContent>
+                        </Card>
+                        <Card className="bg-gradient-to-br from-rose-500 to-rose-600 text-white">
+                            <CardContent className="p-6">
+                                <p className="text-rose-100 text-sm font-medium">Overdue Follow-ups</p>
+                                <p className="text-3xl font-bold mt-2">{stats?.overdueFollowUps || 0}</p>
+                            </CardContent>
+                        </Card>
+                    </div>
                 </>
             )}
             {/* End Restricted Sections */}

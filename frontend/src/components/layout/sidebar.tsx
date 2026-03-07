@@ -19,7 +19,6 @@ import {
     Wallet,
     FileSearch,
     Target,
-    Activity,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -70,7 +69,6 @@ const adminNav: NavItem[] = [
     { name: 'Users', href: '/users', icon: Building2, roles: ['SUPER_ADMIN', 'MANAGER'], screenKey: 'users' },
     { name: 'Targets', href: '/targets', icon: Target, roles: ['SUPER_ADMIN', 'MANAGER'], screenKey: 'targets' },
     { name: 'Scraper Logs', href: '/scraper-logs', icon: FileSearch, roles: ['SUPER_ADMIN'], screenKey: 'scraperLogs' },
-    { name: 'Activities', href: '/activities', icon: Activity, roles: ['SUPER_ADMIN'], screenKey: 'activities' },
 ];
 
 export function Sidebar() {

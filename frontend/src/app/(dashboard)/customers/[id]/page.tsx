@@ -81,20 +81,9 @@ export default function CustomerDetailPage() {
         },
     });
 
-
-
-    // Fetch activities
-    const { data: activities } = useQuery({
-        queryKey: ['activities', 'customer', customerId],
-        queryFn: async () => {
-            const response = await apiClient.get(`/activities?customerId=${customerId}`);
-            return response.data;
-        },
-    });
-
     // Fetch invoices
     const { data: invoices } = useQuery({
-        queryKey: ['invoices', 'customer', customerId],
+        queryKey: ['invoices', customerId],
         queryFn: async () => {
             const response = await apiClient.get(`/invoices?customerId=${customerId}`);
             return response.data;
@@ -220,7 +209,7 @@ export default function CustomerDetailPage() {
         );
     }
 
-    const totalRevenue = invoices?.filter((inv: any) => inv.status === 'PAID')
+    const totalRevenue = invoices?.items?.filter((inv: any) => inv.status === 'PAID')
         .reduce((sum: number, inv: any) => sum + (inv.total || 0), 0) || 0;
 
     return (
@@ -274,7 +263,7 @@ export default function CustomerDetailPage() {
                                 <FileText className="h-6 w-6 text-purple-500" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold">{invoices?.length || 0}</p>
+                                <p className="text-2xl font-bold">{invoices?.items?.length || 0}</p>
                                 <p className="text-sm text-muted-foreground">Invoices</p>
                             </div>
                         </div>
@@ -287,8 +276,8 @@ export default function CustomerDetailPage() {
                                 <Calendar className="h-6 w-6 text-amber-500" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold">{activities?.length || 0}</p>
-                                <p className="text-sm text-muted-foreground">Activities</p>
+                                <p className="text-2xl font-bold">{invoices?.items?.length || 0}</p>
+                                <p className="text-sm text-muted-foreground">Invoices</p>
                             </div>
                         </div>
                     </CardContent>
@@ -587,7 +576,7 @@ export default function CustomerDetailPage() {
                                 </CardHeader>
                                 <CardContent>
                                     <div className="space-y-3">
-                                        {invoices?.map((invoice: any) => (
+                                        {invoices?.items?.map((invoice: any) => (
                                             <div key={invoice.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted transition-colors">
                                                 <div>
                                                     <p className="font-medium font-mono">{invoice.invoiceNumber}</p>
@@ -603,7 +592,7 @@ export default function CustomerDetailPage() {
                                                 </div>
                                             </div>
                                         ))}
-                                        {(!invoices || invoices.length === 0) && (
+                                        {(!invoices?.items || invoices.items.length === 0) && (
                                             <div className="text-center py-8 text-muted-foreground">
                                                 <FileText className="h-10 w-10 mx-auto mb-2 opacity-30" />
                                                 <p>No invoices yet</p>

@@ -13,8 +13,8 @@ interface UserContext {
 }
 
 import { CustomersService } from '../customers/customers.service';
-import { ActivitiesService } from '../activities/activities.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { FollowUpsService } from '../follow-ups/follow-ups.service';
 
 @Injectable()
 export class LeadsService {
@@ -23,31 +23,30 @@ export class LeadsService {
     constructor(
         private prisma: PrismaService,
         private customersService: CustomersService,
-        private activitiesService: ActivitiesService,
+        private followUpsService: FollowUpsService,
         private notificationsService: NotificationsService,
     ) { }
 
-    private async createFollowUpActivity(
+    private async createFollowUpEntry(
         lead: { id: string; firstName: string; lastName: string; assigneeId?: string | null },
         nextFollowUp: Date,
         userId: string,
     ) {
-        const activity = await this.activitiesService.create(
+        const followUp = await this.followUpsService.create(
             {
-                title: `Follow-up with ${lead.firstName} ${lead.lastName}`,
-                type: ActivityType.FOLLOW_UP,
-                status: ActivityStatus.SCHEDULED,
-                scheduledAt: nextFollowUp.toISOString(),
                 leadId: lead.id,
-                assigneeId: lead.assigneeId || userId,
-            },
+                description: `Follow-up with ${lead.firstName} ${lead.lastName}`,
+                scheduledAt: nextFollowUp.toISOString(),
+            } as any,
             userId,
         );
 
+        // Keep notification type as follow-up overdue; for scheduled reminders, reuse activity reminder channel text.
+        // This keeps existing UX while removing Activity records.
         await this.notificationsService.notifyActivityReminder(
-            activity.assigneeId,
-            activity.title,
-            activity.id,
+            lead.assigneeId || userId,
+            `Follow-up with ${lead.firstName} ${lead.lastName}`,
+            followUp.id,
         );
     }
 
@@ -112,15 +111,29 @@ export class LeadsService {
             const email = getField(row, ['email']);
             const firstName = getField(row, ['firstName', 'first name', 'firstname']);
             const lastName = getField(row, ['lastName', 'last name', 'lastname']);
+            const mobile = getField(row, ['mobile', 'phone', 'phonenumber', 'phone number']);
 
-            if (!email || !firstName || !lastName) {
+            // If only phone number is provided, auto-generate firstName, lastName, email
+            let finalFirstName = firstName;
+            let finalLastName = lastName;
+            let finalEmail = email;
+
+            if ((!email || !firstName || !lastName) && mobile) {
+                const cleanPhone = mobile.replace(/\D/g, '').slice(-10);
+                if (cleanPhone.length === 10) {
+                    if (!firstName) finalFirstName = `Lead_${cleanPhone.slice(-4)}`;
+                    if (!lastName) finalLastName = 'Telecalling';
+                    if (!email) finalEmail = `telecalling_${cleanPhone}@placeholder.temp`;
+                }
+            }
+
+            if (!finalEmail || !finalFirstName || !finalLastName) {
                 result.failed++;
-                result.errors.push({ row: rowNumber, message: 'Missing required fields: email, firstName, lastName' });
+                result.errors.push({ row: rowNumber, message: 'Missing required fields: need at least phone number or (email, firstName, lastName)' });
                 continue;
             }
 
             const company = getField(row, ['company']);
-            const mobile = getField(row, ['mobile', 'phone', 'phonenumber', 'phone number']);
             const statusRaw = getField(row, ['status']);
             const sourceRaw = getField(row, ['source']);
             const assigneeId = getField(row, ['assigneeId', 'assignee id']);
@@ -139,7 +152,7 @@ export class LeadsService {
 
             try {
                 const existing = await this.prisma.lead.findFirst({
-                    where: { email: { equals: email, mode: 'insensitive' } },
+                    where: { email: { equals: finalEmail, mode: 'insensitive' } },
                     select: { id: true },
                 });
 
@@ -147,9 +160,9 @@ export class LeadsService {
                     await this.prisma.lead.update({
                         where: { id: existing.id },
                         data: {
-                            firstName,
-                            lastName,
-                            email,
+                            firstName: finalFirstName,
+                            lastName: finalLastName,
+                            email: finalEmail,
                             company,
                             mobile,
                             industry,
@@ -162,12 +175,12 @@ export class LeadsService {
                     });
                     result.updated++;
                 } else {
-                    await this.prisma.lead.create({
+                    const lead = await this.prisma.lead.create({
                         data: {
-                            title: `${firstName} ${lastName}`,
-                            firstName,
-                            lastName,
-                            email,
+                            title: `${finalFirstName} ${finalLastName}`,
+                            firstName: finalFirstName,
+                            lastName: finalLastName,
+                            email: finalEmail,
                             company,
                             mobile,
                             industry,
@@ -185,6 +198,69 @@ export class LeadsService {
                 this.logger.warn(`Bulk import row failed: ${e?.message || e}`);
                 result.failed++;
                 result.errors.push({ row: rowNumber, message: e?.message || 'Unknown error' });
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Bulk import leads from phone numbers only
+     * Auto-generates firstName, lastName, email from phone number
+     */
+    async bulkImportPhones(phones: string[], source: LeadSource, description: string, assigneeId: string | undefined, userId: string) {
+        const result = {
+            total: phones.length,
+            created: 0,
+            duplicates: 0,
+            invalid: 0,
+            errors: [] as { phone: string; message: string }[],
+        };
+
+        for (const phone of phones) {
+            // Clean phone number
+            const cleanPhone = phone.replace(/\D/g, '').slice(-10);
+            
+            if (cleanPhone.length !== 10) {
+                result.invalid++;
+                result.errors.push({ phone, message: 'Invalid phone number (must be 10 digits)' });
+                continue;
+            }
+
+            // Check for duplicate
+            const existing = await this.prisma.lead.findFirst({
+                where: { mobile: cleanPhone },
+                select: { id: true },
+            });
+
+            if (existing) {
+                result.duplicates++;
+                continue;
+            }
+
+            // Generate auto fields
+            const firstName = `Lead_${cleanPhone.slice(-4)}`;
+            const lastName = 'Telecalling';
+            const email = `telecalling_${cleanPhone}@placeholder.temp`;
+
+            try {
+                await this.prisma.lead.create({
+                    data: {
+                        title: `${firstName} ${lastName}`,
+                        firstName,
+                        lastName,
+                        email,
+                        mobile: cleanPhone,
+                        description: description || 'Imported from telecalling campaign',
+                        status: LeadStatus.COLD_LEAD,
+                        source: source || LeadSource.COLD_CALL,
+                        createdById: userId,
+                        assigneeId: assigneeId || userId,
+                    } as any,
+                });
+                result.created++;
+            } catch (e: any) {
+                result.errors.push({ phone, message: e?.message || 'Unknown error' });
             }
         }
 
@@ -216,7 +292,7 @@ export class LeadsService {
         });
 
         if (createLeadDto.nextFollowUp && createLeadDto.status !== LeadStatus.CLOSED_LEAD) {
-            await this.createFollowUpActivity(
+            await this.createFollowUpEntry(
                 lead,
                 new Date(createLeadDto.nextFollowUp),
                 userId,
@@ -373,7 +449,6 @@ export class LeadsService {
                     // Mask mobile number details
                     // Keep last 4 digits, hide the rest
                     const last4 = lead.mobile.slice(-4);
-                    const masked = '*'.repeat(Math.max(0, lead.mobile.length - 4)) + last4;
                     // Or simply '******' + last4 for consistent length? 
                     // User said: "baki * se masking hona chahiye" -> implies masking specific characters.
                     // Let's use generic masking to avoid leaking length if that's a concern, 
@@ -483,7 +558,7 @@ export class LeadsService {
         });
 
         if (updateLeadDto.nextFollowUp && updatedLead.status !== LeadStatus.CLOSED_LEAD) {
-            await this.createFollowUpActivity(
+            await this.createFollowUpEntry(
                 updatedLead,
                 new Date(updateLeadDto.nextFollowUp),
                 user.id,

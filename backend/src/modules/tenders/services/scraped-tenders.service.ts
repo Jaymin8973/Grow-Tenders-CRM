@@ -1,8 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import * as PDFDocument from 'pdfkit';
+import { PassThrough } from 'stream';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as https from 'https';
+import * as http from 'http';
 
 @Injectable()
 export class ScrapedTendersService {
@@ -97,6 +100,7 @@ export class ScrapedTendersService {
             category: t.categoryName,
             department: t.description,
             state: t.state,
+            city: t.city,
             quantity: '', // Not in new schema yet, optional
             startDate: t.publishDate,
             endDate: t.closingDate,
@@ -134,6 +138,8 @@ export class ScrapedTendersService {
             category: tender.categoryName,
             department: tender.description,
             state: tender.state,
+            city: tender.city,
+            address: tender.address,
             quantity: '',
             startDate: tender.publishDate,
             endDate: tender.closingDate,
@@ -189,12 +195,17 @@ export class ScrapedTendersService {
         const tender = await this.findOne(id);
 
         return new Promise((resolve, reject) => {
-            const chunks: Buffer[] = [];
             const doc = new PDFDocument({ margin: 48, size: 'A4' });
 
-            doc.on('data', (chunk: Buffer) => chunks.push(chunk));
-            doc.on('end', () => resolve(Buffer.concat(chunks)));
+            const stream = new PassThrough();
+            const chunks: Buffer[] = [];
+
+            stream.on('data', (chunk: Buffer) => chunks.push(chunk));
+            stream.on('end', () => resolve(Buffer.concat(chunks)));
+            stream.on('error', reject);
             doc.on('error', reject);
+
+            doc.pipe(stream);
 
             const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
             const leftX = doc.page.margins.left;
@@ -347,6 +358,79 @@ export class ScrapedTendersService {
             doc.end();
         });
     }
+
+    /**
+     * Download the original GeM bid document PDF by proxying through the backend.
+     * Some GeM bids (expired/removed) return Content-Length: 0.
+     */
+    async downloadGemDocument(id: string): Promise<{ buffer: Buffer; bidNo: string }> {
+        const tender = await this.findOne(id);
+
+        if (!tender.sourceUrl) {
+            throw new NotFoundException('No GeM document URL available for this tender');
+        }
+
+        const buffer = await this.fetchPdfFromGem(tender.sourceUrl);
+
+        if (!buffer || buffer.length < 100) {
+            throw new NotFoundException(
+                'This tender document is no longer available on GeM portal. The bid may have expired or been removed.',
+            );
+        }
+
+        // Validate it's actually a PDF
+        if (buffer.slice(0, 5).toString() !== '%PDF-') {
+            throw new NotFoundException(
+                'GeM returned an invalid response. The document may no longer be available.',
+            );
+        }
+
+        return { buffer, bidNo: tender.bidNo || 'unknown' };
+    }
+
+    /**
+     * Fetch a PDF from a URL with proper headers, following redirects.
+     */
+    private fetchPdfFromGem(url: string): Promise<Buffer> {
+        return new Promise((resolve, reject) => {
+            const makeRequest = (targetUrl: string, redirectCount = 0) => {
+                if (redirectCount > 5) return reject(new Error('Too many redirects'));
+
+                const protocol = targetUrl.startsWith('https') ? https : http;
+                protocol.get(targetUrl, {
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        'Accept': 'application/pdf,*/*',
+                        'Referer': 'https://bidplus.gem.gov.in/',
+                        'Accept-Language': 'en-US,en;q=0.9',
+                        'Connection': 'keep-alive',
+                    },
+                    timeout: 15000,
+                }, (res) => {
+                    if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+                        const loc = res.headers.location;
+                        const nextUrl = loc.startsWith('http')
+                            ? loc
+                            : new URL(loc, targetUrl).toString();
+                        makeRequest(nextUrl, redirectCount + 1);
+                        return;
+                    }
+                    if (res.statusCode && res.statusCode !== 200) {
+                        return reject(new Error(`HTTP ${res.statusCode}`));
+                    }
+                    const chunks: Buffer[] = [];
+                    res.on('data', (chunk: Buffer) => chunks.push(chunk));
+                    res.on('end', () => {
+                        const buf = Buffer.concat(chunks);
+                        resolve(buf);
+                    });
+                    res.on('error', reject);
+                }).on('error', reject);
+            };
+            makeRequest(url);
+        });
+    }
+
     async getScrapeLogs(page = 1, limit = 20) {
         const skip = (page - 1) * limit;
         const [data, total] = await Promise.all([

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Role, LeadStatus, ActivityStatus, InvoiceStatus } from '@prisma/client';
+import { Role, LeadStatus, InvoiceStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
 interface DateRange {
@@ -127,8 +127,6 @@ export class ReportsService {
                 const [
                     leadsAssigned,
                     leadsConverted,
-                    activitiesTotal,
-                    activitiesCompleted,
                     revenue,
                 ] = await Promise.all([
                     this.prisma.lead.count({
@@ -136,12 +134,6 @@ export class ReportsService {
                     }),
                     this.prisma.lead.count({
                         where: { assigneeId: employee.id, status: LeadStatus.CLOSED_LEAD, ...dateFilter }
-                    }),
-                    this.prisma.activity.count({
-                        where: { assigneeId: employee.id, ...dateFilter }
-                    }),
-                    this.prisma.activity.count({
-                        where: { assigneeId: employee.id, status: ActivityStatus.COMPLETED, ...dateFilter }
                     }),
                     this.prisma.invoice.aggregate({
                         where: {
@@ -161,11 +153,6 @@ export class ReportsService {
                     leadConversionRate: leadsAssigned > 0
                         ? Math.round((leadsConverted / leadsAssigned) * 100)
                         : 0,
-                    activitiesTotal,
-                    activitiesCompleted,
-                    activityCompletionRate: activitiesTotal > 0
-                        ? Math.round((activitiesCompleted / activitiesTotal) * 100)
-                        : 0,
                     revenue: revenue._sum.total || 0,
                 };
             }),
@@ -177,44 +164,22 @@ export class ReportsService {
     async getFollowUpOverdueReport() {
         const now = new Date();
 
-        const overdueActivities = await this.prisma.activity.findMany({
+        const overdueFollowUps = await this.prisma.followUp.findMany({
             where: {
                 scheduledAt: { lt: now },
-                status: { in: [ActivityStatus.SCHEDULED, ActivityStatus.OVERDUE] },
+                status: { in: ['SCHEDULED'] },
             },
             include: {
-                assignee: {
-                    select: { id: true, firstName: true, lastName: true, email: true },
-                },
                 lead: {
-                    select: { id: true, firstName: true, lastName: true, company: true },
-                },
-                customer: {
                     select: { id: true, firstName: true, lastName: true, company: true },
                 },
             },
             orderBy: { scheduledAt: 'asc' },
         });
 
-        // Group by assignee
-        const byAssignee = overdueActivities.reduce((acc, activity) => {
-            const assigneeId = activity.assigneeId;
-            if (!acc[assigneeId]) {
-                acc[assigneeId] = {
-                    assignee: activity.assignee,
-                    activities: [],
-                    count: 0,
-                };
-            }
-            acc[assigneeId].activities.push(activity);
-            acc[assigneeId].count++;
-            return acc;
-        }, {} as Record<string, any>);
-
         return {
-            totalOverdue: overdueActivities.length,
-            byAssignee: Object.values(byAssignee),
-            activities: overdueActivities,
+            totalOverdue: overdueFollowUps.length,
+            followUps: overdueFollowUps,
         };
     }
 
@@ -249,59 +214,123 @@ export class ReportsService {
     }
 
     async getDashboardStats(userId: string, role: Role) {
-        let userFilter: any = {};
-
-        if (role === Role.EMPLOYEE) {
-            userFilter = { assigneeId: userId };
-        } else if (role === Role.MANAGER) {
-            const teamMembers = await this.prisma.user.findMany({
-                where: { managerId: userId },
-                select: { id: true },
-            });
-            const teamIds = [userId, ...teamMembers.map(m => m.id)];
-            userFilter = { assigneeId: { in: teamIds } };
-        }
-
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const thisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
+        const leadScopeWhere = role !== Role.SUPER_ADMIN ? { assigneeId: userId } : {};
+        const invoiceScopeWhere = role !== Role.SUPER_ADMIN
+            ? { customer: { assigneeId: userId } }
+            : {};
+
+        const monthlyRevenue = await this.getMonthlyRevenue(invoiceScopeWhere);
+
+        const leadsByStatus = await this.getLeadsByStatus(leadScopeWhere);
+
         const [
             totalLeads,
+            coldLeads,
+            hotLeads,
+            warmLeads,
+            assignedLeads,
+            unassignedLeads,
             newLeadsThisMonth,
             totalCustomers,
-            activitiesToday,
-            overdueActivities,
+            followUpsToday,
+            overdueFollowUps,
         ] = await Promise.all([
-            this.prisma.lead.count({ where: role !== Role.SUPER_ADMIN ? { assigneeId: userId } : {} }),
+            this.prisma.lead.count({ where: leadScopeWhere }),
+            this.prisma.lead.count({ where: { ...leadScopeWhere, status: LeadStatus.COLD_LEAD } }),
+            this.prisma.lead.count({ where: { ...leadScopeWhere, status: LeadStatus.HOT_LEAD } }),
+            this.prisma.lead.count({ where: { ...leadScopeWhere, status: LeadStatus.WARM_LEAD } }),
+            this.prisma.lead.count({
+                where: {
+                    ...leadScopeWhere,
+                    assigneeId: { not: null },
+                },
+            }),
+            this.prisma.lead.count({
+                where: {
+                    ...leadScopeWhere,
+                    OR: [
+                        { assigneeId: null },
+                        { assigneeId: { isSet: false } },
+                    ],
+                },
+            }),
             this.prisma.lead.count({
                 where: {
                     createdAt: { gte: thisMonth },
-                    ...(role !== Role.SUPER_ADMIN ? { assigneeId: userId } : {}),
+                    ...leadScopeWhere,
                 },
             }),
-            this.prisma.customer.count({ where: role !== Role.SUPER_ADMIN ? { assigneeId: userId } : {} }),
-            this.prisma.activity.count({
+            this.prisma.customer.count({ where: leadScopeWhere }),
+            this.prisma.followUp.count({
                 where: {
                     scheduledAt: { gte: today, lt: new Date(today.getTime() + 24 * 60 * 60 * 1000) },
-                    ...(role !== Role.SUPER_ADMIN ? { assigneeId: userId } : {}),
+                    status: { in: ['SCHEDULED'] },
                 },
             }),
-            this.prisma.activity.count({
+            this.prisma.followUp.count({
                 where: {
                     scheduledAt: { lt: today },
-                    status: { in: [ActivityStatus.SCHEDULED, ActivityStatus.OVERDUE] },
-                    ...(role !== Role.SUPER_ADMIN ? { assigneeId: userId } : {}),
+                    status: { in: ['SCHEDULED'] },
                 },
             }),
         ]);
 
         return {
             totalLeads,
+            coldLeads,
+            hotLeads,
+            warmLeads,
+            assignedLeads,
+            unassignedLeads,
             newLeadsThisMonth,
             totalCustomers,
-            activitiesToday,
-            overdueActivities,
+            followUpsToday,
+            overdueFollowUps,
+            monthlyRevenue,
+            leadsByStatus,
         };
+    }
+
+    private async getLeadsByStatus(leadScopeWhere: any) {
+        const rows = await this.prisma.lead.groupBy({
+            by: ['status'],
+            where: leadScopeWhere,
+            _count: true,
+        });
+
+        return rows.reduce((acc, r) => {
+            acc[r.status] = r._count;
+            return acc;
+        }, {} as Record<string, number>);
+    }
+
+    private async getMonthlyRevenue(invoiceScopeWhere: any) {
+        const now = new Date();
+        const months: Array<{ month: string; revenue: number }> = [];
+
+        for (let i = 11; i >= 0; i--) {
+            const startDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const endDate = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59, 999);
+
+            const revenueAgg = await this.prisma.invoice.aggregate({
+                where: {
+                    status: InvoiceStatus.PAID,
+                    createdAt: { gte: startDate, lte: endDate },
+                    ...(invoiceScopeWhere || {}),
+                },
+                _sum: { total: true },
+            });
+
+            months.push({
+                month: startDate.toLocaleString('default', { month: 'short', year: 'numeric' }),
+                revenue: revenueAgg._sum.total || 0,
+            });
+        }
+
+        return months;
     }
 }

@@ -104,6 +104,21 @@ export class ScrapedTendersController {
         res.send(pdfBuffer);
     }
 
+    @Get(':id/gem-document')
+    @ApiOperation({ summary: 'Download original GeM bid document PDF (proxied)' })
+    async downloadGemDocument(@Param('id') id: string, @Res() res: Response) {
+        const { buffer, bidNo } = await this.scrapedTendersService.downloadGemDocument(id);
+        const safeName = (bidNo || 'unknown').replace(/[/\\:*?"<>|]+/g, '-');
+
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `attachment; filename="GeM-Bidding-${safeName}.pdf"`,
+            'Content-Length': buffer.length,
+        });
+
+        res.send(buffer);
+    }
+
     @Post('scrape')
     @Roles(Role.SUPER_ADMIN)
     @ApiOperation({ summary: 'Manually trigger tender scraping (fetches only today\'s tenders by default)' })
