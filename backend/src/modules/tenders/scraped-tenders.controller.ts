@@ -29,23 +29,38 @@ export class ScrapedTendersController {
     @ApiOperation({ summary: 'Get all scraped tenders with pagination' })
     @ApiQuery({ name: 'status', required: false })
     @ApiQuery({ name: 'state', required: false })
+    @ApiQuery({ name: 'city', required: false })
     @ApiQuery({ name: 'search', required: false })
     @ApiQuery({ name: 'category', required: false })
+    @ApiQuery({ name: 'startDateFrom', required: false })
+    @ApiQuery({ name: 'startDateTo', required: false })
+    @ApiQuery({ name: 'endDateFrom', required: false })
+    @ApiQuery({ name: 'endDateTo', required: false })
     @ApiQuery({ name: 'page', required: false, description: 'Page number (default: 1)' })
     @ApiQuery({ name: 'limit', required: false, description: 'Items per page (default: 20)' })
     findAll(
         @Query('status') status?: string,
         @Query('state') state?: string,
+        @Query('city') city?: string,
         @Query('search') search?: string,
         @Query('category') category?: string,
+        @Query('startDateFrom') startDateFrom?: string,
+        @Query('startDateTo') startDateTo?: string,
+        @Query('endDateFrom') endDateFrom?: string,
+        @Query('endDateTo') endDateTo?: string,
         @Query('page') page?: string,
         @Query('limit') limit?: string,
     ) {
         return this.scrapedTendersService.findAll({
             status,
             state,
+            city,
             search,
             category,
+            startDateFrom,
+            startDateTo,
+            endDateFrom,
+            endDateTo,
             page: page ? parseInt(page, 10) : 1,
             limit: limit ? parseInt(limit, 10) : 20,
         });
@@ -63,9 +78,33 @@ export class ScrapedTendersController {
         return this.scrapedTendersService.getStates();
     }
 
+    @Get('cities')
+    @ApiOperation({ summary: 'Get list of available cities for a given state' })
+    @ApiQuery({ name: 'state', required: true, description: 'Filter cities by state' })
+    getCities(@Query('state') state: string) {
+        if (!state) {
+            return [];
+        }
+        return this.scrapedTendersService.getCities(state);
+    }
+
     @Get('categories')
     @ApiOperation({ summary: 'Get list of available categories' })
-    getCategories() {
+    @ApiQuery({ name: 'page', required: false, description: 'Optional. If provided, returns paginated response' })
+    @ApiQuery({ name: 'limit', required: false, description: 'Optional. Items per page when paginating' })
+    @ApiQuery({ name: 'search', required: false, description: 'Optional. Search within category name when paginating' })
+    getCategories(
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
+        @Query('search') search?: string,
+    ) {
+        if (page || limit || search) {
+            return this.scrapedTendersService.getCategoriesPaginated({
+                search,
+                page: page ? parseInt(page, 10) : 1,
+                limit: limit ? parseInt(limit, 10) : 20,
+            });
+        }
         return this.scrapedTendersService.getCategories();
     }
 

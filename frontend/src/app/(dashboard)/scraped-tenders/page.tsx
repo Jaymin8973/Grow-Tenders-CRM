@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMemo, useState, useEffect } from 'react';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import {
+    Check,
+    ChevronsUpDown,
     Search,
     FileText,
     Clock,
@@ -26,6 +28,15 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from '@/components/ui/command';
 import {
     Table,
     TableBody,
@@ -38,6 +49,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { apiClient } from '@/lib/api-client';
+import { cn } from '@/lib/utils';
 
 interface ScrapedTender {
     id: string;
@@ -66,6 +78,16 @@ interface PaginatedResponse {
     };
 }
 
+interface PaginatedStringResponse {
+    data: string[];
+    meta: {
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+    };
+}
+
 interface Stats {
     total: number;
     active: number;
@@ -78,7 +100,11 @@ export default function ScrapedTendersPage() {
     const [search, setSearch] = useState('');
     const [status, setStatus] = useState<string>('');
     const [state, setState] = useState<string>('');
+    const [city, setCity] = useState<string>('');
     const [category, setCategory] = useState<string>('');
+    const [categoryOpen, setCategoryOpen] = useState(false);
+    const [categorySearch, setCategorySearch] = useState('');
+    const [debouncedCategorySearch, setDebouncedCategorySearch] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [page, setPage] = useState(1);
     const [limit, setLimit] = useState(20);
@@ -92,18 +118,31 @@ export default function ScrapedTendersPage() {
         return () => clearTimeout(timer);
     }, [search]);
 
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedCategorySearch(categorySearch);
+        }, 400);
+        return () => clearTimeout(timer);
+    }, [categorySearch]);
+
     // Reset page when filters change
     useEffect(() => {
         setPage(1);
-    }, [status, state, category]);
+    }, [status, state, city, category]);
+
+    // Reset city when state changes
+    useEffect(() => {
+        setCity('');
+    }, [state]);
 
     const { data: response, isLoading, refetch } = useQuery<PaginatedResponse>({
-        queryKey: ['scraped-tenders', debouncedSearch, status, state, category, page, limit],
+        queryKey: ['scraped-tenders', debouncedSearch, status, state, city, category, page, limit],
         queryFn: async () => {
             const params = new URLSearchParams();
             if (debouncedSearch) params.append('search', debouncedSearch);
             if (status && status !== 'all') params.append('status', status);
             if (state && state !== 'all') params.append('state', state);
+            if (city && city !== 'all') params.append('city', city);
             if (category && category !== 'all') params.append('category', category);
             params.append('page', page.toString());
             params.append('limit', limit.toString());
@@ -131,13 +170,62 @@ export default function ScrapedTendersPage() {
         },
     });
 
-    const { data: categories } = useQuery<string[]>({
-        queryKey: ['scraped-tenders-categories'],
+    const { data: cities, isFetching: isLoadingCities } = useQuery<string[]>({
+        queryKey: ['scraped-tenders-cities', state],
         queryFn: async () => {
-            const res = await apiClient.get('/scraped-tenders/categories');
+            if (!state || state === 'all') return [];
+            const params = new URLSearchParams();
+            params.append('state', state);
+            const res = await apiClient.get(`/scraped-tenders/cities?${params}`);
             return res.data;
         },
+        enabled: !!state && state !== 'all',
     });
+
+    const categoryLimit = 50;
+
+    const categoriesParams = useMemo(() => {
+        const params = new URLSearchParams();
+        params.append('limit', categoryLimit.toString());
+        if (debouncedCategorySearch) params.append('search', debouncedCategorySearch);
+        return params;
+    }, [categoryLimit, debouncedCategorySearch]);
+
+    const {
+        data: categoriesPages,
+        isFetching: isFetchingCategories,
+        isFetchingNextPage: isFetchingNextCategoryPage,
+        fetchNextPage: fetchNextCategoryPage,
+        hasNextPage: hasNextCategoryPage,
+    } = useInfiniteQuery<PaginatedStringResponse>({
+        queryKey: ['scraped-tenders-categories-paginated', debouncedCategorySearch],
+        queryFn: async ({ pageParam }) => {
+            const params = new URLSearchParams(categoriesParams);
+            params.append('page', String(pageParam || 1));
+            const res = await apiClient.get(`/scraped-tenders/categories?${params.toString()}`);
+            return res.data;
+        },
+        initialPageParam: 1,
+        getNextPageParam: (lastPage) => {
+            if (!lastPage?.meta) return undefined;
+            return lastPage.meta.page < lastPage.meta.totalPages ? lastPage.meta.page + 1 : undefined;
+        },
+    });
+
+    const categories = useMemo(() => {
+        const pages = categoriesPages?.pages || [];
+        const seen = new Set<string>();
+        const out: string[] = [];
+        for (const p of pages) {
+            for (const c of p.data || []) {
+                if (!seen.has(c)) {
+                    seen.add(c);
+                    out.push(c);
+                }
+            }
+        }
+        return out;
+    }, [categoriesPages]);
 
     const handleDownloadPdf = async (id: string, bidNo: string) => {
         try {
@@ -211,10 +299,15 @@ export default function ScrapedTendersPage() {
                         Browse and search tenders from Government e Marketplace
                     </p>
                 </div>
-                <Button onClick={() => refetch()} variant="outline" size="sm">
-                    <RefreshCw className="w-4 h-4 mr-2" />
-                    Refresh
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button onClick={() => router.push('/scraped-tenders/advanced-search')} variant="outline" size="sm">
+                        Advanced Search
+                    </Button>
+                    <Button onClick={() => refetch()} variant="outline" size="sm">
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Refresh
+                    </Button>
+                </div>
             </div>
 
             {/* Stats Cards */}
@@ -290,19 +383,101 @@ export default function ScrapedTendersPage() {
                             ))}
                         </SelectContent>
                     </Select>
-                    <Select value={category} onValueChange={setCategory}>
-                        <SelectTrigger className="w-full md:w-[200px]">
-                            <SelectValue placeholder="Category" />
+                    <Select value={city} onValueChange={setCity} disabled={!state || state === 'all'}>
+                        <SelectTrigger className="w-full md:w-[180px]">
+                            <SelectValue placeholder={isLoadingCities ? "Loading cities..." : "City"} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all">All Categories</SelectItem>
-                            {categories?.map((c) => (
+                            <SelectItem value="all">All Cities</SelectItem>
+                            {cities?.map((c) => (
                                 <SelectItem key={c} value={c}>
-                                    {c.length > 30 ? c.substring(0, 30) + '...' : c}
+                                    {c}
                                 </SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
+                    <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
+                        <PopoverTrigger asChild>
+                            <Button
+                                variant="outline"
+                                role="combobox"
+                                aria-expanded={categoryOpen}
+                                className="w-full md:w-[240px] justify-between font-normal text-foreground"
+                            >
+                                <span className="truncate">
+                                    {category && category !== 'all' ? category : 'Category'}
+                                </span>
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                            <Command shouldFilter={false}>
+                                <CommandInput
+                                    placeholder="Search category..."
+                                    value={categorySearch}
+                                    onValueChange={setCategorySearch}
+                                />
+                                <CommandList
+                                    className="pointer-events-auto"
+                                    onScroll={(e) => {
+                                        const el = e.currentTarget;
+                                        const nearBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 40;
+                                        if (nearBottom && hasNextCategoryPage && !isFetchingNextCategoryPage) {
+                                            fetchNextCategoryPage();
+                                        }
+                                    }}
+                                >
+                                    <CommandEmpty>
+                                        {isFetchingCategories ? 'Loading...' : 'No categories found'}
+                                    </CommandEmpty>
+                                    <CommandGroup>
+                                        <CommandItem
+                                            value="__all__"
+                                            onSelect={() => {
+                                                setCategory('all');
+                                                setCategoryOpen(false);
+                                            }}
+                                            onMouseDown={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                setCategory('all');
+                                                setCategoryOpen(false);
+                                            }}
+                                            className="cursor-pointer"
+                                        >
+                                            <Check className={cn('mr-2 h-4 w-4', !category || category === 'all' ? 'opacity-100' : 'opacity-0')} />
+                                            All Categories
+                                        </CommandItem>
+                                        {categories.map((c) => (
+                                            <CommandItem
+                                                key={c}
+                                                value={c}
+                                                className="text-foreground cursor-pointer"
+                                                onSelect={() => {
+                                                    setCategory(c);
+                                                    setCategoryOpen(false);
+                                                }}
+                                                onMouseDown={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    setCategory(c);
+                                                    setCategoryOpen(false);
+                                                }}
+                                            >
+                                                <Check className={cn('mr-2 h-4 w-4', category === c ? 'opacity-100' : 'opacity-0')} />
+                                                <span className="truncate">{c}</span>
+                                            </CommandItem>
+                                        ))}
+                                        {(hasNextCategoryPage || isFetchingNextCategoryPage) && (
+                                            <CommandItem value="__loading__" disabled>
+                                                {isFetchingNextCategoryPage ? 'Loading more...' : 'Scroll to load more'}
+                                            </CommandItem>
+                                        )}
+                                    </CommandGroup>
+                                </CommandList>
+                            </Command>
+                        </PopoverContent>
+                    </Popover>
                     <Select value={limit.toString()} onValueChange={(v) => { setLimit(parseInt(v)); setPage(1); }}>
                         <SelectTrigger className="w-full md:w-[120px]">
                             <SelectValue placeholder="Per page" />

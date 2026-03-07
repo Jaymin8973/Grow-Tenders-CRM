@@ -1,0 +1,134 @@
+[
+  {
+    "id": "search",
+    "name": "",
+    "type": "text",
+    "className": ""
+  },
+  {
+    "id": "languageChange",
+    "name": "",
+    "type": "select-one",
+    "className": ""
+  },
+  {
+    "id": "search",
+    "name": "qs",
+    "type": "text",
+    "className": "suggester-input suggester form-control"
+  },
+  {
+    "id": "search",
+    "name": "q",
+    "type": "text",
+    "className": "simple-input form-control mkpProductSearchText"
+  },
+  {
+    "id": "bno",
+    "name": "bno",
+    "type": "text",
+    "className": "form-control"
+  },
+  {
+    "id": "categorybid",
+    "name": "category",
+    "type": "select-one",
+    "className": "form-control select2 select2-hidden-accessible"
+  },
+  {
+    "id": "from_date_bid",
+    "name": "from_date",
+    "type": "text",
+    "className": "form-control datepicker hasDatepicker"
+  },
+  {
+    "id": "to_date_bid",
+    "name": "to_date",
+    "type": "text",
+    "className": "form-control datepicker hasDatepicker"
+  },
+  {
+    "id": "ministry",
+    "name": "ministry",
+    "type": "select-one",
+    "className": "form-control select2 select2-hidden-accessible"
+  },
+  {
+    "id": "buyer_state",
+    "name": "buyer_state",
+    "type": "select-one",
+    "className": "form-control select2 select2-hidden-accessible"
+  },
+  {
+    "id": "organization",
+    "name": "organization",
+    "type": "select-one",
+    "className": "form-control select2 select2-hidden-accessible"
+  },
+  {
+    "id": "department",
+    "name": "department",
+    "type": "select-one",
+    "className": "form-control select2 select2-hidden-accessible"
+  },
+  {
+    "id": "bidendFromMinistrySearch",
+    "name": "from_date",
+    "type": "text",
+    "className": "form-control datepicker hasDatepicker"
+  },
+  {
+    "id": "bidendToMinistrySearch",
+    "name": "to_date",
+    "type": "text",
+    "className": "form-control datepicker hasDatepicker"
+  },
+  {
+    "id": "state_name_con",
+    "name": "state_name",
+    "type": "select-one",
+    "className": "form-control states"
+  },
+  {
+    "id": "city_name_con",
+    "name": "city_name",
+    "type": "select-one",
+    "className": "form-control citysopt"
+  },
+  {
+    "id": "bidEndFromCon",
+    "name": "from_date",
+    "type": "text",
+    "className": "form-control datepicker hasDatepicker"
+  },
+  {
+    "id": "bidEndToCon",
+    "name": "to_date",
+    "type": "text",
+    "className": "form-control datepicker hasDatepicker"
+  },
+  {
+    "id": "boqtitle_con",
+    "name": "boqtitle",
+    "type": "select-one",
+    "className": "form-control select2 select2-hidden-accessible"
+  },
+  {
+    "id": "bidvalue",
+    "name": "bidvalue",
+    "type": "select-one",
+    "className": "form-control select2 select2-hidden-accessible"
+  },
+  {
+    "id": "bidEndFromBoq",
+    "name": "from_date",
+    "type": "text",
+    "className": "form-control datepicker hasDatepicker"
+  },
+  {
+    "id": "bidEndToBoq",
+    "name": "to_date",
+    "type": "text",
+    "className": "form-control datepicker hasDatepicker"
+  }
+]

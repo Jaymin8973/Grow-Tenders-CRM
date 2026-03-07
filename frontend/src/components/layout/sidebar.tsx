@@ -51,7 +51,7 @@ type NavItem = {
 };
 
 const navigation: NavItem[] = [
-    { name: 'Today', href: '/today', icon: CalendarDays, roles: ['EMPLOYEE'], screenKey: 'today' },
+    { name: 'Today Tasks', href: '/today', icon: CalendarDays, roles: ['EMPLOYEE'], screenKey: 'today' },
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, screenKey: 'dashboard' },
     { name: 'Leads', href: '/leads', icon: UserPlus, screenKey: 'leads' },
     { name: 'Customers', href: '/customers', icon: Users, screenKey: 'customers' },
@@ -92,6 +92,22 @@ export function Sidebar() {
         if (item.roles && !item.roles.includes(user.role)) return false;
         return isAllowedByScreen(item);
     });
+
+    const orderedNavigation = (() => {
+        if (!user) return [] as NavItem[];
+
+        if (user.role === 'EMPLOYEE') {
+            const employeeOrder: ScreenKey[] = ['dashboard', 'today', 'leaderboard', 'leads', 'dailyReports', 'scrapedTenders'];
+            const employeeAllowed = new Set(employeeOrder);
+            const rank = new Map(employeeOrder.map((k, idx) => [k, idx] as const));
+
+            return filteredNavigation
+                .filter((item) => item.screenKey && employeeAllowed.has(item.screenKey))
+                .sort((a, b) => (rank.get(a.screenKey as ScreenKey) ?? 999) - (rank.get(b.screenKey as ScreenKey) ?? 999));
+        }
+
+        return filteredNavigation;
+    })();
 
     const NavLink = ({ item }: { item: NavItem }) => {
         const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
@@ -143,7 +159,7 @@ export function Sidebar() {
             <div className="flex-1 overflow-y-auto px-4 py-6">
                 <div className="space-y-1.5">
                     <div className="space-y-1.5">
-                        {filteredNavigation.map((item) => (
+                        {orderedNavigation.map((item) => (
                             <NavLink key={item.name} item={item} />
                         ))}
                     </div>

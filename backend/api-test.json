@@ -1,0 +1,4520 @@
+{
+  "categorySearches": [
+    {
+      "total": 47555,
+      "docs": [
+        {
+          "id": "9090166",
+          "b_id": [
+            9090166
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638673"
+          ],
+          "b_category_name": [
+            "Fingerprint Elimination Kit"
+          ],
+          "b_total_quantity": [
+            48
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            1
+          ],
+          "b_type": [
+            0
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "Fingerprint Elimination Kit"
+          ],
+          "b_is_custom_item": [
+            0
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7192728"
+          ],
+          "b_id_parent": [
+            8933177
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "home_defe_lawe_fore_fi10251447"
+          ],
+          "b.b_created_by": [
+            "adstore1"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_deptName": [
+            "Home Department Gujarat"
+          ]
+        },
+        {
+          "id": "9090291",
+          "b_id": [
+            9090291
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638689"
+          ],
+          "b_category_name": [
+            "ONION,POTATO,BREAD 400 GM PKT,PANEER,ARVI,BEANS/SEEMS,PARWAL,TORI,BRINJAL,BOTTLE GUARD,CABBAGE,CAUL"
+          ],
+          "b_total_quantity": [
+            534140
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            48
+          ],
+          "b_type": [
+            0
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T16:00:00Z"
+          ],
+          "bd_category_name": [
+            "CARROT,SARSO SAAG,LADY FINGER,MUSHROOM,BEETROOT,JACK FRUIT,SAFAL MATAR,GREEN PEAS,GREEN CHILLI,GINGER,LEMON FRESH,CUCUMBER,GREEN PUMPKIN,CAULIFLOWER,CABBAGE,BOTTLE GUARD,BRINJAL,TORI,PARWAL,BEANS/SEEMS,ARVI,PANEER,BREAD 400 GM PKT,POTATO,GRAPES,EGG,FISH FRESH ROHU/KATLA,CHICKEN ALIVE,MOH/LIVE GOAT MALE,LITCHI,PINE APPLE,PEAR,KHAJOOR,MANGO,KIWI,POMEGRANATE,ONION,MOUSAMBI,ORANGE,GUAVA,APPLE,BANANA,TOMATO,SPINACH,RADISH,SHIMLA MIRCH,GREEN CORIANDER,TITA KARELA"
+          ],
+          "b_is_custom_item": [
+            1
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7208984"
+          ],
+          "b_id_parent": [
+            8951548
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "home_univ_univ_univ_univ"
+          ],
+          "b.b_created_by": [
+            "QUARTERMASTER4THBN"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Home Affairs"
+          ],
+          "ba_official_details_deptName": [
+            "Central Armed Police Forces"
+          ]
+        },
+        {
+          "id": "9090215",
+          "b_id": [
+            9090215
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638679"
+          ],
+          "b_category_name": [
+            "ONION,POTATO,BREAD 400 GM PKT,PANEER,ARVI,BEANS/SEEMS,PARWAL,TORI,BRINJAL,BOTTLE GUARD,CABBAGE,CAUL"
+          ],
+          "b_total_quantity": [
+            44753
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            48
+          ],
+          "b_type": [
+            0
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "CARROT,SARSO SAAG,LADY FINGER,MUSHROOM,BEETROOT,JACK FRUIT,SAFAL MATAR,GREEN PEAS,GREEN CHILLI,GINGER,LEMON FRESH,CUCUMBER,GREEN PUMPKIN,CAULIFLOWER,CABBAGE,BOTTLE GUARD,BRINJAL,TORI,PARWAL,BEANS/SEEMS,ARVI,PANEER,BREAD 400 GM PKT,POTATO,GRAPES,EGG,FISH FRESH ROHU/KATLA,CHICKEN ALIVE,MOH/LIVE GOAT MALE,LITCHI,PINE APPLE,PEAR,KHAJOOR,MANGO,KIWI,POMEGRANATE,ONION,MOUSAMBI,ORANGE,GUAVA,APPLE,BANANA,TOMATO,SPINACH,RADISH,SHIMLA MIRCH,GREEN CORIANDER,TITA KARELA"
+          ],
+          "b_is_custom_item": [
+            1
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7199514"
+          ],
+          "b_id_parent": [
+            8940865
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "home_univ_univ_univ_univ"
+          ],
+          "b.b_created_by": [
+            "QUARTERMASTER4THBN"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Home Affairs"
+          ],
+          "ba_official_details_deptName": [
+            "Central Armed Police Forces"
+          ]
+        },
+        {
+          "id": "9090255",
+          "b_id": [
+            9090255
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638686"
+          ],
+          "b_category_name": [
+            "Hiring of Consultants - Milestone/Deliverable Based - Consultancy services for interior designing f"
+          ],
+          "b_total_quantity": [
+            1
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            1
+          ],
+          "b_type": [
+            1
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "Hiring of Consultants - Milestone/Deliverable Based - Consultancy services for interior designing for provision of 12 x Lieutenant Acommodation at Meerut Cantt under GE (N) Meerut Cantt; Architect - Data; Yes; Onsite"
+          ],
+          "b_is_custom_item": [
+            0
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7209659"
+          ],
+          "b_id_parent": [
+            8952379
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "services_home_pr22455282_hi85156607"
+          ],
+          "b.b_created_by": [
+            "sbso1@mrt2"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Defence"
+          ],
+          "ba_official_details_deptName": [
+            "Department of Military Affairs"
+          ]
+        },
+        {
+          "id": "9090354",
+          "b_id": [
+            9090354
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638695"
+          ],
+          "b_category_name": [
+            "Office Suite Software (V3)"
+          ],
+          "b_total_quantity": [
+            17
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            1
+          ],
+          "b_type": [
+            0
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "Office Suite Software (V3)"
+          ],
+          "b_is_custom_item": [
+            0
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7139131"
+          ],
+          "b_id_parent": [
+            8872216
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "home_info_soft_busi_of40668882"
+          ],
+          "b.b_created_by": [
+            "rajneeshb"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Defence"
+          ],
+          "ba_official_details_deptName": [
+            "Department of Defence"
+          ]
+        },
+        {
+          "id": "9090403",
+          "b_id": [
+            9090403
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638703"
+          ],
+          "b_category_name": [
+            "High End Desktop Computer"
+          ],
+          "b_total_quantity": [
+            8
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            1
+          ],
+          "b_type": [
+            0
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "High End Desktop Computer"
+          ],
+          "b_is_custom_item": [
+            0
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7264098"
+          ],
+          "b_id_parent": [
+            9014192
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "home_info_comp_comp_mida"
+          ],
+          "b.b_created_by": [
+            "adjut11MADRAS"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Defence"
+          ],
+          "ba_official_details_deptName": [
+            "Department of Military Affairs"
+          ]
+        },
+        {
+          "id": "9090389",
+          "b_id": [
+            9090389
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638702"
+          ],
+          "b_category_name": [
+            "Sequential Timers. as per detailed specification.,Dual Display Multifunction. as per detailed speci"
+          ],
+          "b_total_quantity": [
+            35
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            3
+          ],
+          "b_type": [
+            0
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            1
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "b_is_custom_item": [
+            1
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7121527"
+          ],
+          "b_id_parent": [
+            8851756
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "home_univ_univ_univ_univ"
+          ],
+          "b.b_created_by": [
+            "pravatchandra@hal-india.com"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Defence"
+          ],
+          "ba_official_details_deptName": [
+            "Department of Defence Production"
+          ]
+        },
+        {
+          "id": "9090388",
+          "b_id": [
+            9090388
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638701"
+          ],
+          "b_category_name": [
+            "High End Laptop - Notebook,Ultraportable PC Unix system"
+          ],
+          "b_total_quantity": [
+            3
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            2
+          ],
+          "b_type": [
+            0
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "High End Laptop - Notebook,Ultraportable PC Unix system"
+          ],
+          "b_is_custom_item": [
+            1
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7289120"
+          ],
+          "b_id_parent": [
+            9042889
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "home_info_comp_comp_hi86310775,home_univ_univ_univ_univ"
+          ],
+          "b.b_created_by": [
+            "GSO1@AKP"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Defence"
+          ],
+          "ba_official_details_deptName": [
+            "Department of Military Affairs"
+          ]
+        },
+        {
+          "id": "9090385",
+          "b_id": [
+            9090385
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638700"
+          ],
+          "b_category_name": [
+            "Mobile Filtration Plant with Movable Trolley"
+          ],
+          "b_total_quantity": [
+            1
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            1
+          ],
+          "b_type": [
+            0
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "Mobile Filtration Plant with Movable Trolley"
+          ],
+          "b_is_custom_item": [
+            1
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7270752"
+          ],
+          "b_id_parent": [
+            9021759
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "home_univ_univ_univ_univ"
+          ],
+          "b.b_created_by": [
+            "CT_TRGOFFR"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Defence"
+          ],
+          "ba_official_details_deptName": [
+            "Department of Military Affairs"
+          ]
+        },
+        {
+          "id": "9090376",
+          "b_id": [
+            9090376
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638699"
+          ],
+          "b_category_name": [
+            "Repair and Overhauling Service - cars; TATA MOTORS; Yes; Buyer Premises"
+          ],
+          "b_total_quantity": [
+            1
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            1
+          ],
+          "b_type": [
+            1
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "Repair and Overhauling Service - cars; TATA MOTORS; Yes; Buyer Premises"
+          ],
+          "b_is_custom_item": [
+            0
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7214020"
+          ],
+          "b_id_parent": [
+            8957523
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "services_home_gene"
+          ],
+          "b.b_created_by": [
+            "BSOMCTE1"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Defence"
+          ],
+          "ba_official_details_deptName": [
+            "Department of Military Affairs"
+          ]
+        }
+      ]
+    },
+    {
+      "total": 47555,
+      "docs": [
+        {
+          "id": "9090166",
+          "b_id": [
+            9090166
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638673"
+          ],
+          "b_category_name": [
+            "Fingerprint Elimination Kit"
+          ],
+          "b_total_quantity": [
+            48
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            1
+          ],
+          "b_type": [
+            0
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "Fingerprint Elimination Kit"
+          ],
+          "b_is_custom_item": [
+            0
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7192728"
+          ],
+          "b_id_parent": [
+            8933177
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "home_defe_lawe_fore_fi10251447"
+          ],
+          "b.b_created_by": [
+            "adstore1"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_deptName": [
+            "Home Department Gujarat"
+          ]
+        },
+        {
+          "id": "9090181",
+          "b_id": [
+            9090181
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638676"
+          ],
+          "b_category_name": [
+            "High-Torque 2807 Brushless Motor (1350KV)"
+          ],
+          "b_total_quantity": [
+            7
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            1
+          ],
+          "b_type": [
+            0
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-10T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "High-Torque 2807 Brushless Motor (1350KV)"
+          ],
+          "b_is_custom_item": [
+            1
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7275110"
+          ],
+          "b_id_parent": [
+            9026786
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "home_univ_univ_univ_univ"
+          ],
+          "b.b_created_by": [
+            "Mayank.25Madras"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Defence"
+          ],
+          "ba_official_details_deptName": [
+            "Department of Military Affairs"
+          ]
+        },
+        {
+          "id": "9090172",
+          "b_id": [
+            9090172
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638675"
+          ],
+          "b_category_name": [
+            "Custom Bid for Services - Supply  Installation & Maintenance of Refractories for 20 sets of Hot Met"
+          ],
+          "b_total_quantity": [
+            1
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            1
+          ],
+          "b_type": [
+            1
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "Custom Bid for Services - Supply  Installation & Maintenance of Refractories for 20 sets of Hot Metal Ladle for SMS for 3 MTPA Integrated Steel Plant at Nagarnar near Jagdalpur Chhattisgarh state"
+          ],
+          "b_is_custom_item": [
+            0
+          ],
+          "b_bid_number_parent": [
+            "GEM/2025/B/6845470"
+          ],
+          "b_id_parent": [
+            8536203
+          ],
+          "is_high_value": [
+            true
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "services_home_cust"
+          ],
+          "b.b_created_by": [
+            "PANKAJS@NSL"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Steel"
+          ],
+          "ba_official_details_deptName": [
+            "NMDC STEEL Limited"
+          ]
+        },
+        {
+          "id": "9090171",
+          "b_id": [
+            9090171
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638674"
+          ],
+          "b_category_name": [
+            "Rowing Boat"
+          ],
+          "b_total_quantity": [
+            2
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            1
+          ],
+          "b_type": [
+            0
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "Rowing Boat"
+          ],
+          "b_is_custom_item": [
+            0
+          ],
+          "b_bid_number_parent": [
+            "GEM/2025/B/7034399"
+          ],
+          "b_id_parent": [
+            8751558
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "home_comm_mari_comm_ro78313847"
+          ],
+          "b.b_created_by": [
+            "NTTLOGO2023"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Defence"
+          ],
+          "ba_official_details_deptName": [
+            "Department of Military Affairs"
+          ]
+        },
+        {
+          "id": "9090163",
+          "b_id": [
+            9090163
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638672"
+          ],
+          "b_category_name": [
+            "Monthly Basis Cab & Taxi Hiring Services - MUV; 2400 KM X 240 HOURS; Local 24*7"
+          ],
+          "b_total_quantity": [
+            1
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            1
+          ],
+          "b_type": [
+            1
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "Monthly Basis Cab & Taxi Hiring Services - MUV; 2400 KM X 240 HOURS; Local 24*7"
+          ],
+          "b_is_custom_item": [
+            0
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7228878"
+          ],
+          "b_id_parent": [
+            8974272
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "services_home_ve54336454_mont"
+          ],
+          "b.b_created_by": [
+            "buyerpbangalore"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Defence"
+          ],
+          "ba_official_details_deptName": [
+            "Department of Military Affairs"
+          ]
+        },
+        {
+          "id": "9090157",
+          "b_id": [
+            9090157
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638671"
+          ],
+          "b_category_name": [
+            "welding set (motor-generator type) 3 phase, 320 A capacity as per specification in annexure A"
+          ],
+          "b_total_quantity": [
+            1
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            1
+          ],
+          "b_type": [
+            0
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "welding set (motor-generator type) 3 phase, 320 A capacity as per specification in annexure A"
+          ],
+          "b_is_custom_item": [
+            1
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7067306"
+          ],
+          "b_id_parent": [
+            8789944
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "home_univ_univ_univ_univ"
+          ],
+          "b.b_created_by": [
+            "ajaybehera.ofb"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Defence"
+          ],
+          "ba_official_details_deptName": [
+            "Department of Defence Production"
+          ]
+        },
+        {
+          "id": "9090152",
+          "b_id": [
+            9090152
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638670"
+          ],
+          "b_category_name": [
+            "Repair, Maintenance, and Installation of Plant/ Systems/Equipments (Version 2) - Manufacturing Unit"
+          ],
+          "b_total_quantity": [
+            1
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            1
+          ],
+          "b_type": [
+            1
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T17:00:00Z"
+          ],
+          "bd_category_name": [
+            "Repair, Maintenance, and Installation of Plant/ Systems/Equipments (Version 2) - Manufacturing Unit; Biennial rate contract for Maintenance jobs on Exhausters and Fabrication  Erection of Fumes Exhauster cooler exhauster casing suction box etc in Sup.."
+          ],
+          "b_is_custom_item": [
+            0
+          ],
+          "b_bid_number_parent": [
+            "GEM/2025/B/6706036"
+          ],
+          "b_id_parent": [
+            8376639
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "services_home_repa_re22373363"
+          ],
+          "b.b_created_by": [
+            "RCF_TR_CC1"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Chemicals and Fertilizers"
+          ],
+          "ba_official_details_deptName": [
+            "Department of Fertilizers"
+          ]
+        },
+        {
+          "id": "9090131",
+          "b_id": [
+            9090131
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638669"
+          ],
+          "b_category_name": [
+            "SLEEVE OF CHUCK C2M FORGING PROOF MACHINED,SPINDLE C2R FORGING PROOF MACHINED,SHAFT C2R FORGING PRO"
+          ],
+          "b_total_quantity": [
+            29
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            9
+          ],
+          "b_type": [
+            0
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "SLEEVE OF CHUCK C2M FORGING PROOF MACHINED,SPINDLE C2R FORGING PROOF MACHINED,SHAFT C2R FORGING PROOF MACHINED,FRONT FLANGE,REAR FLANGE FORGING,WHEEL FLANGE FORGING,WHEEL FLANGE,C3R FORGING,PRE MACHING FORGING FOR SPINDLE"
+          ],
+          "b_is_custom_item": [
+            0
+          ],
+          "b_bid_number_parent": [
+            "GEM/2025/B/6720391"
+          ],
+          "b_id_parent": [
+            8393218
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "home_boq_boql_boql_boq"
+          ],
+          "b.b_created_by": [
+            "ajbuycon"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Heavy Industries and Public Enterprises"
+          ],
+          "ba_official_details_deptName": [
+            "Department of Heavy Industry"
+          ],
+          "bd_details_is_boq": [
+            true
+          ],
+          "bd_details_new_boq": [
+            true
+          ]
+        },
+        {
+          "id": "9090126",
+          "b_id": [
+            9090126
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638668"
+          ],
+          "b_category_name": [
+            "SWITCH ENG CONTROL ROTARY,TRANSFORMER 10AMP 230V,SLIPPING ASSY,BEARING NON DRIVEN END,HEAT SINK ELE"
+          ],
+          "b_total_quantity": [
+            14
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            7
+          ],
+          "b_type": [
+            0
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "SWITCH ENG CONTROL ROTARY,TRANSFORMER 10AMP 230V,SLIPPING ASSY,BEARING NON DRIVEN END,HEAT SINK ELECT TYPE K1,DIODE SEMICONDUCTOR DEVICE TYPE 44 FMR 100,TRANSFORMER 20AMP 230V"
+          ],
+          "b_is_custom_item": [
+            0
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7288340"
+          ],
+          "b_id_parent": [
+            9042032
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "home_boq_boql_boql_boq"
+          ],
+          "b.b_created_by": [
+            "wkspoffr870"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Defence"
+          ],
+          "ba_official_details_deptName": [
+            "Department of Military Affairs"
+          ],
+          "bd_details_is_boq": [
+            true
+          ],
+          "bd_details_new_boq": [
+            true
+          ]
+        },
+        {
+          "id": "9090115",
+          "b_id": [
+            9090115
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638667"
+          ],
+          "b_category_name": [
+            "Selection of Laboratories for Testing of Products/Material - Soil; Soil testing complete all as spe"
+          ],
+          "b_total_quantity": [
+            1
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            1
+          ],
+          "b_type": [
+            1
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "Selection of Laboratories for Testing of Products/Material - Soil; Soil testing complete all as specified computation of bearing capacity for buildings; Meter; Civil"
+          ],
+          "b_is_custom_item": [
+            0
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7282060"
+          ],
+          "b_id_parent": [
+            9034964
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "services_home_test_sele"
+          ],
+          "b.b_created_by": [
+            "SBSOpgh"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Defence"
+          ],
+          "ba_official_details_deptName": [
+            "Department of Military Affairs"
+          ]
+        }
+      ]
+    }
+  ],
+  "citySearches": [
+    {
+      "total": 47555,
+      "docs": [
+        {
+          "id": "9090166",
+          "b_id": [
+            9090166
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638673"
+          ],
+          "b_category_name": [
+            "Fingerprint Elimination Kit"
+          ],
+          "b_total_quantity": [
+            48
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            1
+          ],
+          "b_type": [
+            0
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "Fingerprint Elimination Kit"
+          ],
+          "b_is_custom_item": [
+            0
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7192728"
+          ],
+          "b_id_parent": [
+            8933177
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "home_defe_lawe_fore_fi10251447"
+          ],
+          "b.b_created_by": [
+            "adstore1"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_deptName": [
+            "Home Department Gujarat"
+          ]
+        },
+        {
+          "id": "9090291",
+          "b_id": [
+            9090291
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638689"
+          ],
+          "b_category_name": [
+            "ONION,POTATO,BREAD 400 GM PKT,PANEER,ARVI,BEANS/SEEMS,PARWAL,TORI,BRINJAL,BOTTLE GUARD,CABBAGE,CAUL"
+          ],
+          "b_total_quantity": [
+            534140
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            48
+          ],
+          "b_type": [
+            0
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T16:00:00Z"
+          ],
+          "bd_category_name": [
+            "CARROT,SARSO SAAG,LADY FINGER,MUSHROOM,BEETROOT,JACK FRUIT,SAFAL MATAR,GREEN PEAS,GREEN CHILLI,GINGER,LEMON FRESH,CUCUMBER,GREEN PUMPKIN,CAULIFLOWER,CABBAGE,BOTTLE GUARD,BRINJAL,TORI,PARWAL,BEANS/SEEMS,ARVI,PANEER,BREAD 400 GM PKT,POTATO,GRAPES,EGG,FISH FRESH ROHU/KATLA,CHICKEN ALIVE,MOH/LIVE GOAT MALE,LITCHI,PINE APPLE,PEAR,KHAJOOR,MANGO,KIWI,POMEGRANATE,ONION,MOUSAMBI,ORANGE,GUAVA,APPLE,BANANA,TOMATO,SPINACH,RADISH,SHIMLA MIRCH,GREEN CORIANDER,TITA KARELA"
+          ],
+          "b_is_custom_item": [
+            1
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7208984"
+          ],
+          "b_id_parent": [
+            8951548
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "home_univ_univ_univ_univ"
+          ],
+          "b.b_created_by": [
+            "QUARTERMASTER4THBN"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Home Affairs"
+          ],
+          "ba_official_details_deptName": [
+            "Central Armed Police Forces"
+          ]
+        },
+        {
+          "id": "9090215",
+          "b_id": [
+            9090215
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638679"
+          ],
+          "b_category_name": [
+            "ONION,POTATO,BREAD 400 GM PKT,PANEER,ARVI,BEANS/SEEMS,PARWAL,TORI,BRINJAL,BOTTLE GUARD,CABBAGE,CAUL"
+          ],
+          "b_total_quantity": [
+            44753
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            48
+          ],
+          "b_type": [
+            0
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "CARROT,SARSO SAAG,LADY FINGER,MUSHROOM,BEETROOT,JACK FRUIT,SAFAL MATAR,GREEN PEAS,GREEN CHILLI,GINGER,LEMON FRESH,CUCUMBER,GREEN PUMPKIN,CAULIFLOWER,CABBAGE,BOTTLE GUARD,BRINJAL,TORI,PARWAL,BEANS/SEEMS,ARVI,PANEER,BREAD 400 GM PKT,POTATO,GRAPES,EGG,FISH FRESH ROHU/KATLA,CHICKEN ALIVE,MOH/LIVE GOAT MALE,LITCHI,PINE APPLE,PEAR,KHAJOOR,MANGO,KIWI,POMEGRANATE,ONION,MOUSAMBI,ORANGE,GUAVA,APPLE,BANANA,TOMATO,SPINACH,RADISH,SHIMLA MIRCH,GREEN CORIANDER,TITA KARELA"
+          ],
+          "b_is_custom_item": [
+            1
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7199514"
+          ],
+          "b_id_parent": [
+            8940865
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "home_univ_univ_univ_univ"
+          ],
+          "b.b_created_by": [
+            "QUARTERMASTER4THBN"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Home Affairs"
+          ],
+          "ba_official_details_deptName": [
+            "Central Armed Police Forces"
+          ]
+        },
+        {
+          "id": "9090255",
+          "b_id": [
+            9090255
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638686"
+          ],
+          "b_category_name": [
+            "Hiring of Consultants - Milestone/Deliverable Based - Consultancy services for interior designing f"
+          ],
+          "b_total_quantity": [
+            1
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            1
+          ],
+          "b_type": [
+            1
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "Hiring of Consultants - Milestone/Deliverable Based - Consultancy services for interior designing for provision of 12 x Lieutenant Acommodation at Meerut Cantt under GE (N) Meerut Cantt; Architect - Data; Yes; Onsite"
+          ],
+          "b_is_custom_item": [
+            0
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7209659"
+          ],
+          "b_id_parent": [
+            8952379
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "services_home_pr22455282_hi85156607"
+          ],
+          "b.b_created_by": [
+            "sbso1@mrt2"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Defence"
+          ],
+          "ba_official_details_deptName": [
+            "Department of Military Affairs"
+          ]
+        },
+        {
+          "id": "9090354",
+          "b_id": [
+            9090354
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638695"
+          ],
+          "b_category_name": [
+            "Office Suite Software (V3)"
+          ],
+          "b_total_quantity": [
+            17
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            1
+          ],
+          "b_type": [
+            0
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "Office Suite Software (V3)"
+          ],
+          "b_is_custom_item": [
+            0
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7139131"
+          ],
+          "b_id_parent": [
+            8872216
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "home_info_soft_busi_of40668882"
+          ],
+          "b.b_created_by": [
+            "rajneeshb"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Defence"
+          ],
+          "ba_official_details_deptName": [
+            "Department of Defence"
+          ]
+        },
+        {
+          "id": "9090403",
+          "b_id": [
+            9090403
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638703"
+          ],
+          "b_category_name": [
+            "High End Desktop Computer"
+          ],
+          "b_total_quantity": [
+            8
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            1
+          ],
+          "b_type": [
+            0
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "High End Desktop Computer"
+          ],
+          "b_is_custom_item": [
+            0
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7264098"
+          ],
+          "b_id_parent": [
+            9014192
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "home_info_comp_comp_mida"
+          ],
+          "b.b_created_by": [
+            "adjut11MADRAS"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Defence"
+          ],
+          "ba_official_details_deptName": [
+            "Department of Military Affairs"
+          ]
+        },
+        {
+          "id": "9090389",
+          "b_id": [
+            9090389
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638702"
+          ],
+          "b_category_name": [
+            "Sequential Timers. as per detailed specification.,Dual Display Multifunction. as per detailed speci"
+          ],
+          "b_total_quantity": [
+            35
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            3
+          ],
+          "b_type": [
+            0
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            1
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "b_is_custom_item": [
+            1
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7121527"
+          ],
+          "b_id_parent": [
+            8851756
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "home_univ_univ_univ_univ"
+          ],
+          "b.b_created_by": [
+            "pravatchandra@hal-india.com"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Defence"
+          ],
+          "ba_official_details_deptName": [
+            "Department of Defence Production"
+          ]
+        },
+        {
+          "id": "9090388",
+          "b_id": [
+            9090388
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638701"
+          ],
+          "b_category_name": [
+            "High End Laptop - Notebook,Ultraportable PC Unix system"
+          ],
+          "b_total_quantity": [
+            3
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            2
+          ],
+          "b_type": [
+            0
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "High End Laptop - Notebook,Ultraportable PC Unix system"
+          ],
+          "b_is_custom_item": [
+            1
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7289120"
+          ],
+          "b_id_parent": [
+            9042889
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "home_info_comp_comp_hi86310775,home_univ_univ_univ_univ"
+          ],
+          "b.b_created_by": [
+            "GSO1@AKP"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Defence"
+          ],
+          "ba_official_details_deptName": [
+            "Department of Military Affairs"
+          ]
+        },
+        {
+          "id": "9090385",
+          "b_id": [
+            9090385
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638700"
+          ],
+          "b_category_name": [
+            "Mobile Filtration Plant with Movable Trolley"
+          ],
+          "b_total_quantity": [
+            1
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            1
+          ],
+          "b_type": [
+            0
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "Mobile Filtration Plant with Movable Trolley"
+          ],
+          "b_is_custom_item": [
+            1
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7270752"
+          ],
+          "b_id_parent": [
+            9021759
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "home_univ_univ_univ_univ"
+          ],
+          "b.b_created_by": [
+            "CT_TRGOFFR"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Defence"
+          ],
+          "ba_official_details_deptName": [
+            "Department of Military Affairs"
+          ]
+        },
+        {
+          "id": "9090376",
+          "b_id": [
+            9090376
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638699"
+          ],
+          "b_category_name": [
+            "Repair and Overhauling Service - cars; TATA MOTORS; Yes; Buyer Premises"
+          ],
+          "b_total_quantity": [
+            1
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            1
+          ],
+          "b_type": [
+            1
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "Repair and Overhauling Service - cars; TATA MOTORS; Yes; Buyer Premises"
+          ],
+          "b_is_custom_item": [
+            0
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7214020"
+          ],
+          "b_id_parent": [
+            8957523
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "services_home_gene"
+          ],
+          "b.b_created_by": [
+            "BSOMCTE1"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Defence"
+          ],
+          "ba_official_details_deptName": [
+            "Department of Military Affairs"
+          ]
+        }
+      ]
+    }
+  ],
+  "boqSearches": [
+    {
+      "total": 47555,
+      "docs": [
+        {
+          "id": "9090166",
+          "b_id": [
+            9090166
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638673"
+          ],
+          "b_category_name": [
+            "Fingerprint Elimination Kit"
+          ],
+          "b_total_quantity": [
+            48
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            1
+          ],
+          "b_type": [
+            0
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "Fingerprint Elimination Kit"
+          ],
+          "b_is_custom_item": [
+            0
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7192728"
+          ],
+          "b_id_parent": [
+            8933177
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "home_defe_lawe_fore_fi10251447"
+          ],
+          "b.b_created_by": [
+            "adstore1"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_deptName": [
+            "Home Department Gujarat"
+          ]
+        },
+        {
+          "id": "9090291",
+          "b_id": [
+            9090291
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638689"
+          ],
+          "b_category_name": [
+            "ONION,POTATO,BREAD 400 GM PKT,PANEER,ARVI,BEANS/SEEMS,PARWAL,TORI,BRINJAL,BOTTLE GUARD,CABBAGE,CAUL"
+          ],
+          "b_total_quantity": [
+            534140
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            48
+          ],
+          "b_type": [
+            0
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T16:00:00Z"
+          ],
+          "bd_category_name": [
+            "CARROT,SARSO SAAG,LADY FINGER,MUSHROOM,BEETROOT,JACK FRUIT,SAFAL MATAR,GREEN PEAS,GREEN CHILLI,GINGER,LEMON FRESH,CUCUMBER,GREEN PUMPKIN,CAULIFLOWER,CABBAGE,BOTTLE GUARD,BRINJAL,TORI,PARWAL,BEANS/SEEMS,ARVI,PANEER,BREAD 400 GM PKT,POTATO,GRAPES,EGG,FISH FRESH ROHU/KATLA,CHICKEN ALIVE,MOH/LIVE GOAT MALE,LITCHI,PINE APPLE,PEAR,KHAJOOR,MANGO,KIWI,POMEGRANATE,ONION,MOUSAMBI,ORANGE,GUAVA,APPLE,BANANA,TOMATO,SPINACH,RADISH,SHIMLA MIRCH,GREEN CORIANDER,TITA KARELA"
+          ],
+          "b_is_custom_item": [
+            1
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7208984"
+          ],
+          "b_id_parent": [
+            8951548
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "home_univ_univ_univ_univ"
+          ],
+          "b.b_created_by": [
+            "QUARTERMASTER4THBN"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Home Affairs"
+          ],
+          "ba_official_details_deptName": [
+            "Central Armed Police Forces"
+          ]
+        },
+        {
+          "id": "9090215",
+          "b_id": [
+            9090215
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638679"
+          ],
+          "b_category_name": [
+            "ONION,POTATO,BREAD 400 GM PKT,PANEER,ARVI,BEANS/SEEMS,PARWAL,TORI,BRINJAL,BOTTLE GUARD,CABBAGE,CAUL"
+          ],
+          "b_total_quantity": [
+            44753
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            48
+          ],
+          "b_type": [
+            0
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "CARROT,SARSO SAAG,LADY FINGER,MUSHROOM,BEETROOT,JACK FRUIT,SAFAL MATAR,GREEN PEAS,GREEN CHILLI,GINGER,LEMON FRESH,CUCUMBER,GREEN PUMPKIN,CAULIFLOWER,CABBAGE,BOTTLE GUARD,BRINJAL,TORI,PARWAL,BEANS/SEEMS,ARVI,PANEER,BREAD 400 GM PKT,POTATO,GRAPES,EGG,FISH FRESH ROHU/KATLA,CHICKEN ALIVE,MOH/LIVE GOAT MALE,LITCHI,PINE APPLE,PEAR,KHAJOOR,MANGO,KIWI,POMEGRANATE,ONION,MOUSAMBI,ORANGE,GUAVA,APPLE,BANANA,TOMATO,SPINACH,RADISH,SHIMLA MIRCH,GREEN CORIANDER,TITA KARELA"
+          ],
+          "b_is_custom_item": [
+            1
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7199514"
+          ],
+          "b_id_parent": [
+            8940865
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "home_univ_univ_univ_univ"
+          ],
+          "b.b_created_by": [
+            "QUARTERMASTER4THBN"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Home Affairs"
+          ],
+          "ba_official_details_deptName": [
+            "Central Armed Police Forces"
+          ]
+        },
+        {
+          "id": "9090255",
+          "b_id": [
+            9090255
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638686"
+          ],
+          "b_category_name": [
+            "Hiring of Consultants - Milestone/Deliverable Based - Consultancy services for interior designing f"
+          ],
+          "b_total_quantity": [
+            1
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            1
+          ],
+          "b_type": [
+            1
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "Hiring of Consultants - Milestone/Deliverable Based - Consultancy services for interior designing for provision of 12 x Lieutenant Acommodation at Meerut Cantt under GE (N) Meerut Cantt; Architect - Data; Yes; Onsite"
+          ],
+          "b_is_custom_item": [
+            0
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7209659"
+          ],
+          "b_id_parent": [
+            8952379
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "services_home_pr22455282_hi85156607"
+          ],
+          "b.b_created_by": [
+            "sbso1@mrt2"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Defence"
+          ],
+          "ba_official_details_deptName": [
+            "Department of Military Affairs"
+          ]
+        },
+        {
+          "id": "9090354",
+          "b_id": [
+            9090354
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638695"
+          ],
+          "b_category_name": [
+            "Office Suite Software (V3)"
+          ],
+          "b_total_quantity": [
+            17
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            1
+          ],
+          "b_type": [
+            0
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "Office Suite Software (V3)"
+          ],
+          "b_is_custom_item": [
+            0
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7139131"
+          ],
+          "b_id_parent": [
+            8872216
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "home_info_soft_busi_of40668882"
+          ],
+          "b.b_created_by": [
+            "rajneeshb"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Defence"
+          ],
+          "ba_official_details_deptName": [
+            "Department of Defence"
+          ]
+        },
+        {
+          "id": "9090403",
+          "b_id": [
+            9090403
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638703"
+          ],
+          "b_category_name": [
+            "High End Desktop Computer"
+          ],
+          "b_total_quantity": [
+            8
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            1
+          ],
+          "b_type": [
+            0
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "High End Desktop Computer"
+          ],
+          "b_is_custom_item": [
+            0
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7264098"
+          ],
+          "b_id_parent": [
+            9014192
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "home_info_comp_comp_mida"
+          ],
+          "b.b_created_by": [
+            "adjut11MADRAS"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Defence"
+          ],
+          "ba_official_details_deptName": [
+            "Department of Military Affairs"
+          ]
+        },
+        {
+          "id": "9090389",
+          "b_id": [
+            9090389
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638702"
+          ],
+          "b_category_name": [
+            "Sequential Timers. as per detailed specification.,Dual Display Multifunction. as per detailed speci"
+          ],
+          "b_total_quantity": [
+            35
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            3
+          ],
+          "b_type": [
+            0
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            1
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "b_is_custom_item": [
+            1
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7121527"
+          ],
+          "b_id_parent": [
+            8851756
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "home_univ_univ_univ_univ"
+          ],
+          "b.b_created_by": [
+            "pravatchandra@hal-india.com"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Defence"
+          ],
+          "ba_official_details_deptName": [
+            "Department of Defence Production"
+          ]
+        },
+        {
+          "id": "9090388",
+          "b_id": [
+            9090388
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638701"
+          ],
+          "b_category_name": [
+            "High End Laptop - Notebook,Ultraportable PC Unix system"
+          ],
+          "b_total_quantity": [
+            3
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            2
+          ],
+          "b_type": [
+            0
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "High End Laptop - Notebook,Ultraportable PC Unix system"
+          ],
+          "b_is_custom_item": [
+            1
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7289120"
+          ],
+          "b_id_parent": [
+            9042889
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "home_info_comp_comp_hi86310775,home_univ_univ_univ_univ"
+          ],
+          "b.b_created_by": [
+            "GSO1@AKP"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Defence"
+          ],
+          "ba_official_details_deptName": [
+            "Department of Military Affairs"
+          ]
+        },
+        {
+          "id": "9090385",
+          "b_id": [
+            9090385
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638700"
+          ],
+          "b_category_name": [
+            "Mobile Filtration Plant with Movable Trolley"
+          ],
+          "b_total_quantity": [
+            1
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            1
+          ],
+          "b_type": [
+            0
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "Mobile Filtration Plant with Movable Trolley"
+          ],
+          "b_is_custom_item": [
+            1
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7270752"
+          ],
+          "b_id_parent": [
+            9021759
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "home_univ_univ_univ_univ"
+          ],
+          "b.b_created_by": [
+            "CT_TRGOFFR"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Defence"
+          ],
+          "ba_official_details_deptName": [
+            "Department of Military Affairs"
+          ]
+        },
+        {
+          "id": "9090376",
+          "b_id": [
+            9090376
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638699"
+          ],
+          "b_category_name": [
+            "Repair and Overhauling Service - cars; TATA MOTORS; Yes; Buyer Premises"
+          ],
+          "b_total_quantity": [
+            1
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            1
+          ],
+          "b_type": [
+            1
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "Repair and Overhauling Service - cars; TATA MOTORS; Yes; Buyer Premises"
+          ],
+          "b_is_custom_item": [
+            0
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7214020"
+          ],
+          "b_id_parent": [
+            8957523
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "services_home_gene"
+          ],
+          "b.b_created_by": [
+            "BSOMCTE1"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Defence"
+          ],
+          "ba_official_details_deptName": [
+            "Department of Military Affairs"
+          ]
+        }
+      ]
+    }
+  ],
+  "consigneeLocation": [
+    {
+      "total": 47555,
+      "docs": [
+        {
+          "id": "9090166",
+          "b_id": [
+            9090166
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638673"
+          ],
+          "b_category_name": [
+            "Fingerprint Elimination Kit"
+          ],
+          "b_total_quantity": [
+            48
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            1
+          ],
+          "b_type": [
+            0
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "Fingerprint Elimination Kit"
+          ],
+          "b_is_custom_item": [
+            0
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7192728"
+          ],
+          "b_id_parent": [
+            8933177
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "home_defe_lawe_fore_fi10251447"
+          ],
+          "b.b_created_by": [
+            "adstore1"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_deptName": [
+            "Home Department Gujarat"
+          ]
+        },
+        {
+          "id": "9090291",
+          "b_id": [
+            9090291
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638689"
+          ],
+          "b_category_name": [
+            "ONION,POTATO,BREAD 400 GM PKT,PANEER,ARVI,BEANS/SEEMS,PARWAL,TORI,BRINJAL,BOTTLE GUARD,CABBAGE,CAUL"
+          ],
+          "b_total_quantity": [
+            534140
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            48
+          ],
+          "b_type": [
+            0
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T16:00:00Z"
+          ],
+          "bd_category_name": [
+            "CARROT,SARSO SAAG,LADY FINGER,MUSHROOM,BEETROOT,JACK FRUIT,SAFAL MATAR,GREEN PEAS,GREEN CHILLI,GINGER,LEMON FRESH,CUCUMBER,GREEN PUMPKIN,CAULIFLOWER,CABBAGE,BOTTLE GUARD,BRINJAL,TORI,PARWAL,BEANS/SEEMS,ARVI,PANEER,BREAD 400 GM PKT,POTATO,GRAPES,EGG,FISH FRESH ROHU/KATLA,CHICKEN ALIVE,MOH/LIVE GOAT MALE,LITCHI,PINE APPLE,PEAR,KHAJOOR,MANGO,KIWI,POMEGRANATE,ONION,MOUSAMBI,ORANGE,GUAVA,APPLE,BANANA,TOMATO,SPINACH,RADISH,SHIMLA MIRCH,GREEN CORIANDER,TITA KARELA"
+          ],
+          "b_is_custom_item": [
+            1
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7208984"
+          ],
+          "b_id_parent": [
+            8951548
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "home_univ_univ_univ_univ"
+          ],
+          "b.b_created_by": [
+            "QUARTERMASTER4THBN"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Home Affairs"
+          ],
+          "ba_official_details_deptName": [
+            "Central Armed Police Forces"
+          ]
+        },
+        {
+          "id": "9090215",
+          "b_id": [
+            9090215
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638679"
+          ],
+          "b_category_name": [
+            "ONION,POTATO,BREAD 400 GM PKT,PANEER,ARVI,BEANS/SEEMS,PARWAL,TORI,BRINJAL,BOTTLE GUARD,CABBAGE,CAUL"
+          ],
+          "b_total_quantity": [
+            44753
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            48
+          ],
+          "b_type": [
+            0
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "CARROT,SARSO SAAG,LADY FINGER,MUSHROOM,BEETROOT,JACK FRUIT,SAFAL MATAR,GREEN PEAS,GREEN CHILLI,GINGER,LEMON FRESH,CUCUMBER,GREEN PUMPKIN,CAULIFLOWER,CABBAGE,BOTTLE GUARD,BRINJAL,TORI,PARWAL,BEANS/SEEMS,ARVI,PANEER,BREAD 400 GM PKT,POTATO,GRAPES,EGG,FISH FRESH ROHU/KATLA,CHICKEN ALIVE,MOH/LIVE GOAT MALE,LITCHI,PINE APPLE,PEAR,KHAJOOR,MANGO,KIWI,POMEGRANATE,ONION,MOUSAMBI,ORANGE,GUAVA,APPLE,BANANA,TOMATO,SPINACH,RADISH,SHIMLA MIRCH,GREEN CORIANDER,TITA KARELA"
+          ],
+          "b_is_custom_item": [
+            1
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7199514"
+          ],
+          "b_id_parent": [
+            8940865
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "home_univ_univ_univ_univ"
+          ],
+          "b.b_created_by": [
+            "QUARTERMASTER4THBN"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Home Affairs"
+          ],
+          "ba_official_details_deptName": [
+            "Central Armed Police Forces"
+          ]
+        },
+        {
+          "id": "9090255",
+          "b_id": [
+            9090255
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638686"
+          ],
+          "b_category_name": [
+            "Hiring of Consultants - Milestone/Deliverable Based - Consultancy services for interior designing f"
+          ],
+          "b_total_quantity": [
+            1
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            1
+          ],
+          "b_type": [
+            1
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "Hiring of Consultants - Milestone/Deliverable Based - Consultancy services for interior designing for provision of 12 x Lieutenant Acommodation at Meerut Cantt under GE (N) Meerut Cantt; Architect - Data; Yes; Onsite"
+          ],
+          "b_is_custom_item": [
+            0
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7209659"
+          ],
+          "b_id_parent": [
+            8952379
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "services_home_pr22455282_hi85156607"
+          ],
+          "b.b_created_by": [
+            "sbso1@mrt2"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Defence"
+          ],
+          "ba_official_details_deptName": [
+            "Department of Military Affairs"
+          ]
+        },
+        {
+          "id": "9090354",
+          "b_id": [
+            9090354
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638695"
+          ],
+          "b_category_name": [
+            "Office Suite Software (V3)"
+          ],
+          "b_total_quantity": [
+            17
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            1
+          ],
+          "b_type": [
+            0
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "Office Suite Software (V3)"
+          ],
+          "b_is_custom_item": [
+            0
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7139131"
+          ],
+          "b_id_parent": [
+            8872216
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "home_info_soft_busi_of40668882"
+          ],
+          "b.b_created_by": [
+            "rajneeshb"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Defence"
+          ],
+          "ba_official_details_deptName": [
+            "Department of Defence"
+          ]
+        },
+        {
+          "id": "9090403",
+          "b_id": [
+            9090403
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638703"
+          ],
+          "b_category_name": [
+            "High End Desktop Computer"
+          ],
+          "b_total_quantity": [
+            8
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            1
+          ],
+          "b_type": [
+            0
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "High End Desktop Computer"
+          ],
+          "b_is_custom_item": [
+            0
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7264098"
+          ],
+          "b_id_parent": [
+            9014192
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "home_info_comp_comp_mida"
+          ],
+          "b.b_created_by": [
+            "adjut11MADRAS"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Defence"
+          ],
+          "ba_official_details_deptName": [
+            "Department of Military Affairs"
+          ]
+        },
+        {
+          "id": "9090389",
+          "b_id": [
+            9090389
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638702"
+          ],
+          "b_category_name": [
+            "Sequential Timers. as per detailed specification.,Dual Display Multifunction. as per detailed speci"
+          ],
+          "b_total_quantity": [
+            35
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            3
+          ],
+          "b_type": [
+            0
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            1
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "b_is_custom_item": [
+            1
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7121527"
+          ],
+          "b_id_parent": [
+            8851756
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "home_univ_univ_univ_univ"
+          ],
+          "b.b_created_by": [
+            "pravatchandra@hal-india.com"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Defence"
+          ],
+          "ba_official_details_deptName": [
+            "Department of Defence Production"
+          ]
+        },
+        {
+          "id": "9090388",
+          "b_id": [
+            9090388
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638701"
+          ],
+          "b_category_name": [
+            "High End Laptop - Notebook,Ultraportable PC Unix system"
+          ],
+          "b_total_quantity": [
+            3
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            2
+          ],
+          "b_type": [
+            0
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "High End Laptop - Notebook,Ultraportable PC Unix system"
+          ],
+          "b_is_custom_item": [
+            1
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7289120"
+          ],
+          "b_id_parent": [
+            9042889
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "home_info_comp_comp_hi86310775,home_univ_univ_univ_univ"
+          ],
+          "b.b_created_by": [
+            "GSO1@AKP"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Defence"
+          ],
+          "ba_official_details_deptName": [
+            "Department of Military Affairs"
+          ]
+        },
+        {
+          "id": "9090385",
+          "b_id": [
+            9090385
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638700"
+          ],
+          "b_category_name": [
+            "Mobile Filtration Plant with Movable Trolley"
+          ],
+          "b_total_quantity": [
+            1
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            1
+          ],
+          "b_type": [
+            0
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "Mobile Filtration Plant with Movable Trolley"
+          ],
+          "b_is_custom_item": [
+            1
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7270752"
+          ],
+          "b_id_parent": [
+            9021759
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "home_univ_univ_univ_univ"
+          ],
+          "b.b_created_by": [
+            "CT_TRGOFFR"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Defence"
+          ],
+          "ba_official_details_deptName": [
+            "Department of Military Affairs"
+          ]
+        },
+        {
+          "id": "9090376",
+          "b_id": [
+            9090376
+          ],
+          "b_bid_number": [
+            "GEM/2026/R/638699"
+          ],
+          "b_category_name": [
+            "Repair and Overhauling Service - cars; TATA MOTORS; Yes; Buyer Premises"
+          ],
+          "b_total_quantity": [
+            1
+          ],
+          "b_status": [
+            1
+          ],
+          "b_bid_type": [
+            2
+          ],
+          "b_is_bunch": [
+            1
+          ],
+          "b_type": [
+            1
+          ],
+          "b_bid_to_ra": [
+            1
+          ],
+          "b_buyer_status": [
+            0
+          ],
+          "b_eval_type": [
+            0
+          ],
+          "final_start_date_sort": [
+            "2026-03-08T14:00:00Z"
+          ],
+          "final_end_date_sort": [
+            "2026-03-09T14:00:00Z"
+          ],
+          "bd_category_name": [
+            "Repair and Overhauling Service - cars; TATA MOTORS; Yes; Buyer Premises"
+          ],
+          "b_is_custom_item": [
+            0
+          ],
+          "b_bid_number_parent": [
+            "GEM/2026/B/7214020"
+          ],
+          "b_id_parent": [
+            8957523
+          ],
+          "is_high_value": [
+            false
+          ],
+          "b_ra_to_bid": [
+            1
+          ],
+          "ra_b_status": [
+            1
+          ],
+          "b_is_inactive": [
+            0
+          ],
+          "ra_b_buyer_status": [
+            2
+          ],
+          "b_cat_id": [
+            "services_home_gene"
+          ],
+          "b.b_created_by": [
+            "BSOMCTE1"
+          ],
+          "ba_is_single_packet": [
+            0
+          ],
+          "ba_is_global_tendering": [
+            0
+          ],
+          "is_rc_bid": [
+            0
+          ],
+          "ba_official_details_minName": [
+            "Ministry of Defence"
+          ],
+          "ba_official_details_deptName": [
+            "Department of Military Affairs"
+          ]
+        }
+      ]
+    }
+  ]
+}

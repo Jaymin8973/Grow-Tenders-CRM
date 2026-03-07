@@ -51,8 +51,13 @@ export class ScrapedTendersService {
     async findAll(filters?: {
         status?: string;
         state?: string;
+        city?: string;
         search?: string;
         category?: string;
+        startDateFrom?: string;
+        startDateTo?: string;
+        endDateFrom?: string;
+        endDateTo?: string;
         page?: number;
         limit?: number;
     }) {
@@ -71,6 +76,9 @@ export class ScrapedTendersService {
         if (filters?.state) {
             where.state = { contains: filters.state, mode: 'insensitive' };
         }
+        if (filters?.city) {
+            where.city = { contains: filters.city, mode: 'insensitive' };
+        }
         if (filters?.category) {
             where.categoryName = { contains: filters.category, mode: 'insensitive' };
         }
@@ -81,6 +89,25 @@ export class ScrapedTendersService {
                 { description: { contains: filters.search, mode: 'insensitive' } },
             ];
         }
+
+        const buildDateRange = (from?: string, to?: string) => {
+            const range: Record<string, Date> = {};
+            if (from) {
+                const d = new Date(from);
+                if (!Number.isNaN(d.getTime())) range.gte = d;
+            }
+            if (to) {
+                const d = new Date(to);
+                if (!Number.isNaN(d.getTime())) range.lte = d;
+            }
+            return Object.keys(range).length ? range : undefined;
+        };
+
+        const publishDateRange = buildDateRange(filters?.startDateFrom, filters?.startDateTo);
+        if (publishDateRange) where.publishDate = publishDateRange;
+
+        const closingDateRange = buildDateRange(filters?.endDateFrom, filters?.endDateTo);
+        if (closingDateRange) where.closingDate = closingDateRange;
 
         const [data, total] = await Promise.all([
             this.prisma.tender.findMany({
@@ -139,10 +166,9 @@ export class ScrapedTendersService {
             department: tender.description,
             state: tender.state,
             city: tender.city,
-            address: tender.address,
-            quantity: '',
             startDate: tender.publishDate,
             endDate: tender.closingDate,
+            quantity: '',
             status: tender.status === 'PUBLISHED' ? 'ACTIVE' : tender.status,
             source: 'GeM',
             sourceUrl: tender.tenderUrl,
@@ -181,6 +207,16 @@ export class ScrapedTendersService {
         return tenders.map(t => t.state!).filter(Boolean).sort();
     }
 
+    async getCities(state: string): Promise<string[]> {
+        const tenders = await this.prisma.tender.findMany({
+            where: { source: 'GEM', state: state, city: { not: null } },
+            select: { city: true },
+            distinct: ['city'],
+        });
+
+        return tenders.map(t => t.city!).filter(Boolean).sort();
+    }
+
     async getCategories(): Promise<string[]> {
         const tenders = await this.prisma.tender.findMany({
             where: { source: 'GEM', categoryName: { not: null } },
@@ -189,6 +225,67 @@ export class ScrapedTendersService {
         });
 
         return tenders.map(t => t.categoryName!).filter(Boolean).sort();
+    }
+
+    async getCategoriesPaginated(params?: {
+        search?: string;
+        page?: number;
+        limit?: number;
+    }) {
+        const page = params?.page || 1;
+        const limit = params?.limit || 20;
+        const skip = (page - 1) * limit;
+
+        const escapeRegex = (input: string) => input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+        const match: Record<string, any> = {
+            source: 'GEM',
+            categoryName: { $type: 'string' },
+        };
+
+        const search = (params?.search || '').trim();
+        if (search) {
+            match.categoryName = {
+                $type: 'string',
+                $regex: escapeRegex(search),
+                $options: 'i',
+            };
+        }
+
+        const cmd = {
+            aggregate: 'tenders',
+            pipeline: [
+                { $match: match },
+                { $group: { _id: '$categoryName' } },
+                { $sort: { _id: 1 } },
+                {
+                    $facet: {
+                        data: [{ $skip: skip }, { $limit: limit }],
+                        meta: [{ $count: 'total' }],
+                    },
+                },
+            ],
+            cursor: {},
+        } as const;
+
+        const result = (await this.prisma.$runCommandRaw(cmd)) as any;
+        const firstBatch = result?.cursor?.firstBatch;
+        const facet = Array.isArray(firstBatch) ? firstBatch[0] : undefined;
+        const dataRows = facet?.data ?? [];
+        const metaRows = facet?.meta ?? [];
+        const total = metaRows?.[0]?.total ?? 0;
+
+        const categories = (dataRows as Array<{ _id: string }>).map((r) => r._id).filter(Boolean);
+
+        return {
+            data: categories,
+            meta: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
+            },
+        };
     }
 
     async generatePdf(id: string): Promise<Buffer> {

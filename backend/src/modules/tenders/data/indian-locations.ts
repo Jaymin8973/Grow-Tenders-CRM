@@ -1,7 +1,7 @@
 /**
  * Comprehensive map of Indian cities, districts, and towns to their states.
  * Sourced from official Indian government data + major city names and alternate spellings.
- * Total entries: 893
+ * Total entries: 907
  */
 export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     // Punjab
@@ -20,6 +20,8 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     "AHMEDABAD": "Gujarat",
     // Maharashtra
     "AHMEDNAGAR": "Maharashtra",
+    // Gujarat
+    "AHWA": "Gujarat",
     // Mizoram
     "AIZAWL": "Mizoram",
     // Rajasthan
@@ -53,7 +55,7 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     // Chhattisgarh
     "AMBIKAPUR": "Chhattisgarh",
     // Uttar Pradesh
-    "AMETHI (CHATRAPATI SAHUJI MAHRAJ NAGAR)": "Uttar Pradesh",
+    "AMETHI": "Uttar Pradesh",
     // Lakshadweep
     "AMINI": "Lakshadweep",
     // Maharashtra
@@ -64,7 +66,6 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     "AMRITSAR": "Punjab",
     // Uttar Pradesh
     "AMROHA": "Uttar Pradesh",
-    "AMROHA (J.P. NAGAR)": "Uttar Pradesh",
     // Gujarat
     "ANAND": "Gujarat",
     // Andhra Pradesh
@@ -122,7 +123,7 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     "BALANGIR": "Odisha",
     "BALASORE": "Odisha",
     // Karnataka
-    "BALLARI (BELLARY)": "Karnataka",
+    "BALLARI": "Karnataka",
     // Uttar Pradesh
     "BALLIA": "Uttar Pradesh",
     // Chhattisgarh
@@ -131,7 +132,7 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     // Uttar Pradesh
     "BALRAMPUR": "Uttar Pradesh",
     // Gujarat
-    "BANASKANTHA (PALANPUR)": "Gujarat",
+    "BANASKANTHA": "Gujarat",
     // Uttar Pradesh
     "BANDA": "Uttar Pradesh",
     // Jammu and Kashmir
@@ -181,7 +182,7 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     // Bihar
     "BEGUSARAI": "Bihar",
     // Karnataka
-    "BELAGAVI (BELGAUM)": "Karnataka",
+    "BELAGAVI": "Karnataka",
     "BELGAUM": "Karnataka",
     "BELLARY": "Karnataka",
     // Tripura
@@ -190,14 +191,14 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     "BEMETARA": "Chhattisgarh",
     // Karnataka
     "BENGALURU": "Karnataka",
-    "BENGALURU (BANGALORE) RURAL": "Karnataka",
-    "BENGALURU (BANGALORE) URBAN": "Karnataka",
     // Odisha
     "BERHAMPUR": "Odisha",
     // Bihar
     "BETTIAH": "Bihar",
     // Madhya Pradesh
     "BETUL": "Madhya Pradesh",
+    // Bihar
+    "BHABUA": "Bihar",
     // Uttar Pradesh
     "BHADOHI": "Uttar Pradesh",
     // Telangana
@@ -217,6 +218,8 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     "BHILAI": "Chhattisgarh",
     // Rajasthan
     "BHILWARA": "Rajasthan",
+    // Uttar Pradesh
+    "BHIM NAGAR": "Uttar Pradesh",
     // Madhya Pradesh
     "BHIND": "Madhya Pradesh",
     // Haryana
@@ -229,14 +232,13 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     "BHUBANESWAR": "Odisha",
     // Karnataka
     "BIDAR": "Karnataka",
-    // Chhattisgarh
-    "BIJAPUR": "Chhattisgarh",
+    "BIJAPUR": "Karnataka",
     // Uttar Pradesh
     "BIJNOR": "Uttar Pradesh",
     // Rajasthan
     "BIKANER": "Rajasthan",
-    // Chhattisgarh
-    "BILASPUR": "Chhattisgarh",
+    // Himachal Pradesh
+    "BILASPUR": "Himachal Pradesh",
     // West Bengal
     "BIRBHUM": "West Bengal",
     // Manipur
@@ -267,7 +269,6 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     "BUNDI": "Rajasthan",
     // West Bengal
     "BURDWAN": "West Bengal",
-    "BURDWAN (BARDHAMAN)": "West Bengal",
     // Madhya Pradesh
     "BURHANPUR": "Madhya Pradesh",
     // Bihar
@@ -303,6 +304,8 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     "CHARKHI DADRI": "Haryana",
     // Jharkhand
     "CHATRA": "Jharkhand",
+    // Uttar Pradesh
+    "CHATRAPATI SAHUJI MAHRAJ NAGAR": "Uttar Pradesh",
     // Tamil Nadu
     "CHENNAI": "Tamil Nadu",
     // Lakshadweep
@@ -316,7 +319,8 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     "CHHOTA UDEPUR": "Gujarat",
     // Karnataka
     "CHIKBALLAPUR": "Karnataka",
-    "CHIKKAMAGALURU (CHIKMAGALUR)": "Karnataka",
+    "CHIKKAMAGALURU": "Karnataka",
+    "CHIKMAGALUR": "Karnataka",
     // Assam
     "CHIRANG": "Assam",
     // Karnataka
@@ -348,7 +352,6 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     "DAHOD": "Gujarat",
     // West Bengal
     "DAKSHIN DINAJPUR": "West Bengal",
-    "DAKSHIN DINAJPUR (SOUTH DINAJPUR)": "West Bengal",
     // Karnataka
     "DAKSHINA KANNADA": "Karnataka",
     // Daman and Diu
@@ -356,9 +359,9 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     // Madhya Pradesh
     "DAMOH": "Madhya Pradesh",
     // Gujarat
-    "DANGS (AHWA)": "Gujarat",
+    "DANGS": "Gujarat",
     // Chhattisgarh
-    "DANTEWADA (SOUTH BASTAR)": "Chhattisgarh",
+    "DANTEWADA": "Chhattisgarh",
     // Bihar
     "DARBHANGA": "Bihar",
     // West Bengal
@@ -437,7 +440,7 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     // West Bengal
     "DURGAPUR": "West Bengal",
     // Bihar
-    "EAST CHAMPARAN (MOTIHARI)": "Bihar",
+    "EAST CHAMPARAN": "Bihar",
     // Delhi
     "EAST DELHI": "Delhi",
     // Meghalaya
@@ -450,6 +453,8 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     "EAST KAMENG": "Arunachal Pradesh",
     // Meghalaya
     "EAST KHASI HILLS": "Meghalaya",
+    // West Bengal
+    "EAST MEDINIPUR": "West Bengal",
     // Arunachal Pradesh
     "EAST SIANG": "Arunachal Pradesh",
     // Sikkim
@@ -568,7 +573,6 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     "HANUMANGARH": "Rajasthan",
     // Uttar Pradesh
     "HAPUR": "Uttar Pradesh",
-    "HAPUR (PANCHSHEEL NAGAR)": "Uttar Pradesh",
     // Madhya Pradesh
     "HARDA": "Madhya Pradesh",
     // Uttar Pradesh
@@ -584,6 +588,8 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     // Jharkhand
     "HAZARIBAG": "Jharkhand",
     "HAZARIBAGH": "Jharkhand",
+    // Gujarat
+    "HIMMATNAGAR": "Gujarat",
     // Andhra Pradesh
     "HINDUPUR": "Andhra Pradesh",
     // Maharashtra
@@ -619,6 +625,9 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     "ITANAGAR": "Arunachal Pradesh",
     // Madhya Pradesh
     "ITARSI": "Madhya Pradesh",
+    // Uttar Pradesh
+    "J.P. NAGAR": "Uttar Pradesh",
+    // Madhya Pradesh
     "JABALPUR": "Madhya Pradesh",
     // Odisha
     "JAGATSINGHAPUR": "Odisha",
@@ -695,7 +704,7 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     // Gujarat
     "JUNAGADH": "Gujarat",
     // Chhattisgarh
-    "KABIRDHAM (KAWARDHA)": "Chhattisgarh",
+    "KABIRDHAM": "Chhattisgarh",
     // Gujarat
     "KACHCHH": "Gujarat",
     // Andhra Pradesh
@@ -706,7 +715,6 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     "KAILASHAHAR": "Tripura",
     // Bihar
     "KAIMUR": "Bihar",
-    "KAIMUR (BHABUA)": "Bihar",
     // Haryana
     "KAITHAL": "Haryana",
     // Manipur
@@ -714,7 +722,7 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     // Andhra Pradesh
     "KAKINADA": "Andhra Pradesh",
     // Karnataka
-    "KALABURAGI (GULBARGA)": "Karnataka",
+    "KALABURAGI": "Karnataka",
     // Odisha
     "KALAHANDI": "Odisha",
     // West Bengal
@@ -737,7 +745,7 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     // Himachal Pradesh
     "KANGRA": "Himachal Pradesh",
     // Chhattisgarh
-    "KANKER (NORTH BASTAR)": "Chhattisgarh",
+    "KANKER": "Chhattisgarh",
     // Uttar Pradesh
     "KANNAUJ": "Uttar Pradesh",
     // Kerala
@@ -746,7 +754,7 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     "KANPUR": "Uttar Pradesh",
     "KANPUR DEHAT": "Uttar Pradesh",
     "KANPUR NAGAR": "Uttar Pradesh",
-    "KANSHIRAM NAGAR (KASGANJ)": "Uttar Pradesh",
+    "KANSHIRAM NAGAR": "Uttar Pradesh",
     // Tamil Nadu
     "KANYAKUMARI": "Tamil Nadu",
     // Punjab
@@ -757,8 +765,8 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     "KARAULI": "Rajasthan",
     // Assam
     "KARBI ANGLONG": "Assam",
-    // Ladakh
-    "KARGIL": "Ladakh",
+    // Jammu and Kashmir
+    "KARGIL": "Jammu and Kashmir",
     // Assam
     "KARIMGANJ": "Assam",
     // Telangana
@@ -767,6 +775,8 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     "KARNAL": "Haryana",
     // Tamil Nadu
     "KARUR": "Tamil Nadu",
+    // Karnataka
+    "KARWAR": "Karnataka",
     // Kerala
     "KASARAGOD": "Kerala",
     // Uttar Pradesh
@@ -788,7 +798,7 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     // Odisha
     "KENDRAPARA": "Odisha",
     "KENDUJHAR": "Odisha",
-    "KENDUJHAR (KEONJHAR)": "Odisha",
+    "KEONJHAR": "Odisha",
     // Himachal Pradesh
     "KEYLONG": "Himachal Pradesh",
     // Maharashtra
@@ -806,7 +816,7 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     // Madhya Pradesh
     "KHARGONE": "Madhya Pradesh",
     // Gujarat
-    "KHEDA (NADIAD)": "Gujarat",
+    "KHEDA": "Gujarat",
     // Odisha
     "KHORDHA": "Odisha",
     // Tripura
@@ -857,7 +867,7 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     // Chhattisgarh
     "KORBA": "Chhattisgarh",
     "KOREA": "Chhattisgarh",
-    "KOREA (KORIYA)": "Chhattisgarh",
+    "KORIYA": "Chhattisgarh",
     // Rajasthan
     "KOTA": "Rajasthan",
     // Uttarakhand
@@ -886,12 +896,12 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     // Arunachal Pradesh
     "KURUNG KUMEY": "Arunachal Pradesh",
     // Uttar Pradesh
-    "KUSHINAGAR (PADRAUNA)": "Uttar Pradesh",
+    "KUSHINAGAR": "Uttar Pradesh",
     // Gujarat
     "KUTCH": "Gujarat",
     // Himachal Pradesh
     "LAHAUL": "Himachal Pradesh",
-    "LAHAUL &AMP; SPITI": "Himachal Pradesh",
+    "LAHAUL & SPITI": "Himachal Pradesh",
     "LAHAUL AND SPITI": "Himachal Pradesh",
     // Assam
     "LAKHIMPUR": "Assam",
@@ -909,8 +919,8 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     "LATUR": "Maharashtra",
     // Mizoram
     "LAWNGTLAI": "Mizoram",
-    // Ladakh
-    "LEH": "Ladakh",
+    // Jammu and Kashmir
+    "LEH": "Jammu and Kashmir",
     // Jharkhand
     "LOHARDAGA": "Jharkhand",
     // Arunachal Pradesh
@@ -1012,6 +1022,8 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     // Nagaland
     "MOKOKCHUNG": "Nagaland",
     "MON": "Nagaland",
+    // Bihar
+    "MONGHYR": "Bihar",
     // Uttar Pradesh
     "MORADABAD": "Uttar Pradesh",
     // Gujarat
@@ -1032,7 +1044,7 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     // Chhattisgarh
     "MUNGELI": "Chhattisgarh",
     // Bihar
-    "MUNGER (MONGHYR)": "Bihar",
+    "MUNGER": "Bihar",
     // West Bengal
     "MURSHIDABAD": "West Bengal",
     // Uttarakhand
@@ -1043,7 +1055,7 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     "MUZAFFARPUR": "Bihar",
     // Karnataka
     "MYSORE": "Karnataka",
-    "MYSURU (MYSORE)": "Karnataka",
+    "MYSURU": "Karnataka",
     // Odisha
     "NABARANGPUR": "Odisha",
     // West Bengal
@@ -1086,7 +1098,7 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     // Chhattisgarh
     "NARAYANPUR": "Chhattisgarh",
     // Gujarat
-    "NARMADA (RAJPIPLA)": "Gujarat",
+    "NARMADA": "Gujarat",
     // Haryana
     "NARNAUL": "Haryana",
     // Madhya Pradesh
@@ -1099,7 +1111,7 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     // Bihar
     "NAWADA": "Bihar",
     // Punjab
-    "NAWANSHAHR (SHAHID BHAGAT SINGH NAGAR)": "Punjab",
+    "NAWANSHAHR": "Punjab",
     // Odisha
     "NAYAGARH": "Odisha",
     // Madhya Pradesh
@@ -1123,8 +1135,13 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     "NONGSTOIN": "Meghalaya",
     // West Bengal
     "NORTH 24 PARGANAS": "West Bengal",
+    // Chhattisgarh
+    "NORTH BASTAR": "Chhattisgarh",
     // Delhi
     "NORTH DELHI": "Delhi",
+    // West Bengal
+    "NORTH DINAJPUR": "West Bengal",
+    // Delhi
     "NORTH EAST  DELHI": "Delhi",
     // Meghalaya
     "NORTH GARO HILLS": "Meghalaya",
@@ -1146,6 +1163,8 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     "OSMANABAD": "Maharashtra",
     // Madhya Pradesh
     "PACHMARHI": "Madhya Pradesh",
+    // Uttar Pradesh
+    "PADRAUNA": "Uttar Pradesh",
     // Jharkhand
     "PAKUR": "Jharkhand",
     // Sikkim
@@ -1169,7 +1188,9 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     // Haryana
     "PANCHKULA": "Haryana",
     // Gujarat
-    "PANCHMAHAL (GODHRA)": "Gujarat",
+    "PANCHMAHAL": "Gujarat",
+    // Uttar Pradesh
+    "PANCHSHEEL NAGAR": "Uttar Pradesh",
     // Haryana
     "PANIPAT": "Haryana",
     // Madhya Pradesh
@@ -1181,7 +1202,7 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     // Maharashtra
     "PARBHANI": "Maharashtra",
     // West Bengal
-    "PASCHIM MEDINIPUR (WEST MEDINIPUR)": "West Bengal",
+    "PASCHIM MEDINIPUR": "West Bengal",
     // Arunachal Pradesh
     "PASIGHAT": "Arunachal Pradesh",
     // Gujarat
@@ -1223,6 +1244,8 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     "PORBANDAR": "Gujarat",
     // Andaman and Nicobar Islands
     "PORT BLAIR": "Andaman and Nicobar Islands",
+    // Uttar Pradesh
+    "PRABUDDH NAGAR": "Uttar Pradesh",
     // Andhra Pradesh
     "PRAKASAM": "Andhra Pradesh",
     // Uttar Pradesh
@@ -1240,12 +1263,12 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     "PUNE": "Maharashtra",
     "PUNE CANTT": "Maharashtra",
     // West Bengal
-    "PURBA MEDINIPUR (EAST MEDINIPUR)": "West Bengal",
+    "PURBA MEDINIPUR": "West Bengal",
     // Odisha
     "PURI": "Odisha",
     // Bihar
+    "PURNEA": "Bihar",
     "PURNIA": "Bihar",
-    "PURNIA (PURNEA)": "Bihar",
     // West Bengal
     "PURULIA": "West Bengal",
     // Uttar Pradesh
@@ -1273,6 +1296,8 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     "RAJNANDGAON": "Chhattisgarh",
     // Jammu and Kashmir
     "RAJOURI": "Jammu and Kashmir",
+    // Gujarat
+    "RAJPIPLA": "Gujarat",
     // Rajasthan
     "RAJSAMAND": "Rajasthan",
     // Karnataka
@@ -1318,8 +1343,10 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     "RUDRAPUR": "Uttarakhand",
     // Punjab
     "RUPNAGAR": "Punjab",
+    // Telangana
+    "RURAL": "Telangana",
     // Gujarat
-    "SABARKANTHA (HIMMATNAGAR)": "Gujarat",
+    "SABARKANTHA": "Gujarat",
     // Madhya Pradesh
     "SAGAR": "Madhya Pradesh",
     // Uttar Pradesh
@@ -1329,7 +1356,7 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     // Jharkhand
     "SAHIBGANJ": "Jharkhand",
     // Punjab
-    "SAHIBZADA AJIT SINGH NAGAR (MOHALI)": "Punjab",
+    "SAHIBZADA AJIT SINGH NAGAR": "Punjab",
     // Mizoram
     "SAIHA": "Mizoram",
     // Tamil Nadu
@@ -1341,7 +1368,7 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     // Odisha
     "SAMBALPUR": "Odisha",
     // Uttar Pradesh
-    "SAMBHAL (BHIM NAGAR)": "Uttar Pradesh",
+    "SAMBHAL": "Uttar Pradesh",
     // Telangana
     "SANGAREDDY": "Telangana",
     // Maharashtra
@@ -1379,12 +1406,14 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     "SHAHDARA": "Delhi",
     // Madhya Pradesh
     "SHAHDOL": "Madhya Pradesh",
+    // Punjab
+    "SHAHID BHAGAT SINGH NAGAR": "Punjab",
     // Uttar Pradesh
     "SHAHJAHANPUR": "Uttar Pradesh",
     // Madhya Pradesh
     "SHAJAPUR": "Madhya Pradesh",
     // Uttar Pradesh
-    "SHAMALI (PRABUDDH NAGAR)": "Uttar Pradesh",
+    "SHAMALI": "Uttar Pradesh",
     "SHAMLI": "Uttar Pradesh",
     // Bihar
     "SHEIKHPURA": "Bihar",
@@ -1397,7 +1426,7 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     "SHIMLA": "Himachal Pradesh",
     // Karnataka
     "SHIMOGA": "Karnataka",
-    "SHIVAMOGGA (SHIMOGA)": "Karnataka",
+    "SHIVAMOGGA": "Karnataka",
     // Madhya Pradesh
     "SHIVPURI": "Madhya Pradesh",
     // Jammu and Kashmir
@@ -1428,7 +1457,7 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     "SINGRAULI": "Madhya Pradesh",
     // Himachal Pradesh
     "SIRMAUR": "Himachal Pradesh",
-    "SIRMAUR (SIRMOUR)": "Himachal Pradesh",
+    "SIRMOUR": "Himachal Pradesh",
     // Rajasthan
     "SIROHI": "Rajasthan",
     // Haryana
@@ -1462,8 +1491,13 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     "SORENG": "Sikkim",
     // West Bengal
     "SOUTH 24 PARGANAS": "West Bengal",
+    // Chhattisgarh
+    "SOUTH BASTAR": "Chhattisgarh",
     // Delhi
     "SOUTH DELHI": "Delhi",
+    // West Bengal
+    "SOUTH DINAJPUR": "West Bengal",
+    // Delhi
     "SOUTH EAST DELHI": "Delhi",
     // Meghalaya
     "SOUTH GARO HILLS": "Meghalaya",
@@ -1506,7 +1540,7 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     // Manipur
     "TAMENGLONG": "Manipur",
     // Gujarat
-    "TAPI (VYARA)": "Gujarat",
+    "TAPI": "Gujarat",
     // Punjab
     "TARN TARAN": "Punjab",
     // Arunachal Pradesh
@@ -1531,7 +1565,7 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     // Kerala
     "THIRUVANANTHAPURAM": "Kerala",
     // Tamil Nadu
-    "THOOTHUKUDI (TUTICORIN)": "Tamil Nadu",
+    "THOOTHUKUDI": "Tamil Nadu",
     // Manipur
     "THOUBAL": "Manipur",
     // Kerala
@@ -1558,10 +1592,12 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     // Nagaland
     "TUENSANG": "Nagaland",
     // Karnataka
-    "TUMAKURU (TUMKUR)": "Karnataka",
+    "TUMAKURU": "Karnataka",
     "TUMKUR": "Karnataka",
     // Meghalaya
     "TURA": "Meghalaya",
+    // Tamil Nadu
+    "TUTICORIN": "Tamil Nadu",
     // Rajasthan
     "UDAIPUR": "Rajasthan",
     // Assam
@@ -1587,11 +1623,12 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     // Arunachal Pradesh
     "UPPER SIANG": "Arunachal Pradesh",
     "UPPER SUBANSIRI": "Arunachal Pradesh",
+    // Telangana
+    "URBAN": "Telangana",
     // West Bengal
     "UTTAR DINAJPUR": "West Bengal",
-    "UTTAR DINAJPUR (NORTH DINAJPUR)": "West Bengal",
     // Karnataka
-    "UTTARA KANNADA (KARWAR)": "Karnataka",
+    "UTTARA KANNADA": "Karnataka",
     // Uttarakhand
     "UTTARKASHI": "Uttarakhand",
     // Gujarat
@@ -1611,7 +1648,7 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     // Madhya Pradesh
     "VIDISHA": "Madhya Pradesh",
     // Karnataka
-    "VIJAYAPURA (BIJAPUR)": "Karnataka",
+    "VIJAYAPURA": "Karnataka",
     // Andhra Pradesh
     "VIJAYAWADA": "Andhra Pradesh",
     // Telangana
@@ -1622,11 +1659,11 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     // Andhra Pradesh
     "VISAKHAPATNAM": "Andhra Pradesh",
     "VIZIANAGARAM": "Andhra Pradesh",
+    // Gujarat
+    "VYARA": "Gujarat",
     // Telangana
     "WANAPARTHY": "Telangana",
     "WARANGAL": "Telangana",
-    "WARANGAL (RURAL)": "Telangana",
-    "WARANGAL (URBAN)": "Telangana",
     "WARANGAL RURAL": "Telangana",
     "WARANGAL URBAN": "Telangana",
     // Maharashtra
@@ -1650,6 +1687,8 @@ export const INDIAN_CITY_STATE_MAP: Record<string, string> = {
     "WEST KARBI ANGLONG": "Assam",
     // Meghalaya
     "WEST KHASI HILLS": "Meghalaya",
+    // West Bengal
+    "WEST MEDINIPUR": "West Bengal",
     // Arunachal Pradesh
     "WEST SIANG": "Arunachal Pradesh",
     // Sikkim
