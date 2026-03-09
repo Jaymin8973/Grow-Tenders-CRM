@@ -79,13 +79,26 @@ export class ScrapedTendersController {
     }
 
     @Get('cities')
-    @ApiOperation({ summary: 'Get list of available cities for a given state' })
-    @ApiQuery({ name: 'state', required: true, description: 'Filter cities by state' })
-    getCities(@Query('state') state: string) {
-        if (!state) {
+    @ApiOperation({ summary: 'Get list of available cities for given states' })
+    @ApiQuery({ name: 'state', required: false, description: 'Filter cities by single state' })
+    @ApiQuery({ name: 'states', required: false, description: 'Filter cities by multiple states (comma separated or repeated)' })
+    async getCities(
+        @Query('state') state: string,
+        @Query('states') states: string | string[],
+    ) {
+        // Handle multiple states from query params
+        let stateList: string[] = [];
+        if (states) {
+            // states can be a single string or array of strings
+            stateList = Array.isArray(states) ? states : [states];
+        }
+        if (state && !stateList.includes(state)) {
+            stateList.push(state);
+        }
+        if (stateList.length === 0) {
             return [];
         }
-        return this.scrapedTendersService.getCities(state);
+        return this.scrapedTendersService.getCities(stateList);
     }
 
     @Get('categories')

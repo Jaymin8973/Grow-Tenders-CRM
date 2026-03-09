@@ -45,9 +45,10 @@ export class SubscriptionsController {
         @Param('customerId') customerId: string,
         @Body('categories') categories: string[],
         @Body('states') states: string[],
+        @Body('cities') cities: string[],
         @Body('isActive') isActive?: boolean,
     ) {
-        return this.tendersService.updateSubscription(customerId, categories, states || [], isActive);
+        return this.tendersService.updateSubscription(customerId, categories, states, cities || [], isActive);
     }
 
     @Delete(':customerId')

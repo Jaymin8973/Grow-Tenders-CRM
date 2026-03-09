@@ -207,9 +207,13 @@ export class ScrapedTendersService {
         return tenders.map(t => t.state!).filter(Boolean).sort();
     }
 
-    async getCities(state: string): Promise<string[]> {
+    async getCities(states: string[]): Promise<string[]> {
         const tenders = await this.prisma.tender.findMany({
-            where: { source: 'GEM', state: state, city: { not: null } },
+            where: { 
+                source: 'GEM', 
+                state: { in: states }, 
+                city: { not: null } 
+            },
             select: { city: true },
             distinct: ['city'],
         });

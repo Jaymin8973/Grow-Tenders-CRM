@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException, BadRequestException, Logger, Conflic
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
+import { LeadStatus, LeadSource } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CustomerRegisterDto } from './dto/customer-register.dto';
 import { CustomerLoginDto } from './dto/customer-login.dto';
@@ -52,6 +53,27 @@ export class PublicAuthService {
                 createdAt: true,
             },
         });
+
+        // Create Lead for CRM tracking - website registration
+        try {
+            await this.prisma.lead.create({
+                data: {
+                    title: `${firstName} ${lastName}`,
+                    firstName,
+                    lastName,
+                    email,
+                    mobile: phone,
+                    company,
+                    status: LeadStatus.HOT_LEAD,
+                    source: LeadSource.WEBSITE,
+                    description: 'Lead created from website registration',
+                },
+            });
+            this.logger.log(`Lead created for website registration: ${email}`);
+        } catch (leadError) {
+            // Log error but don't fail registration if lead creation fails
+            this.logger.warn(`Failed to create lead for ${email}: ${leadError instanceof Error ? leadError.message : leadError}`);
+        }
 
         // Generate tokens
         const tokens = await this.generateTokens(customer.id, customer.email);

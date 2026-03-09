@@ -551,6 +551,7 @@ model TenderSubscription {
   
   categories  String[]  // Array of category keywords
   states      String[]  // Array of state names for matching
+  cities      String[]  // Array of city names for matching
   isActive    Boolean   @default(true)
   startDate   DateTime?
   durationMonths Int?

@@ -17,6 +17,12 @@ export class CreateSubscriptionDto {
     @IsString({ each: true })
     states: string[];
 
+    @ApiPropertyOptional({ type: [String], description: 'Array of city names for matching' })
+    @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
+    cities?: string[];
+
     @ApiPropertyOptional({ default: true })
     @IsOptional()
     @IsBoolean()

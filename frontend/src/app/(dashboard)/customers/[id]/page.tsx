@@ -40,6 +40,7 @@ import {
     Bell,
     Save,
     X,
+    Search,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { getInitials, cn, formatCurrency } from '@/lib/utils';
@@ -59,9 +60,11 @@ export default function CustomerDetailPage() {
 
     // Subscription state
     const [selectedStates, setSelectedStates] = useState<string[]>([]);
+    const [selectedCities, setSelectedCities] = useState<string[]>([]);
     const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
     const [subscriptionActive, setSubscriptionActive] = useState(true);
     const [subscriptionMonths, setSubscriptionMonths] = useState<number>(1);
+    const [categorySearch, setCategorySearch] = useState('');
 
     // Fetch customer details
     const { data: customer, isLoading } = useQuery({
@@ -126,10 +129,24 @@ export default function CustomerDetailPage() {
         },
     });
 
+    // Fetch available cities based on selected states
+    const { data: availableCities, isLoading: isLoadingCities } = useQuery<string[]>({
+        queryKey: ['scraped-tenders-cities', selectedStates],
+        queryFn: async () => {
+            if (!selectedStates || selectedStates.length === 0) return [];
+            const params = new URLSearchParams();
+            selectedStates.forEach(s => params.append('states', s));
+            const response = await apiClient.get(`/scraped-tenders/cities?${params.toString()}`);
+            return response.data;
+        },
+        enabled: selectedStates.length > 0,
+    });
+
     // Initialize subscription state when data loads
     useEffect(() => {
         if (!subscription) return;
         setSelectedStates(subscription.states || []);
+        setSelectedCities(subscription.cities || []);
         setSelectedCategories(subscription.categories || []);
         setSubscriptionActive(subscription.isActive ?? true);
         setSubscriptionMonths(subscription.durationMonths ?? 1);
@@ -177,6 +194,7 @@ export default function CustomerDetailPage() {
                 customerId,
                 categories: selectedCategories,
                 states: selectedStates,
+                cities: selectedCities,
                 isActive: subscriptionActive,
                 durationMonths: subscriptionMonths,
             });
@@ -491,6 +509,8 @@ export default function CustomerDetailPage() {
                                                                     setSelectedStates([...selectedStates, state]);
                                                                 } else {
                                                                     setSelectedStates(selectedStates.filter(s => s !== state));
+                                                                    // Also remove cities from this state
+                                                                    setSelectedCities([]);
                                                                 }
                                                             }}
                                                             className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
@@ -511,14 +531,97 @@ export default function CustomerDetailPage() {
                                             </p>
                                         </div>
 
+                                        {/* Cities Selection */}
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <h3 className="font-medium">Preferred Cities</h3>
+                                                <div className="flex items-center gap-2">
+                                                    {availableCities && availableCities.length > 0 && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="text-xs h-6"
+                                                            onClick={() => {
+                                                                if (selectedCities.length === availableCities.length) {
+                                                                    setSelectedCities([]);
+                                                                } else {
+                                                                    setSelectedCities([...availableCities]);
+                                                                }
+                                                            }}
+                                                        >
+                                                            {selectedCities.length === availableCities.length ? 'Clear All' : 'Select All'}
+                                                        </Button>
+                                                    )}
+                                                    <Badge variant="outline">{selectedCities.length} selected</Badge>
+                                                </div>
+                                            </div>
+                                            <div className="border rounded-lg p-4 h-64 overflow-y-auto space-y-2">
+                                                {isLoadingCities && (
+                                                    <p className="text-sm text-muted-foreground text-center py-8">
+                                                        Loading cities...
+                                                    </p>
+                                                )}
+                                                {!isLoadingCities && selectedStates.length === 0 && (
+                                                    <p className="text-sm text-muted-foreground text-center py-8">
+                                                        Select states first to see available cities
+                                                    </p>
+                                                )}
+                                                {!isLoadingCities && selectedStates.length > 0 && availableCities?.map((city: string) => (
+                                                    <div key={city} className="flex items-center space-x-2">
+                                                        <input
+                                                            type="checkbox"
+                                                            id={`city-${city}`}
+                                                            checked={selectedCities.includes(city)}
+                                                            onChange={(e) => {
+                                                                if (e.target.checked) {
+                                                                    setSelectedCities([...selectedCities, city]);
+                                                                } else {
+                                                                    setSelectedCities(selectedCities.filter(c => c !== city));
+                                                                }
+                                                            }}
+                                                            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                                        />
+                                                        <label htmlFor={`city-${city}`} className="text-sm cursor-pointer select-none flex-1">
+                                                            {city}
+                                                        </label>
+                                                    </div>
+                                                ))}
+                                                {!isLoadingCities && selectedStates.length > 0 && (!availableCities || availableCities.length === 0) && (
+                                                    <p className="text-sm text-muted-foreground text-center py-8">
+                                                        No cities available for selected states
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <p className="text-xs text-muted-foreground">
+                                                Select cities within chosen states. Leave empty to receive from all cities in selected states.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid gap-6 md:grid-cols-2">
                                         {/* Categories Selection */}
                                         <div className="space-y-4">
                                             <div className="flex items-center justify-between">
                                                 <h3 className="font-medium">Preferred Categories</h3>
                                                 <Badge variant="outline">{selectedCategories.length} selected</Badge>
                                             </div>
-                                            <div className="border rounded-lg p-4 h-64 overflow-y-auto space-y-2">
-                                                {availableCategories?.map((category: string) => (
+                                            {/* Category Search */}
+                                            <div className="relative">
+                                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Search categories..."
+                                                    value={categorySearch}
+                                                    onChange={(e) => setCategorySearch(e.target.value)}
+                                                    className="w-full pl-9 pr-4 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                                                />
+                                            </div>
+                                            <div className="border rounded-lg p-4 h-56 overflow-y-auto space-y-2">
+                                                {availableCategories
+                                                    ?.filter((category: string) => 
+                                                        category.toLowerCase().includes(categorySearch.toLowerCase())
+                                                    )
+                                                    .map((category: string) => (
                                                     <div key={category} className="flex items-center space-x-2">
                                                         <input
                                                             type="checkbox"
@@ -543,6 +646,13 @@ export default function CustomerDetailPage() {
                                                         No categories available yet
                                                     </p>
                                                 )}
+                                                {availableCategories && availableCategories.filter((category: string) => 
+                                                    category.toLowerCase().includes(categorySearch.toLowerCase())
+                                                ).length === 0 && categorySearch && (
+                                                    <p className="text-sm text-muted-foreground text-center py-8">
+                                                        No categories matching "{categorySearch}"
+                                                    </p>
+                                                )}
                                             </div>
                                             <p className="text-xs text-muted-foreground">
                                                 Select active tender categories. New categories appear here automatically as they are scraped.
@@ -560,6 +670,8 @@ export default function CustomerDetailPage() {
                                             You will receive emails for new tenders matching:
                                             <br />
                                             <strong>States:</strong> {selectedStates.length > 0 ? selectedStates.join(', ') : 'All States'}
+                                            <br />
+                                            <strong>Cities:</strong> {selectedCities.length > 0 ? selectedCities.join(', ') : 'All Cities'}
                                             <br />
                                             <strong>Categories:</strong> {selectedCategories.length > 0 ? selectedCategories.join(', ') : 'All Categories'}
                                         </p>

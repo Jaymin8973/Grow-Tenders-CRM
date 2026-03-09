@@ -55,8 +55,21 @@ export class PublicTendersController {
     @Get('categories')
     @Public()
     @ApiOperation({ summary: 'Get all tender categories (public endpoint)' })
-    findAllCategories() {
-        return this.tendersService.findAllCategories();
+    @ApiQuery({ name: 'search', required: false })
+    @ApiQuery({ name: 'limit', required: false })
+    async findAllCategories(
+        @Query('search') search?: string,
+        @Query('limit') limit?: string,
+    ) {
+        // Return categories from tender.categoryName (same as CRM dropdown)
+        const tenders = await this.tendersService.findDistinctCategories(
+            search,
+            limit ? parseInt(limit) : 100,
+        );
+        return tenders.map((name: string, index: number) => ({
+            id: `cat-${index}`,
+            name,
+        }));
     }
 
     @Get('stats')

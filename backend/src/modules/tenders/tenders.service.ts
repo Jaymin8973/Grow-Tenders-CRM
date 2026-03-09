@@ -148,6 +148,31 @@ export class TendersService {
         });
     }
 
+    // Get distinct categories from tender.categoryName (same as scraped-tenders)
+    async findDistinctCategories(search?: string, limit: number = 100): Promise<string[]> {
+        const where: any = {
+            source: 'GEM',
+            categoryName: { not: null },
+        };
+
+        if (search) {
+            where.categoryName = {
+                not: null,
+                contains: search,
+                mode: 'insensitive',
+            };
+        }
+
+        const tenders = await this.prisma.tender.findMany({
+            where,
+            select: { categoryName: true },
+            distinct: ['categoryName'],
+            take: limit,
+        });
+
+        return tenders.map(t => t.categoryName!).filter(Boolean).sort();
+    }
+
     async updateCategory(id: string, data: { name?: string; description?: string; isActive?: boolean }) {
         return this.prisma.tenderCategory.update({
             where: { id },
@@ -176,6 +201,7 @@ export class TendersService {
                 data: {
                     categories: createSubscriptionDto.categories,
                     states: createSubscriptionDto.states,
+                    cities: createSubscriptionDto.cities || [],
                     isActive: createSubscriptionDto.isActive ?? true,
                     startDate,
                     durationMonths,
@@ -190,6 +216,7 @@ export class TendersService {
                 customerId: createSubscriptionDto.customerId,
                 categories: createSubscriptionDto.categories,
                 states: createSubscriptionDto.states,
+                cities: createSubscriptionDto.cities || [],
                 isActive: createSubscriptionDto.isActive ?? true,
                 startDate,
                 durationMonths,
@@ -233,10 +260,10 @@ export class TendersService {
         return subscriptions.map((s: any) => s.customer);
     }
 
-    async updateSubscription(customerId: string, categories: string[], states: string[], isActive: boolean = true) {
+    async updateSubscription(customerId: string, categories: string[], states: string[], cities: string[] = [], isActive: boolean = true) {
         return this.prisma.tenderSubscription.update({
             where: { customerId },
-            data: { categories, states, isActive },
+            data: { categories, states, cities, isActive },
             include: { customer: true },
         });
     }
