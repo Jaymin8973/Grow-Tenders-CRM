@@ -59,7 +59,7 @@ export function Header() {
         queryFn: async () => {
             if (!searchQuery.trim()) return [];
             const response = await apiClient.get(`/customers?search=${encodeURIComponent(searchQuery)}`);
-            return response.data;
+            return response.data?.items ?? [];
         },
         enabled: searchQuery.trim().length > 0,
     });
