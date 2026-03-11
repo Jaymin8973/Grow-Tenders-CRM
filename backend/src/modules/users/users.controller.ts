@@ -7,6 +7,7 @@ import {
     Param,
     UseGuards,
     Query,
+    Req,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
@@ -36,27 +37,27 @@ export class UsersController {
     @Roles(Role.SUPER_ADMIN, Role.MANAGER)
     @ApiOperation({ summary: 'Get all users' })
     @ApiQuery({ name: 'role', required: false, enum: Role })
-    findAll(@Query('role') role?: Role) {
-        return this.usersService.findAll(role);
+    findAll(@Req() req: any, @Query('role') role?: Role) {
+        return this.usersService.findAll(role, req.user?.role);
     }
 
     @Get('managers')
     @ApiOperation({ summary: 'Get all managers' })
-    getManagers() {
-        return this.usersService.getManagers();
+    getManagers(@Req() req: any) {
+        return this.usersService.getManagers(req.user?.role);
     }
 
     @Get('team')
     @Roles(Role.MANAGER)
     @ApiOperation({ summary: 'Get team members for current manager' })
-    getTeamMembers(@CurrentUser('id') managerId: string) {
-        return this.usersService.getTeamMembers(managerId);
+    getTeamMembers(@Req() req: any, @CurrentUser('id') managerId: string) {
+        return this.usersService.getTeamMembers(managerId, req.user?.role);
     }
 
     @Get('profile')
     @ApiOperation({ summary: 'Get current user profile' })
-    getProfile(@CurrentUser('id') userId: string) {
-        return this.usersService.findOne(userId);
+    getProfile(@Req() req: any, @CurrentUser('id') userId: string) {
+        return this.usersService.findOne(userId, req.user?.role);
     }
 
     @Patch('profile')
@@ -80,8 +81,8 @@ export class UsersController {
     @Get(':id')
     @Roles(Role.SUPER_ADMIN, Role.MANAGER)
     @ApiOperation({ summary: 'Get user by ID' })
-    findOne(@Param('id') id: string) {
-        return this.usersService.findOne(id);
+    findOne(@Req() req: any, @Param('id') id: string) {
+        return this.usersService.findOne(id, req.user?.role);
     }
 
     @Patch(':id')

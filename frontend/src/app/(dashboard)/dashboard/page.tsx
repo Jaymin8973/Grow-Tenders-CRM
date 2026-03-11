@@ -3,8 +3,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/auth-context';
 import apiClient from '@/lib/api-client';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, formatNumber } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import {
     Users,
     UserPlus,
@@ -23,7 +24,7 @@ import {
     XAxis,
     YAxis,
     CartesianGrid,
-    Tooltip,
+    Tooltip as RechartsTooltip,
     ResponsiveContainer,
     PieChart,
     Pie,
@@ -57,6 +58,17 @@ export default function DashboardPage() {
             const response = await apiClient.get('/reports/dashboard');
             return response.data;
         },
+    });
+
+    const { data: managerAllocation, isLoading: managerAllocationLoading } = useQuery({
+        queryKey: ['manager-allocation-dashboard'],
+        queryFn: async () => {
+            const month = new Date();
+            const monthParam = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}-01`;
+            const response = await apiClient.get(`/targets/manager-allocation?month=${monthParam}`);
+            return response.data;
+        },
+        enabled: user?.role === 'MANAGER',
     });
 
     const salesData = stats?.monthlyRevenue
@@ -145,6 +157,9 @@ export default function DashboardPage() {
         },
     ];
 
+    const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+    const isManager = user?.role === 'MANAGER';
+
     return (
         <div className="space-y-8 page-enter">
             {/* Page Header */}
@@ -185,10 +200,121 @@ export default function DashboardPage() {
                 </div>
             )}
 
+            {/* Manager Dashboard */}
+            {isManager && (
+                <div className="space-y-6">
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        <Card className="overflow-hidden border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur">
+                            <div className="h-1.5 bg-gradient-to-r from-indigo-500 to-violet-500" />
+                            <CardContent className="p-4">
+                                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Your Target</p>
+                                <p className="text-2xl font-bold mt-1">
+                                    {managerAllocation?.hasTarget ? formatCurrency(managerAllocation?.managerTarget?.total || 0) : '-'}
+                                </p>
+                                {!managerAllocationLoading && managerAllocation?.hasTarget === false && (
+                                    <p className="text-xs text-muted-foreground mt-1">No target assigned for this month</p>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        <Card className="overflow-hidden border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur">
+                            <div className="h-1.5 bg-gradient-to-r from-sky-500 to-cyan-500" />
+                            <CardContent className="p-4">
+                                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Allocated to Team</p>
+                                <p className="text-2xl font-bold mt-1">
+                                    {managerAllocation?.hasTarget ? formatCurrency(managerAllocation?.managerTarget?.allocated || 0) : '-'}
+                                </p>
+                            </CardContent>
+                        </Card>
+
+                        <Card className="overflow-hidden border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur">
+                            <div className="h-1.5 bg-gradient-to-r from-emerald-500 to-green-500" />
+                            <CardContent className="p-4">
+                                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Remaining</p>
+                                <p className="text-2xl font-bold mt-1">
+                                    {managerAllocation?.hasTarget ? formatCurrency(managerAllocation?.managerTarget?.remaining || 0) : '-'}
+                                </p>
+                            </CardContent>
+                        </Card>
+
+                        <Card className="overflow-hidden border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur">
+                            <div className="h-1.5 bg-gradient-to-r from-amber-500 to-orange-500" />
+                            <CardContent className="p-4">
+                                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Your Achievement</p>
+                                <p className="text-2xl font-bold mt-1">
+                                    {managerAllocation?.hasTarget ? formatCurrency(managerAllocation?.managerTarget?.achieved || 0) : '-'}
+                                </p>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
+                        <Card className="card-hover">
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-lg">Team Follow-ups Today</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-3xl font-bold">{stats?.followUpsToday || 0}</p>
+                                <p className="text-xs text-muted-foreground mt-1">Across your team</p>
+                            </CardContent>
+                        </Card>
+                        <Card className="card-hover">
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-lg">Overdue Follow-ups</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-3xl font-bold">{stats?.overdueFollowUps || 0}</p>
+                                <p className="text-xs text-muted-foreground mt-1">Needs attention</p>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    <Card className="card-hover">
+                        <CardHeader>
+                            <CardTitle className="text-lg">Employee-wise Targets</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {!managerAllocationLoading && managerAllocation?.hasTarget && managerAllocation?.teamMembers?.length > 0 ? (
+                                <div className="space-y-3">
+                                    {managerAllocation.teamMembers.map((m: any) => (
+                                        <div key={m.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border p-3 bg-white/60 dark:bg-slate-900/60">
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-sm font-semibold">
+                                                    {m.firstName?.[0]}{m.lastName?.[0]}
+                                                </div>
+                                                <div>
+                                                    <p className="font-medium">{m.firstName} {m.lastName}</p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        Target: {formatCurrency(m.target || 0)}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-6">
+                                                <div className="text-right">
+                                                    <p className="text-xs text-muted-foreground">Achieved</p>
+                                                    <p className="font-semibold">{formatCurrency(m.achieved || 0)}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-xs text-muted-foreground">Progress</p>
+                                                    <p className="font-semibold">{Number(m.percentage || 0).toFixed(0)}%</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-sm text-muted-foreground">No team target data available for this month.</p>
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
+
             {/* Start Restricted Admin/Manager Sections */}
-            {(user?.role === 'SUPER_ADMIN' || user?.role === 'MANAGER') && (
+            {isSuperAdmin && (
                 <>
                     {/* Stats Cards */}
+                    <TooltipProvider>
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                         {statsCards.map((stat) => {
                             const IconComponent = stat.icon;
@@ -212,7 +338,14 @@ export default function DashboardPage() {
                                             )}
                                         </div>
                                         <div>
-                                            <p className="text-2xl font-bold">{stat.value}</p>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <p className="text-2xl font-bold cursor-default">{formatNumber(stat.value)}</p>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>{stat.value.toLocaleString('en-IN')}</p>
+                                                </TooltipContent>
+                                            </Tooltip>
                                             <p className="text-sm text-muted-foreground">{stat.title}</p>
                                             {stat.changeLabel && (
                                                 <p className="text-xs text-muted-foreground mt-1">{stat.changeLabel}</p>
@@ -223,6 +356,7 @@ export default function DashboardPage() {
                             );
                         })}
                     </div>
+                    </TooltipProvider>
 
                     {/* Charts */}
                     <div className="grid gap-6 lg:grid-cols-2">
@@ -249,7 +383,7 @@ export default function DashboardPage() {
                                             <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
                                             <XAxis dataKey="month" className="text-xs" axisLine={false} tickLine={false} />
                                             <YAxis className="text-xs" axisLine={false} tickLine={false} />
-                                            <Tooltip
+                                            <RechartsTooltip
                                                 contentStyle={{
                                                     backgroundColor: 'hsl(var(--card))',
                                                     border: '1px solid hsl(var(--border))',
@@ -304,7 +438,7 @@ export default function DashboardPage() {
                                                     />
                                                 ))}
                                             </Pie>
-                                            <Tooltip
+                                            <RechartsTooltip
                                                 contentStyle={{
                                                     backgroundColor: 'hsl(var(--card))',
                                                     border: '1px solid hsl(var(--border))',

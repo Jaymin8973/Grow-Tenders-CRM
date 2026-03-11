@@ -15,6 +15,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ComposeEmailDialog } from '@/components/mail/compose-email-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import {
     Table,
     TableBody,
@@ -340,12 +341,20 @@ export default function LeadsPage() {
             )}
 
             {user?.role === 'SUPER_ADMIN' && (
+                <TooltipProvider>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
                     <Card className="card-hover">
                         <CardContent className="p-5">
                             <div className="space-y-1">
                                 <p className="text-sm text-muted-foreground">Total Leads</p>
-                                <p className="text-2xl font-bold">{formatNumber(stats?.total ?? 0)}</p>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <p className="text-2xl font-bold cursor-default">{formatNumber(stats?.total ?? 0)}</p>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>{(stats?.total ?? 0).toLocaleString('en-IN')}</p>
+                                    </TooltipContent>
+                                </Tooltip>
                             </div>
                         </CardContent>
                     </Card>
@@ -353,7 +362,14 @@ export default function LeadsPage() {
                         <CardContent className="p-5">
                             <div className="space-y-1">
                                 <p className="text-sm text-muted-foreground">Cold Leads</p>
-                                <p className="text-2xl font-bold">{getCount('COLD_LEAD')}</p>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <p className="text-2xl font-bold cursor-default">{getCount('COLD_LEAD')}</p>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>{getCount('COLD_LEAD').toLocaleString('en-IN')}</p>
+                                    </TooltipContent>
+                                </Tooltip>
                             </div>
                         </CardContent>
                     </Card>
@@ -361,7 +377,14 @@ export default function LeadsPage() {
                         <CardContent className="p-5">
                             <div className="space-y-1">
                                 <p className="text-sm text-muted-foreground">Warm Leads</p>
-                                <p className="text-2xl font-bold">{getCount('WARM_LEAD')}</p>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <p className="text-2xl font-bold cursor-default">{getCount('WARM_LEAD')}</p>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>{getCount('WARM_LEAD').toLocaleString('en-IN')}</p>
+                                    </TooltipContent>
+                                </Tooltip>
                             </div>
                         </CardContent>
                     </Card>
@@ -369,7 +392,14 @@ export default function LeadsPage() {
                         <CardContent className="p-5">
                             <div className="space-y-1">
                                 <p className="text-sm text-muted-foreground">Hot Leads</p>
-                                <p className="text-2xl font-bold">{getCount('HOT_LEAD')}</p>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <p className="text-2xl font-bold cursor-default">{getCount('HOT_LEAD')}</p>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>{getCount('HOT_LEAD').toLocaleString('en-IN')}</p>
+                                    </TooltipContent>
+                                </Tooltip>
                             </div>
                         </CardContent>
                     </Card>
@@ -377,7 +407,14 @@ export default function LeadsPage() {
                         <CardContent className="p-5">
                             <div className="space-y-1">
                                 <p className="text-sm text-muted-foreground">Proposal</p>
-                                <p className="text-2xl font-bold">{getCount('PROPOSAL_LEAD')}</p>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <p className="text-2xl font-bold cursor-default">{getCount('PROPOSAL_LEAD')}</p>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>{getCount('PROPOSAL_LEAD').toLocaleString('en-IN')}</p>
+                                    </TooltipContent>
+                                </Tooltip>
                             </div>
                         </CardContent>
                     </Card>
@@ -385,11 +422,19 @@ export default function LeadsPage() {
                         <CardContent className="p-5">
                             <div className="space-y-1">
                                 <p className="text-sm text-muted-foreground">Closed</p>
-                                <p className="text-2xl font-bold">{getCount('CLOSED_LEAD')}</p>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <p className="text-2xl font-bold cursor-default">{getCount('CLOSED_LEAD')}</p>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>{getCount('CLOSED_LEAD').toLocaleString('en-IN')}</p>
+                                    </TooltipContent>
+                                </Tooltip>
                             </div>
                         </CardContent>
                     </Card>
                 </div>
+                </TooltipProvider>
             )}
 
             {/* Filters & Search */}

@@ -103,6 +103,7 @@ export default function LeadDetailPage() {
     const [followUpOpen, setFollowUpOpen] = useState(false);
     const [followUpDate, setFollowUpDate] = useState<Date>();
     const [followUpDescription, setFollowUpDescription] = useState('');
+    const [timelineLimit, setTimelineLimit] = useState(10);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -179,6 +180,15 @@ export default function LeadDetailPage() {
         queryKey: ['follow-ups', 'lead', leadId],
         queryFn: async () => {
             const response = await apiClient.get(`/follow-ups/lead/${leadId}`);
+            return response.data;
+        },
+    });
+
+    // Fetch audit logs for lead timeline
+    const { data: auditLogs } = useQuery({
+        queryKey: ['audit-logs', 'lead', leadId],
+        queryFn: async () => {
+            const response = await apiClient.get(`/audit-logs/lead/${leadId}`);
             return response.data;
         },
     });
@@ -851,38 +861,136 @@ export default function LeadDetailPage() {
                                 </CardHeader>
                                 <CardContent>
                                     <div className="space-y-4">
-                                        {followUps?.map((followUp: any) => (
-                                            <div key={followUp.id} className="flex gap-4 p-3 rounded-lg hover:bg-muted transition-colors">
-                                                <div className={cn(
-                                                    "p-2 rounded-full h-fit",
-                                                    followUp.status === 'COMPLETED' ? 'bg-emerald-100' : 'bg-blue-100'
-                                                )}>
-                                                    {followUp.status === 'COMPLETED' ? (
-                                                        <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                                                    ) : (
-                                                        <Clock className="h-4 w-4 text-blue-600" />
+                                        {(() => {
+                                            // Combine follow-ups and audit logs into timeline
+                                            const allItems = [
+                                                ...(followUps?.map((f: any) => ({
+                                                    id: f.id,
+                                                    type: 'followup',
+                                                    date: new Date(f.createdAt || f.scheduledAt),
+                                                    data: f,
+                                                })) || []),
+                                                ...(auditLogs?.filter((log: any) => log.action !== 'VIEW').map((log: any) => ({
+                                                    id: log.id,
+                                                    type: 'audit',
+                                                    date: new Date(log.createdAt),
+                                                    data: log,
+                                                })) || []),
+                                            ].sort((a, b) => b.date.getTime() - a.date.getTime());
+
+                                            const visibleItems = allItems.slice(0, timelineLimit);
+                                            const hasMore = allItems.length > timelineLimit;
+
+                                            return (
+                                                <>
+                                                    {visibleItems.map((item: any) => {
+                                                        if (item.type === 'followup') {
+                                                            const f = item.data;
+                                                            return (
+                                                                <div key={item.id} className="flex gap-4 p-3 rounded-lg hover:bg-muted transition-colors">
+                                                                    <div className={cn(
+                                                                        "p-2 rounded-full h-fit",
+                                                                        f.status === 'COMPLETED' ? 'bg-emerald-100' : 'bg-blue-100'
+                                                                    )}>
+                                                                        {f.status === 'COMPLETED' ? (
+                                                                            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                                                                        ) : (
+                                                                            <Clock className="h-4 w-4 text-blue-600" />
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="flex-1">
+                                                                        <div className="flex items-center justify-between">
+                                                                            <p className="font-medium">Follow-up Scheduled</p>
+                                                                            <div className="text-right">
+                                                                                <p className="text-xs text-muted-foreground">
+                                                                                    {format(new Date(f.createdAt || f.scheduledAt), 'PP p')}
+                                                                                </p>
+                                                                                <p className="text-xs text-muted-foreground/70">
+                                                                                    Scheduled for: {format(new Date(f.scheduledAt), 'PPP')}
+                                                                                </p>
+                                                                            </div>
+                                                                        </div>
+                                                                        <p className="text-sm text-muted-foreground">{f.status}</p>
+                                                                        {f.description && (
+                                                                            <p className="text-sm mt-1">{f.description}</p>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        } else {
+                                                            const log = item.data;
+                                                            const actionColors: Record<string, string> = {
+                                                                CREATE: 'bg-green-100 text-green-600',
+                                                                UPDATE: 'bg-amber-100 text-amber-600',
+                                                                DELETE: 'bg-red-100 text-red-600',
+                                                            };
+                                                            const actionIcons: Record<string, string> = {
+                                                                CREATE: '➕',
+                                                                UPDATE: '✏️',
+                                                                DELETE: '🗑️',
+                                                            };
+                                                            return (
+                                                                <div key={item.id} className="flex gap-4 p-3 rounded-lg hover:bg-muted transition-colors">
+                                                                    <div className={cn(
+                                                                        "p-2 rounded-full h-fit",
+                                                                        actionColors[log.action]?.split(' ')[0] || 'bg-slate-100'
+                                                                    )}>
+                                                                        <span className="text-sm">{actionIcons[log.action] || '📋'}</span>
+                                                                    </div>
+                                                                    <div className="flex-1">
+                                                                        <div className="flex items-center justify-between">
+                                                                            <div className="flex items-center gap-2">
+                                                                                <p className="font-medium">
+                                                                                    {log.action === 'CREATE' ? 'Created' :
+                                                                                     log.action === 'UPDATE' ? 'Updated' : 'Deleted'}
+                                                                                </p>
+                                                                                {log.user && (
+                                                                                    <span className="text-xs text-muted-foreground">
+                                                                                        by {log.user.firstName} {log.user.lastName}
+                                                                                    </span>
+                                                                                )}
+                                                                            </div>
+                                                                            <p className="text-xs text-muted-foreground">
+                                                                                {format(new Date(log.createdAt), 'PP p')}
+                                                                            </p>
+                                                                        </div>
+                                                                        {log.newValues && Object.keys(log.newValues).length > 0 && (
+                                                                            <div className="mt-1">
+                                                                                <p className="text-sm text-muted-foreground">
+                                                                                    Changed: {Object.keys(log.newValues).filter(k => !['id', 'createdAt', 'updatedAt'].includes(k)).join(', ')}
+                                                                                </p>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        }
+                                                    })}
+                                                    {allItems.length === 0 && (
+                                                        <div className="text-center py-8 text-muted-foreground">
+                                                            <CalendarIcon className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                                                            <p>No activity yet</p>
+                                                        </div>
                                                     )}
-                                                </div>
-                                                <div className="flex-1">
-                                                    <div className="flex items-center justify-between">
-                                                        <p className="font-medium">Follow-up</p>
-                                                        <span className="text-xs text-muted-foreground">
-                                                            {format(new Date(followUp.scheduledAt), 'PPP')}
-                                                        </span>
-                                                    </div>
-                                                    <p className="text-sm text-muted-foreground">{followUp.status}</p>
-                                                    {followUp.description && (
-                                                        <p className="text-sm mt-1">{followUp.description}</p>
+                                                    {hasMore && (
+                                                        <div className="pt-2">
+                                                            <Button
+                                                                variant="outline"
+                                                                className="w-full"
+                                                                onClick={() => setTimelineLimit(prev => prev + 10)}
+                                                            >
+                                                                Load More ({allItems.length - timelineLimit} remaining)
+                                                            </Button>
+                                                        </div>
                                                     )}
-                                                </div>
-                                            </div>
-                                        ))}
-                                        {(!followUps || followUps.length === 0) && (
-                                            <div className="text-center py-8 text-muted-foreground">
-                                                <CalendarIcon className="h-10 w-10 mx-auto mb-2 opacity-30" />
-                                                <p>No follow-ups yet</p>
-                                            </div>
-                                        )}
+                                                    {allItems.length > 0 && (
+                                                        <p className="text-xs text-center text-muted-foreground pt-2">
+                                                            Showing {visibleItems.length} of {allItems.length} activities
+                                                        </p>
+                                                    )}
+                                                </>
+                                            );
+                                        })()}
                                     </div>
                                 </CardContent>
                             </Card>

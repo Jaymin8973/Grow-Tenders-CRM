@@ -187,7 +187,13 @@ export class PaymentsService {
             where: { id },
             include: {
                 customer: true,
-                invoice: true,
+                invoice: {
+                    include: {
+                        lead: {
+                            select: { id: true, firstName: true, lastName: true, company: true },
+                        },
+                    },
+                },
                 createdBy: {
                     select: { id: true, firstName: true, lastName: true, email: true },
                 },
@@ -222,12 +228,21 @@ export class PaymentsService {
             };
         }
 
+        // Handle paymentDate - parse as local date to avoid timezone issues
+        let paymentDateUpdate: Date | undefined = undefined;
+        if (updatePaymentDto.paymentDate) {
+            // Parse date string as local date (not UTC) to match stats query
+            const [year, month, day] = updatePaymentDto.paymentDate.split('-').map(Number);
+            const originalTime = payment.paymentDate;
+            paymentDateUpdate = new Date(year, month - 1, day, originalTime.getHours(), originalTime.getMinutes(), originalTime.getSeconds());
+        }
+
         return this.prisma.payment.update({
             where: { id },
             data: {
                 ...updatePaymentDto,
                 ...gstData,
-                paymentDate: updatePaymentDto.paymentDate ? new Date(updatePaymentDto.paymentDate) : undefined,
+                paymentDate: paymentDateUpdate,
             },
             include: {
                 customer: true,

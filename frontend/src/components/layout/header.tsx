@@ -248,7 +248,7 @@ export function Header() {
                                         {user?.firstName} {user?.lastName}
                                     </p>
                                     <p className="text-xs leading-none text-muted-foreground">
-                                        {user?.email}
+                                        {user?.role === 'SUPER_ADMIN' ? user?.email : (user?.showEmail ? user?.email : '-')}
                                     </p>
                                 </div>
                             </DropdownMenuLabel>

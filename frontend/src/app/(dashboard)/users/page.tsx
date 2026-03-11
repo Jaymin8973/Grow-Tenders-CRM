@@ -10,6 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import {
     Table,
     TableBody,
@@ -64,6 +66,23 @@ export default function UsersPage() {
             if (search) params.append('search', search);
             const response = await apiClient.get(`/users?${params.toString()}`);
             return response.data;
+        },
+    });
+
+    const toggleShowEmailMutation = useMutation({
+        mutationFn: async ({ userId, showEmail }: { userId: string; showEmail: boolean }) => {
+            return apiClient.patch(`/users/${userId}`, { showEmail });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['users'] });
+            toast({ title: 'Email visibility updated' });
+        },
+        onError: (error: any) => {
+            toast({
+                title: 'Failed to update email visibility',
+                description: getErrorMessage(error),
+                variant: 'destructive',
+            });
         },
     });
 
@@ -130,6 +149,7 @@ export default function UsersPage() {
             </div>
 
             {/* Stats Cards */}
+            <TooltipProvider>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <Card className="card-hover">
                     <CardContent className="p-5">
@@ -138,7 +158,14 @@ export default function UsersPage() {
                                 <Users className="h-6 w-6 text-blue-500" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold">{formatNumber(users?.length || 0)}</p>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <p className="text-2xl font-bold cursor-default">{formatNumber(users?.length || 0)}</p>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>{(users?.length || 0).toLocaleString('en-IN')}</p>
+                                    </TooltipContent>
+                                </Tooltip>
                                 <p className="text-sm text-muted-foreground">Total Users</p>
                             </div>
                         </div>
@@ -151,7 +178,14 @@ export default function UsersPage() {
                                 <UserCheck className="h-6 w-6 text-emerald-500" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold">{formatNumber(activeUsers.length)}</p>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <p className="text-2xl font-bold cursor-default">{formatNumber(activeUsers.length)}</p>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>{activeUsers.length.toLocaleString('en-IN')}</p>
+                                    </TooltipContent>
+                                </Tooltip>
                                 <p className="text-sm text-muted-foreground">Active</p>
                             </div>
                         </div>
@@ -164,9 +198,16 @@ export default function UsersPage() {
                                 <Shield className="h-6 w-6 text-purple-500" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold">
-                                    {users?.filter((u: any) => u.role === 'MANAGER').length || 0}
-                                </p>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <p className="text-2xl font-bold cursor-default">
+                                            {users?.filter((u: any) => u.role === 'MANAGER').length || 0}
+                                        </p>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>{(users?.filter((u: any) => u.role === 'MANAGER').length || 0).toLocaleString('en-IN')}</p>
+                                    </TooltipContent>
+                                </Tooltip>
                                 <p className="text-sm text-muted-foreground">Managers</p>
                             </div>
                         </div>
@@ -179,13 +220,21 @@ export default function UsersPage() {
                                 <UserX className="h-6 w-6 text-amber-500" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold">{formatNumber(inactiveUsers.length)}</p>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <p className="text-2xl font-bold cursor-default">{formatNumber(inactiveUsers.length)}</p>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>{inactiveUsers.length.toLocaleString('en-IN')}</p>
+                                    </TooltipContent>
+                                </Tooltip>
                                 <p className="text-sm text-muted-foreground">Inactive</p>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
             </div>
+            </TooltipProvider>
 
             {/* Search */}
             <Card>
@@ -212,6 +261,7 @@ export default function UsersPage() {
                                 <TableHead className="w-[300px]">User</TableHead>
                                 <TableHead>Role</TableHead>
                                 <TableHead>Manager</TableHead>
+                                <TableHead>Show Email</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead>Joined</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
@@ -235,7 +285,7 @@ export default function UsersPage() {
                                                         {u.firstName} {u.lastName}
                                                     </p>
                                                     <p className="text-sm text-muted-foreground">
-                                                        {u.email}
+                                                        {user?.role === 'SUPER_ADMIN' ? u.email : (u.showEmail ? u.email : '-')}
                                                     </p>
                                                 </div>
                                             </div>
@@ -260,6 +310,19 @@ export default function UsersPage() {
                                             ) : (
                                                 <span className="text-muted-foreground">-</span>
                                             )}
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center gap-2">
+                                                <Checkbox
+                                                    checked={!!u.showEmail}
+                                                    onCheckedChange={(checked) => {
+                                                        toggleShowEmailMutation.mutate({
+                                                            userId: u.id,
+                                                            showEmail: Boolean(checked),
+                                                        });
+                                                    }}
+                                                />
+                                            </div>
                                         </TableCell>
                                         <TableCell>
                                             <Badge variant={u.isActive ? 'default' : 'secondary'}>
@@ -315,7 +378,7 @@ export default function UsersPage() {
                             })}
                             {(!users || users.length === 0) && (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="h-32 text-center">
+                                    <TableCell colSpan={7} className="h-32 text-center">
                                         <div className="flex flex-col items-center justify-center text-muted-foreground">
                                             <Users className="h-10 w-10 mb-2 opacity-50" />
                                             <p>No users found</p>

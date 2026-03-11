@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/card';
 import { CreateReportDialog } from '@/components/daily-reports/create-report-dialog';
 import { ReportsTable } from '@/components/daily-reports/reports-table';
+import { EditReportDialog } from '@/components/daily-reports/edit-report-dialog';
 import {
     Select,
     SelectContent,
@@ -27,6 +28,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn, formatNumber } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
 
 interface DailyReport {
@@ -77,6 +79,8 @@ export default function DailyReportsPage() {
     const limit = 10;
 
     const [activeTab, setActiveTab] = useState('today');
+    const [editingReport, setEditingReport] = useState<DailyReport | null>(null);
+    const [editDialogOpen, setEditDialogOpen] = useState(false);
 
     // Filters
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
@@ -142,7 +146,7 @@ export default function DailyReportsPage() {
         }
     }, [user, selectedDate, selectedEmployee, activeTab, page]);
 
-    const canCreateReport = user?.role === 'EMPLOYEE' || user?.role === 'SUPER_ADMIN' || user?.role === 'MANAGER';
+    const canCreateReport = user?.role === 'EMPLOYEE';
     const canViewAllObject = user?.role === 'MANAGER' || user?.role === 'SUPER_ADMIN';
 
     const handlePrevPage = () => {
@@ -181,67 +185,85 @@ export default function DailyReportsPage() {
                 </div>
 
                 {/* Stats Summary */}
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    <Card className="overflow-hidden border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur">
-                        <div className="h-1.5 bg-gradient-to-r from-blue-500 to-cyan-500" />
-                        <CardContent className="p-4">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                                    <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                {canViewAllObject && (
+                    <TooltipProvider>
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        <Card className="overflow-hidden border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur">
+                            <div className="h-1.5 bg-gradient-to-r from-blue-500 to-cyan-500" />
+                            <CardContent className="p-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                                        <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Reports</p>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 cursor-default">{formatNumber(total)}</p>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p>{total.toLocaleString('en-IN')}</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Reports</p>
-                                    <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{formatNumber(total)}</p>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                            </CardContent>
+                        </Card>
 
-                    <Card className="overflow-hidden border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur">
-                        <div className="h-1.5 bg-gradient-to-r from-emerald-500 to-green-500" />
-                        <CardContent className="p-4">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
-                                    <TrendingUp className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                        <Card className="overflow-hidden border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur">
+                            <div className="h-1.5 bg-gradient-to-r from-emerald-500 to-green-500" />
+                            <CardContent className="p-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
+                                        <TrendingUp className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Current Page</p>
+                                        <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{page} / {totalPages}</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Current Page</p>
-                                    <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{page} / {totalPages}</p>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                            </CardContent>
+                        </Card>
 
-                    <Card className="overflow-hidden border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur">
-                        <div className="h-1.5 bg-gradient-to-r from-amber-500 to-orange-500" />
-                        <CardContent className="p-4">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30">
-                                    <Users className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                        <Card className="overflow-hidden border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur">
+                            <div className="h-1.5 bg-gradient-to-r from-amber-500 to-orange-500" />
+                            <CardContent className="p-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30">
+                                        <Users className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Employees</p>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 cursor-default">{formatNumber(employees.length)}</p>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p>{employees.length.toLocaleString('en-IN')}</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Employees</p>
-                                    <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{formatNumber(employees.length)}</p>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                            </CardContent>
+                        </Card>
 
-                    <Card className="overflow-hidden border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur">
-                        <div className="h-1.5 bg-gradient-to-r from-rose-500 to-pink-500" />
-                        <CardContent className="p-4">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-rose-100 dark:bg-rose-900/30">
-                                    <Clock className="h-5 w-5 text-rose-600 dark:text-rose-400" />
+                        <Card className="overflow-hidden border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur">
+                            <div className="h-1.5 bg-gradient-to-r from-rose-500 to-pink-500" />
+                            <CardContent className="p-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 rounded-lg bg-rose-100 dark:bg-rose-900/30">
+                                        <Clock className="h-5 w-5 text-rose-600 dark:text-rose-400" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">View Mode</p>
+                                        <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 capitalize">{activeTab}</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">View Mode</p>
-                                    <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 capitalize">{activeTab}</p>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                    </TooltipProvider>
+                )}
 
                 {/* Filters for Admin/Manager */}
                 {canViewAllObject && (
@@ -338,7 +360,10 @@ export default function DailyReportsPage() {
                                 <p className="text-sm mt-1">No reports match your current filters</p>
                             </div>
                         ) : (
-                            <ReportsTable reports={reports} />
+                            <ReportsTable reports={reports} currentUserId={user?.id} userRole={user?.role} onRefresh={fetchReports} onEdit={(report) => {
+                                    setEditingReport(report);
+                                    setEditDialogOpen(true);
+                                }} />
                         )}
                     </CardContent>
                 </Card>
@@ -399,6 +424,12 @@ export default function DailyReportsPage() {
                     </div>
                 )}
             </div>
+            <EditReportDialog
+                report={editingReport}
+                open={editDialogOpen}
+                onOpenChange={setEditDialogOpen}
+                onSuccess={fetchReports}
+            />
         </div>
     );
 }

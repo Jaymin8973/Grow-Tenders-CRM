@@ -17,22 +17,23 @@ export class PaymentRequestsService {
     constructor(private prisma: PrismaService) { }
 
     async create(userId: string, data: any, file?: Express.Multer.File) {
-        let screenshotUrl = null;
-
-        if (file) {
-            // Ensure upload directory exists
-            const uploadDir = path.join(process.cwd(), 'uploads/payment_requests');
-            if (!fs.existsSync(uploadDir)) {
-                fs.mkdirSync(uploadDir, { recursive: true });
-            }
-
-            const filename = generateFilename(file.originalname);
-            const filePath = path.join(uploadDir, filename);
-
-            fs.writeFileSync(filePath, file.buffer);
-            // Construct URL (assuming static serve setup or similar)
-            screenshotUrl = `/uploads/payment_requests/${filename}`;
+        // Screenshot is required
+        if (!file) {
+            throw new BadRequestException('Payment screenshot is required');
         }
+
+        // Ensure upload directory exists
+        const uploadDir = path.join(process.cwd(), 'uploads/payment_requests');
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+
+        const filename = generateFilename(file.originalname);
+        const filePath = path.join(uploadDir, filename);
+
+        fs.writeFileSync(filePath, file.buffer);
+        // Construct URL (assuming static serve setup or similar)
+        const screenshotUrl = `/uploads/payment_requests/${filename}`;
 
         return this.prisma.paymentRequest.create({
             data: {

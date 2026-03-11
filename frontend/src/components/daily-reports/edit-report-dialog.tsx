@@ -12,7 +12,6 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from '@/components/ui/dialog';
 import {
     Form,
@@ -44,10 +43,6 @@ const formSchema = z.object({
     })).optional(),
 });
 
-interface CreateReportDialogProps {
-    onSuccess: () => void;
-}
-
 interface Lead {
     id: string;
     firstName: string;
@@ -56,15 +51,32 @@ interface Lead {
     status: string;
 }
 
-interface PaymentDetail {
-    customerId?: string;
-    leadId?: string;
-    amount?: number;
-    notes?: string;
+interface DailyReport {
+    id: string;
+    title: string | null;
+    content: string;
+    callCount: number;
+    avgTalkTime: number;
+    leadsGenerated: number;
+    date: string;
+    leadIds?: string[];
+    leads?: Lead[];
+    paymentDetails?: Array<{
+        customerId?: string;
+        leadId?: string;
+        amount?: number;
+        notes?: string;
+    }>;
 }
 
-export function CreateReportDialog({ onSuccess }: CreateReportDialogProps) {
-    const [open, setOpen] = useState(false);
+interface EditReportDialogProps {
+    report: DailyReport | null;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onSuccess: () => void;
+}
+
+export function EditReportDialog({ report, open, onOpenChange, onSuccess }: EditReportDialogProps) {
     const { toast } = useToast();
     const [leads, setLeads] = useState<Lead[]>([]);
 
@@ -83,10 +95,20 @@ export function CreateReportDialog({ onSuccess }: CreateReportDialogProps) {
     });
 
     useEffect(() => {
-        if (open) {
+        if (open && report) {
+            form.reset({
+                title: report.title || '',
+                content: report.content || '',
+                callCount: report.callCount || 0,
+                avgTalkTime: report.avgTalkTime || 0,
+                leadsGenerated: report.leadsGenerated || 0,
+                paymentReceivedFromCustomerIds: [],
+                leadIds: report.leadIds || [],
+                paymentDetails: report.paymentDetails || [],
+            });
             fetchLeads();
         }
-    }, [open]);
+    }, [open, report]);
 
     const fetchLeads = async () => {
         try {
@@ -96,39 +118,9 @@ export function CreateReportDialog({ onSuccess }: CreateReportDialogProps) {
         } catch (error) {
             console.error('Failed to fetch leads', error);
         }
-    }
-
-    async function onSubmit(values: z.infer<typeof formSchema>) {
-        try {
-            await apiClient.post('/daily-reports', values);
-            toast({
-                title: 'Report submitted',
-                description: 'Your daily report has been submitted successfully.',
-            });
-            setOpen(false);
-            form.reset();
-            onSuccess();
-        } catch (error: any) {
-            const message = error?.response?.data?.message || 'Failed to submit report. Please try again.';
-            toast({
-                title: 'Error',
-                description: message,
-                variant: 'destructive',
-            });
-            console.error(error);
-        }
-    }
-
-    const selectedLeadIds = form.watch('leadIds') || [];
-    const paymentDetails = form.watch('paymentDetails') || [];
-
-    const toggleLead = (leadId: string) => {
-        const current = form.getValues('leadIds') || [];
-        const updated = current.includes(leadId)
-            ? current.filter(id => id !== leadId)
-            : [...current, leadId];
-        form.setValue('leadIds', updated);
     };
+
+    const paymentDetails = form.watch('paymentDetails') || [];
 
     const addPaymentDetail = () => {
         const current = form.getValues('paymentDetails') || [];
@@ -147,25 +139,39 @@ export function CreateReportDialog({ onSuccess }: CreateReportDialogProps) {
         form.setValue('paymentDetails', [...current]);
     };
 
+    async function onSubmit(values: z.infer<typeof formSchema>) {
+        if (!report) return;
+        try {
+            await apiClient.put(`/daily-reports/${report.id}`, values);
+            toast({
+                title: 'Report updated',
+                description: 'Your daily report has been updated successfully.',
+            });
+            onOpenChange(false);
+            onSuccess();
+        } catch (error: any) {
+            const message = error?.response?.data?.message || 'Failed to update report. Please try again.';
+            toast({
+                title: 'Error',
+                description: message,
+                variant: 'destructive',
+            });
+        }
+    }
+
+    if (!report) return null;
+
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-                <Button>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create Report
-                </Button>
-            </DialogTrigger>
+        <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>Create Daily Report</DialogTitle>
+                    <DialogTitle>Edit Daily Report</DialogTitle>
                     <DialogDescription>
-                        Submit your daily work summary here.
+                        Update your daily work summary.
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                        {/* Title field removed */}
-
                         <div className="grid grid-cols-3 gap-4">
                             <FormField
                                 control={form.control}
@@ -253,7 +259,7 @@ export function CreateReportDialog({ onSuccess }: CreateReportDialogProps) {
 
                         <DialogFooter>
                             <Button type="submit" disabled={form.formState.isSubmitting}>
-                                {form.formState.isSubmitting ? 'Submitting...' : 'Submit Report'}
+                                {form.formState.isSubmitting ? 'Updating...' : 'Update Report'}
                             </Button>
                         </DialogFooter>
                     </form>

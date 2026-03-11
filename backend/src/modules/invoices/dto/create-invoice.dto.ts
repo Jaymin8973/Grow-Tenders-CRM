@@ -6,9 +6,11 @@ import {
     IsArray,
     ValidateNested,
     IsDateString,
+    IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { InvoiceType } from '@prisma/client';
 
 class LineItemDto {
     @ApiProperty({ example: 'Web Development Services' })
@@ -53,10 +55,20 @@ export class CreateInvoiceDto {
     @IsOptional()
     companyLogo?: string;
 
-    @ApiProperty()
+    @ApiPropertyOptional()
     @IsString()
-    @IsNotEmpty()
-    customerId: string;
+    @IsOptional()
+    customerId?: string;
+
+    @ApiPropertyOptional()
+    @IsString()
+    @IsOptional()
+    leadId?: string;
+
+    @ApiPropertyOptional({ enum: InvoiceType, example: 'REGULAR' })
+    @IsEnum(InvoiceType)
+    @IsOptional()
+    invoiceType?: InvoiceType;
 
     @ApiPropertyOptional()
     @IsString()

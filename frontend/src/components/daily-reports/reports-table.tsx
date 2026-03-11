@@ -11,7 +11,11 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Pencil, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import apiClient from '@/lib/api-client';
 
 interface DailyReport {
     id: string;
@@ -27,6 +31,7 @@ interface DailyReport {
         firstName: string;
         lastName: string;
         email: string;
+        showEmail?: boolean;
         role: string;
     };
     paymentReceivedFromCustomers: Array<{
@@ -35,16 +40,59 @@ interface DailyReport {
         lastName: string;
         company?: string;
     }>;
+    leadIds?: string[];
+    leads?: Array<{
+        id: string;
+        firstName: string;
+        lastName: string;
+        company?: string;
+        status: string;
+    }>;
+    paymentDetails?: Array<{
+        customerId?: string;
+        leadId?: string;
+        amount?: number;
+        notes?: string;
+    }>;
 }
 
 interface ReportsTableProps {
     reports: DailyReport[];
+    currentUserId?: string;
+    userRole?: string;
+    onRefresh?: () => void;
+    onEdit?: (report: DailyReport) => void;
 }
 
-export function ReportsTable({ reports }: ReportsTableProps) {
+export function ReportsTable({ reports, currentUserId, userRole, onRefresh, onEdit }: ReportsTableProps) {
+    const { toast } = useToast();
+    const [deleting, setDeleting] = useState<string | null>(null);
+
+    const handleDelete = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this report?')) return;
+        setDeleting(id);
+        try {
+            await apiClient.delete(`/daily-reports/${id}`);
+            toast({ title: 'Report deleted successfully' });
+            onRefresh?.();
+        } catch (error: any) {
+            toast({
+                title: 'Error',
+                description: error.response?.data?.message || 'Failed to delete report',
+                variant: 'destructive'
+            });
+        } finally {
+            setDeleting(null);
+        }
+    };
+
     if (reports.length === 0) {
         return <div className="text-center py-10 text-muted-foreground">No reports found.</div>;
     }
+
+    const canEditReport = (report: DailyReport) => {
+        return userRole === 'EMPLOYEE' && report.employee.id === currentUserId;
+    };
 
     return (
         <div className="rounded-md border">
@@ -53,11 +101,11 @@ export function ReportsTable({ reports }: ReportsTableProps) {
                     <TableRow>
                         <TableHead>Date</TableHead>
                         <TableHead>Employee</TableHead>
-                        {/* Summary column removed */}
                         <TableHead>Calls</TableHead>
                         <TableHead>Talk Time</TableHead>
                         <TableHead>Leads</TableHead>
-                        <TableHead>Payments From</TableHead>
+                        <TableHead>Payments From Leads</TableHead>
+                        {userRole === 'EMPLOYEE' && <TableHead>Actions</TableHead>}
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -86,7 +134,7 @@ export function ReportsTable({ reports }: ReportsTableProps) {
                                             {report.employee.firstName} {report.employee.lastName}
                                         </span>
                                         <span className="text-xs text-muted-foreground">
-                                            {report.employee.email}
+                                            {userRole === 'SUPER_ADMIN' ? report.employee.email : (report.employee.showEmail ? report.employee.email : '-')}
                                         </span>
                                     </div>
                                 </div>
@@ -102,18 +150,56 @@ export function ReportsTable({ reports }: ReportsTableProps) {
                                 <span className="font-medium">{report.leadsGenerated}</span>
                             </TableCell>
                             <TableCell className="align-top">
-                                {report.paymentReceivedFromCustomers && report.paymentReceivedFromCustomers.length > 0 ? (
-                                    <div className="flex flex-wrap gap-1">
-                                        {report.paymentReceivedFromCustomers.map((customer) => (
-                                            <Badge key={customer.id} variant="secondary" className="text-xs font-normal">
-                                                {customer.firstName} {customer.lastName}
-                                            </Badge>
-                                        ))}
+                                {report.paymentDetails && report.paymentDetails.length > 0 ? (
+                                    <div className="flex flex-col gap-1">
+                                        {report.paymentDetails.map((pd, idx) => {
+                                            const lead = report.leads?.find(l => l.id === pd.leadId);
+                                            const amountNumber = pd.amount === undefined || pd.amount === null
+                                                ? undefined
+                                                : typeof pd.amount === 'number'
+                                                    ? pd.amount
+                                                    : Number(pd.amount);
+                                            return (
+                                                <div key={idx} className="flex items-center gap-2">
+                                                    {(lead || pd.leadId) && (
+                                                        <Badge variant="secondary" className="text-xs font-normal">
+                                                            {lead ? `${lead.firstName} ${lead.lastName}` : pd.leadId}
+                                                        </Badge>
+                                                    )}
+                                                    {amountNumber !== undefined && !Number.isNaN(amountNumber) && (
+                                                        <span className="text-xs font-medium">₹{amountNumber.toLocaleString()}</span>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 ) : (
                                     <span className="text-xs text-muted-foreground">-</span>
                                 )}
                             </TableCell>
+                            {userRole === 'EMPLOYEE' && (
+                                <TableCell className="align-top">
+                                    {canEditReport(report) && (
+                                        <div className="flex gap-2">
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => onEdit?.(report)}
+                                            >
+                                                <Pencil className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => handleDelete(report.id)}
+                                                disabled={deleting === report.id}
+                                            >
+                                                <Trash2 className="h-4 w-4 text-red-500" />
+                                            </Button>
+                                        </div>
+                                    )}
+                                </TableCell>
+                            )}
                         </TableRow>
                     ))}
                 </TableBody>

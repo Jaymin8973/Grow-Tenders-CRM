@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import {
     Trophy,
     Medal,
@@ -230,6 +231,7 @@ export default function LeaderboardPage() {
                 </div>
 
                 {/* Stats Summary */}
+                <TooltipProvider>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <Card className="overflow-hidden border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur">
                         <div className="h-1.5 bg-gradient-to-r from-amber-500 to-yellow-500" />
@@ -240,12 +242,19 @@ export default function LeaderboardPage() {
                                 </div>
                                 <div>
                                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Top Revenue</p>
-                                    <p className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                                        {globalLeaderboard?.[0]?.metrics?.revenueClosed 
-                                            ? formatCurrency(globalLeaderboard[0].metrics.revenueClosed)
-                                            : '-'
-                                        }
-                                    </p>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <p className="text-lg font-bold text-slate-900 dark:text-slate-100 cursor-default">
+                                                {globalLeaderboard?.[0]?.metrics?.revenueClosed 
+                                                    ? formatCurrency(globalLeaderboard[0].metrics.revenueClosed)
+                                                    : '-'
+                                                }
+                                            </p>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>₹{(globalLeaderboard?.[0]?.metrics?.revenueClosed || 0).toLocaleString('en-IN')}</p>
+                                        </TooltipContent>
+                                    </Tooltip>
                                 </div>
                             </div>
                         </CardContent>
@@ -260,9 +269,16 @@ export default function LeaderboardPage() {
                                 </div>
                                 <div>
                                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Employees</p>
-                                    <p className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                                        {formatNumber(globalLeaderboard?.length || 0)}
-                                    </p>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <p className="text-lg font-bold text-slate-900 dark:text-slate-100 cursor-default">
+                                                {formatNumber(globalLeaderboard?.length || 0)}
+                                            </p>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>{(globalLeaderboard?.length || 0).toLocaleString('en-IN')}</p>
+                                        </TooltipContent>
+                                    </Tooltip>
                                 </div>
                             </div>
                         </CardContent>
@@ -277,9 +293,16 @@ export default function LeaderboardPage() {
                                 </div>
                                 <div>
                                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Converted</p>
-                                    <p className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                                        {formatNumber(globalLeaderboard?.reduce((sum: number, e: any) => sum + (e.metrics?.leadsConverted || 0), 0) || 0)}
-                                    </p>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <p className="text-lg font-bold text-slate-900 dark:text-slate-100 cursor-default">
+                                                {formatNumber(globalLeaderboard?.reduce((sum: number, e: any) => sum + (e.metrics?.leadsConverted || 0), 0) || 0)}
+                                            </p>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>{(globalLeaderboard?.reduce((sum: number, e: any) => sum + (e.metrics?.leadsConverted || 0), 0) || 0).toLocaleString('en-IN')}</p>
+                                        </TooltipContent>
+                                    </Tooltip>
                                 </div>
                             </div>
                         </CardContent>
@@ -294,14 +317,22 @@ export default function LeaderboardPage() {
                                 </div>
                                 <div>
                                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Activities</p>
-                                    <p className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                                        {formatNumber(globalLeaderboard?.reduce((sum: number, e: any) => sum + (e.metrics?.activitiesCompleted || 0), 0) || 0)}
-                                    </p>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <p className="text-lg font-bold text-slate-900 dark:text-slate-100 cursor-default">
+                                                {formatNumber(globalLeaderboard?.reduce((sum: number, e: any) => sum + (e.metrics?.activitiesCompleted || 0), 0) || 0)}
+                                            </p>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>{(globalLeaderboard?.reduce((sum: number, e: any) => sum + (e.metrics?.activitiesCompleted || 0), 0) || 0).toLocaleString('en-IN')}</p>
+                                        </TooltipContent>
+                                    </Tooltip>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
                 </div>
+                </TooltipProvider>
 
                 {/* Tabs */}
                 <Tabs defaultValue="employees" className="w-full">

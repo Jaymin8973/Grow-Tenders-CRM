@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, UseGuards, Query, Param } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { AuditLogsService } from './audit-logs.service';
@@ -8,12 +8,12 @@ import { Roles } from '../../common/decorators';
 @ApiTags('Audit Logs')
 @Controller('audit-logs')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.SUPER_ADMIN)
 @ApiBearerAuth('JWT-auth')
 export class AuditLogsController {
     constructor(private readonly auditLogsService: AuditLogsService) { }
 
     @Get()
+    @Roles(Role.SUPER_ADMIN)
     @ApiOperation({ summary: 'Get audit logs (Admin only)' })
     @ApiQuery({ name: 'userId', required: false })
     @ApiQuery({ name: 'action', required: false })
@@ -44,8 +44,15 @@ export class AuditLogsController {
         );
     }
 
+    @Get('lead/:leadId')
+    @ApiOperation({ summary: 'Get audit logs for a specific lead' })
+    findByLeadId(@Param('leadId') leadId: string) {
+        return this.auditLogsService.findByEntity('leads', leadId);
+    }
+
     @Get('entity/:module/:entityId')
-    @ApiOperation({ summary: 'Get audit logs for specific entity' })
+    @Roles(Role.SUPER_ADMIN)
+    @ApiOperation({ summary: 'Get audit logs for specific entity (Admin only)' })
     findByEntity(
         @Query('module') module: string,
         @Query('entityId') entityId: string,

@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
-import { InvoiceStatus } from '@prisma/client';
+import { InvoiceStatus, InvoiceType, LeadStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
@@ -21,6 +21,29 @@ export class InvoicesService {
     }
 
     async create(createInvoiceDto: CreateInvoiceDto, userId: string) {
+        // Validate lead status for lead-based invoices
+        if (createInvoiceDto.leadId) {
+            const lead = await this.prisma.lead.findUnique({
+                where: { id: createInvoiceDto.leadId },
+            });
+
+            if (!lead) {
+                throw new NotFoundException('Lead not found');
+            }
+
+            const invoiceType = createInvoiceDto.invoiceType || InvoiceType.REGULAR;
+
+            // PERFORMA invoice only allowed for PROPOSAL_LEAD
+            if (invoiceType === InvoiceType.PERFORMA && lead.status !== LeadStatus.PROPOSAL_LEAD) {
+                throw new ForbiddenException('Performa invoice can only be created for leads with PROPOSAL status');
+            }
+
+            // REGULAR invoice only allowed for HOT_LEAD
+            if (invoiceType === InvoiceType.REGULAR && lead.status !== LeadStatus.HOT_LEAD) {
+                throw new ForbiddenException('Regular invoice can only be created for leads with HOT status');
+            }
+        }
+
         const invoiceNumber = await this.generateInvoiceNumber();
 
         // Calculate totals
@@ -52,13 +75,15 @@ export class InvoicesService {
                 companyEmail: createInvoiceDto.companyEmail,
                 companyLogo: createInvoiceDto.companyLogo,
                 customerId: createInvoiceDto.customerId,
+                leadId: createInvoiceDto.leadId,
+                invoiceType: createInvoiceDto.invoiceType || InvoiceType.REGULAR,
 
                 subtotal,
                 taxRate: createInvoiceDto.taxRate || 0,
                 taxAmount,
                 discount,
                 discountType: createInvoiceDto.discountType,
-                status: 'PAID', // Always paid immediately
+                status: InvoiceStatus.DRAFT,
                 total,
                 paymentTerms: createInvoiceDto.paymentTerms,
                 dueDate: createInvoiceDto.dueDate ? new Date(createInvoiceDto.dueDate) : null,
@@ -78,7 +103,9 @@ export class InvoicesService {
                 customer: {
                     select: { id: true, firstName: true, lastName: true, email: true, company: true },
                 },
-
+                lead: {
+                    select: { id: true, firstName: true, lastName: true, email: true, company: true, status: true },
+                },
                 lineItems: true,
                 createdBy: {
                     select: { id: true, firstName: true, lastName: true },
@@ -125,6 +152,9 @@ export class InvoicesService {
                     customer: {
                         select: { id: true, firstName: true, lastName: true, email: true, company: true },
                     },
+                    lead: {
+                        select: { id: true, firstName: true, lastName: true, email: true, company: true, status: true },
+                    },
                     createdBy: {
                         select: { id: true, firstName: true, lastName: true },
                     },
@@ -145,6 +175,7 @@ export class InvoicesService {
             where: { id },
             include: {
                 customer: true,
+                lead: true,
                 lineItems: true,
                 createdBy: {
                     select: { id: true, firstName: true, lastName: true },

@@ -7,6 +7,7 @@ import apiClient from '@/lib/api-client';
 interface User {
     id: string;
     email: string;
+    showEmail?: boolean;
     firstName: string;
     lastName: string;
     role: 'SUPER_ADMIN' | 'MANAGER' | 'EMPLOYEE';

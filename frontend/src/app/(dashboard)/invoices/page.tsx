@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useQuery, keepPreviousData } from '@tanstack/react-query';
+import { useQuery, useMutation, keepPreviousData } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -23,6 +23,12 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
     Search,
     Plus,
     FileText,
@@ -30,14 +36,42 @@ import {
     MoreHorizontal,
     Download,
     Loader2,
+    Flame,
+    Sparkles,
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
+import { CreateInvoiceDialog } from '@/components/invoices/create-invoice-dialog';
+import { EditInvoiceDialog } from '@/components/invoices/edit-invoice-dialog';
 
 export default function InvoicesPage() {
     const router = useRouter();
     const [search, setSearch] = useState('');
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(25);
+    const [createInvoiceOpen, setCreateInvoiceOpen] = useState(false);
+    const [performaInvoiceOpen, setPerformaInvoiceOpen] = useState(false);
+    const [editInvoiceId, setEditInvoiceId] = useState<string | null>(null);
+    const [editOpen, setEditOpen] = useState(false);
+
+    const downloadPdfMutation = useMutation({
+        mutationFn: async (invoiceId: string) => {
+            const response = await apiClient.get(`/invoices/${invoiceId}/pdf`, {
+                responseType: 'blob',
+            });
+            return { data: response.data, invoiceId };
+        },
+        onSuccess: ({ data, invoiceId }) => {
+            const invoice = invoices.find((inv: any) => inv.id === invoiceId);
+            const url = window.URL.createObjectURL(new Blob([data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `invoice-${invoice?.invoiceNumber || invoiceId}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        },
+    });
 
     const { data: invoicesData, isLoading, isFetching } = useQuery({
         queryKey: ['invoices', search, page, pageSize],
@@ -75,8 +109,19 @@ export default function InvoicesPage() {
                     </p>
                 </div>
                 <div className="flex gap-2">
-                    <Button className="gap-2" onClick={() => router.push('/invoices/new')}>
-                        <Plus className="h-4 w-4" />
+                    <Button 
+                        variant="outline" 
+                        className="gap-2 border-purple-200 text-purple-700 hover:bg-purple-50"
+                        onClick={() => setPerformaInvoiceOpen(true)}
+                    >
+                        <Sparkles className="h-4 w-4" />
+                        Create Performa
+                    </Button>
+                    <Button 
+                        className="gap-2 bg-gradient-to-r from-rose-500 to-red-500 hover:from-rose-600 hover:to-red-600"
+                        onClick={() => setCreateInvoiceOpen(true)}
+                    >
+                        <Flame className="h-4 w-4" />
                         Create Invoice
                     </Button>
                 </div>
@@ -143,6 +188,7 @@ export default function InvoicesPage() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Invoice</TableHead>
+                                <TableHead>Type</TableHead>
                                 <TableHead>Customer</TableHead>
                                 <TableHead>Invoice Date</TableHead>
                                 <TableHead className="text-right">Amount</TableHead>
@@ -153,8 +199,7 @@ export default function InvoicesPage() {
                             {invoices?.map((invoice: any) => (
                                 <TableRow
                                     key={invoice.id}
-                                    className="table-row-hover cursor-pointer"
-                                    onClick={() => router.push(`/invoices/${invoice.id}`)}
+                                    className="table-row-hover"
                                 >
                                     <TableCell>
                                         <p className="font-medium font-mono">
@@ -162,12 +207,21 @@ export default function InvoicesPage() {
                                         </p>
                                     </TableCell>
                                     <TableCell>
+                                        <span className="text-sm font-medium">
+                                            {invoice.invoiceType === 'PERFORMA' ? 'Performa' : 'Invoice'}
+                                        </span>
+                                    </TableCell>
+                                    <TableCell>
                                         <div>
                                             <p className="font-medium">
-                                                {invoice.customer?.firstName} {invoice.customer?.lastName}
+                                                {invoice.customer
+                                                    ? `${invoice.customer.firstName ?? ''} ${invoice.customer.lastName ?? ''}`.trim()
+                                                    : `${invoice.lead?.firstName ?? ''} ${invoice.lead?.lastName ?? ''}`.trim()}
                                             </p>
                                             <p className="text-sm text-muted-foreground">
-                                                {invoice.customer?.company || invoice.customer?.email}
+                                                {invoice.customer
+                                                    ? (invoice.customer.company || invoice.customer.email)
+                                                    : (invoice.lead?.company || invoice.lead?.email)}
                                             </p>
                                         </div>
                                     </TableCell>
@@ -183,19 +237,46 @@ export default function InvoicesPage() {
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-2">
-                                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                <Download className="h-4 w-4" />
+                                            <Button 
+                                                variant="ghost" 
+                                                size="icon" 
+                                                className="h-8 w-8"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    downloadPdfMutation.mutate(invoice.id);
+                                                }}
+                                                disabled={downloadPdfMutation.isPending}
+                                            >
+                                                {downloadPdfMutation.isPending && downloadPdfMutation.variables === invoice.id ? (
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                ) : (
+                                                    <Download className="h-4 w-4" />
+                                                )}
                                             </Button>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                <MoreHorizontal className="h-4 w-4" />
-                                            </Button>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem
+                                                        onClick={() => {
+                                                            setEditInvoiceId(invoice.id);
+                                                            setEditOpen(true);
+                                                        }}
+                                                    >
+                                                        Edit
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </div>
                                     </TableCell>
                                 </TableRow>
                             ))}
                             {(!invoices || invoices.length === 0) && (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="h-32 text-center">
+                                    <TableCell colSpan={6} className="h-32 text-center">
                                         <div className="flex flex-col items-center justify-center text-muted-foreground">
                                             <FileText className="h-10 w-10 mb-2 opacity-50" />
                                             <p>No invoices found</p>
@@ -250,6 +331,24 @@ export default function InvoicesPage() {
                     </Button>
                 </div>
             </div>
+
+            {/* Create Invoice Dialogs */}
+            <CreateInvoiceDialog
+                open={createInvoiceOpen}
+                onOpenChange={setCreateInvoiceOpen}
+                invoiceType="REGULAR"
+            />
+            <CreateInvoiceDialog
+                open={performaInvoiceOpen}
+                onOpenChange={setPerformaInvoiceOpen}
+                invoiceType="PERFORMA"
+            />
+
+            <EditInvoiceDialog
+                open={editOpen}
+                onOpenChange={setEditOpen}
+                invoiceId={editInvoiceId}
+            />
         </div>
     );
 }

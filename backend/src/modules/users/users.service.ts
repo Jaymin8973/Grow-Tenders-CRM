@@ -9,6 +9,13 @@ import { UpdateUserDto } from './dto/update-user.dto';
 export class UsersService {
     constructor(private prisma: PrismaService) { }
 
+    private maskEmail<T extends { email?: string; showEmail?: boolean }>(user: T, requesterRole?: string): T {
+        if (requesterRole !== 'SUPER_ADMIN' && user && user.showEmail === false) {
+            return { ...user, email: undefined };
+        }
+        return user;
+    }
+
     async create(createUserDto: CreateUserDto) {
         const existingUser = await this.prisma.user.findUnique({
             where: { email: createUserDto.email },
@@ -28,6 +35,7 @@ export class UsersService {
             select: {
                 id: true,
                 email: true,
+                showEmail: true,
                 firstName: true,
                 lastName: true,
                 role: true,
@@ -41,40 +49,15 @@ export class UsersService {
         return user;
     }
 
-    async findAll(role?: Role) {
+    async findAll(role?: Role, requesterRole?: string) {
         const where = role ? { role } : {};
 
-        return this.prisma.user.findMany({
+        const users = await this.prisma.user.findMany({
             where,
             select: {
                 id: true,
                 email: true,
-                firstName: true,
-                lastName: true,
-                role: true,
-                phone: true,
-                avatar: true,
-                isActive: true,
-                managerId: true,
-                manager: {
-                    select: {
-                        id: true,
-                        firstName: true,
-                        lastName: true,
-                    },
-                },
-                createdAt: true,
-            },
-            orderBy: { createdAt: 'desc' },
-        });
-    }
-
-    async findOne(id: string) {
-        const user = await this.prisma.user.findUnique({
-            where: { id },
-            select: {
-                id: true,
-                email: true,
+                showEmail: true,
                 firstName: true,
                 lastName: true,
                 role: true,
@@ -88,6 +71,44 @@ export class UsersService {
                         firstName: true,
                         lastName: true,
                         email: true,
+                        showEmail: true,
+                    },
+                },
+                createdAt: true,
+            },
+            orderBy: { createdAt: 'desc' },
+        });
+
+        return users.map((u: any) => {
+            const masked = this.maskEmail(u as any, requesterRole) as any;
+            if (masked.manager) {
+                masked.manager = this.maskEmail(masked.manager, requesterRole);
+            }
+            return masked;
+        });
+    }
+
+    async findOne(id: string, requesterRole?: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { id },
+            select: {
+                id: true,
+                email: true,
+                showEmail: true,
+                firstName: true,
+                lastName: true,
+                role: true,
+                phone: true,
+                avatar: true,
+                isActive: true,
+                managerId: true,
+                manager: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true,
+                        email: true,
+                        showEmail: true,
                     },
                 },
                 employees: {
@@ -96,6 +117,7 @@ export class UsersService {
                         firstName: true,
                         lastName: true,
                         email: true,
+                        showEmail: true,
                         role: true,
                     },
                 },
@@ -108,7 +130,10 @@ export class UsersService {
             throw new NotFoundException('User not found');
         }
 
-        return user;
+        const masked: any = this.maskEmail(user as any, requesterRole);
+        if (masked.manager) masked.manager = this.maskEmail(masked.manager, requesterRole);
+        if (masked.employees?.length) masked.employees = masked.employees.map((e: any) => this.maskEmail(e, requesterRole));
+        return masked;
     }
 
     async findByEmail(email: string) {
@@ -144,6 +169,7 @@ export class UsersService {
             select: {
                 id: true,
                 email: true,
+                showEmail: true,
                 firstName: true,
                 lastName: true,
                 role: true,
@@ -230,12 +256,13 @@ export class UsersService {
         });
     }
 
-    async getTeamMembers(managerId: string) {
-        return this.prisma.user.findMany({
+    async getTeamMembers(managerId: string, requesterRole?: string) {
+        const users = await this.prisma.user.findMany({
             where: { managerId },
             select: {
                 id: true,
                 email: true,
+                showEmail: true,
                 firstName: true,
                 lastName: true,
                 role: true,
@@ -245,6 +272,8 @@ export class UsersService {
                 createdAt: true,
             },
         });
+
+        return users.map((u: any) => this.maskEmail(u, requesterRole));
     }
 
     async changePassword(userId: string, currentPassword: string, newPassword: string) {
@@ -275,8 +304,8 @@ export class UsersService {
         });
     }
 
-    async getManagers() {
-        return this.prisma.user.findMany({
+    async getManagers(requesterRole?: string) {
+        const users = await this.prisma.user.findMany({
             where: {
                 role: Role.MANAGER,
                 isActive: true,
@@ -284,10 +313,13 @@ export class UsersService {
             select: {
                 id: true,
                 email: true,
+                showEmail: true,
                 firstName: true,
                 lastName: true,
                 role: true,
             },
         });
+
+        return users.map((u: any) => this.maskEmail(u, requesterRole));
     }
 }

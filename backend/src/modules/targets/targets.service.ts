@@ -1,7 +1,6 @@
 
 import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Role } from '@prisma/client';
 
 @Injectable()
 export class TargetsService {
@@ -15,7 +14,7 @@ export class TargetsService {
      * @param assignedById - ID of the user assigning the target
      * @param parentTargetId - Optional parent target ID (for team member targets)
      */
-    async setTarget(userId: string, amount: number, month: Date, assignedById?: string, parentTargetId?: string, assignedByRole?: Role) {
+    async setTarget(userId: string, amount: number, month: Date, assignedById?: string, parentTargetId?: string, assignedByRole?: string) {
         // Ensure month is set to the first day
         const firstDayOfMonth = new Date(month.getFullYear(), month.getMonth(), 1);
 
@@ -27,6 +26,41 @@ export class TargetsService {
 
         if (!targetUser) {
             throw new BadRequestException('User not found');
+        }
+
+        // Enforce hierarchy rules
+        if (assignedByRole === 'SUPER_ADMIN') {
+            if (targetUser.role !== 'MANAGER') {
+                throw new ForbiddenException('Super Admin can assign targets only to Managers');
+            }
+            if (parentTargetId) {
+                throw new BadRequestException('Parent target should not be provided when assigning to a Manager');
+            }
+        }
+
+        if (assignedByRole === 'MANAGER') {
+            if (targetUser.role !== 'EMPLOYEE') {
+                throw new ForbiddenException('Manager can assign targets only to Employees');
+            }
+            if (targetUser.managerId !== assignedById) {
+                throw new ForbiddenException('Manager can assign targets only to their own team members');
+            }
+            if (!parentTargetId) {
+                throw new BadRequestException('parentTargetId is required when Manager assigns target to Employee');
+            }
+
+            // Ensure parentTarget belongs to this manager and month
+            const parentTargetForMonth = await this.prisma.target.findFirst({
+                where: {
+                    id: parentTargetId,
+                    userId: assignedById,
+                    month: firstDayOfMonth,
+                },
+            });
+
+            if (!parentTargetForMonth) {
+                throw new ForbiddenException('Invalid parent target for this manager/month');
+            }
         }
 
         // If parentTargetId is provided, validate allocation
@@ -137,13 +171,25 @@ export class TargetsService {
         };
     }
 
-    async findAll(month: Date) {
+    async findAll(month: Date, userId?: string, role?: string) {
         const firstDayOfMonth = new Date(month.getFullYear(), month.getMonth(), 1);
 
+        const where: any = {
+            month: firstDayOfMonth,
+        };
+
+        // Manager should only see their own target + their team's targets
+        if (role === 'MANAGER' && userId) {
+            const teamMembers = await this.prisma.user.findMany({
+                where: { managerId: userId },
+                select: { id: true },
+            });
+            const allowedUserIds = [userId, ...teamMembers.map((m: { id: string }) => m.id)];
+            where.userId = { in: allowedUserIds };
+        }
+
         const targets = await this.prisma.target.findMany({
-            where: {
-                month: firstDayOfMonth,
-            },
+            where,
             include: {
                 user: {
                     select: {
@@ -152,6 +198,8 @@ export class TargetsService {
                         lastName: true,
                         role: true,
                         avatar: true,
+                        showEmail: true,
+                        email: true,
                     }
                 }
             }
@@ -170,7 +218,12 @@ export class TargetsService {
             };
         }));
 
-        return enrichedTargets;
+        return enrichedTargets.map((t: any) => {
+            if (role !== 'SUPER_ADMIN' && t.user?.showEmail === false) {
+                return { ...t, user: { ...t.user, email: undefined } };
+            }
+            return t;
+        });
     }
 
     /**
@@ -220,7 +273,7 @@ export class TargetsService {
     /**
      * Get manager's target with team allocation details
      */
-    async getManagerAllocation(managerId: string, month: Date) {
+    async getManagerAllocation(managerId: string, month: Date, requesterRole?: string) {
         const firstDayOfMonth = new Date(month.getFullYear(), month.getMonth(), 1);
 
         // Get manager's target
@@ -252,12 +305,12 @@ export class TargetsService {
         // Get team members
         const teamMembers = await this.prisma.user.findMany({
             where: { managerId },
-            select: { id: true, firstName: true, lastName: true, role: true }
+            select: { id: true, firstName: true, lastName: true, role: true, email: true, showEmail: true }
         });
 
         // Get each team member's stats
         const teamStats = await Promise.all(
-            teamMembers.map(async (member) => {
+            teamMembers.map(async (member: { id: string; firstName: string; lastName: string; role: string }) => {
                 const stats = await this.getEmployeeStats(member.id, month);
                 const memberTarget = await this.prisma.target.findUnique({
                     where: {
@@ -277,15 +330,23 @@ export class TargetsService {
             })
         );
 
+        const maskedTeamStats = teamStats.map((m: any) => {
+            if (requesterRole !== 'SUPER_ADMIN' && m.showEmail === false) {
+                return { ...m, email: undefined };
+            }
+            return m;
+        });
+
         return {
             hasTarget: true,
             managerTarget: {
+                id: managerTarget.id,
                 total: managerTarget.amount,
                 allocated: managerTarget.allocatedAmount,
                 remaining: managerTarget.remainingAmount,
                 achieved: (await this.getEmployeeStats(managerId, month)).achieved,
             },
-            teamMembers: teamStats,
+            teamMembers: maskedTeamStats,
             allocatedTargets: managerTarget.childTargets,
         };
     }
@@ -314,7 +375,7 @@ export class TargetsService {
     /**
      * Update target amount
      */
-    async updateTarget(targetId: string, newAmount: number, userId: string, role: Role) {
+    async updateTarget(targetId: string, newAmount: number, userId: string, role: string) {
         const target = await this.prisma.target.findUnique({
             where: { id: targetId },
             include: { parentTarget: true }

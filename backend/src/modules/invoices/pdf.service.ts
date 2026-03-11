@@ -234,7 +234,7 @@ export class PdfService {
 
     <div class="header">
       <div class="company-name">GROW TENDER</div>
-      <div class="invoice-label">INVOICE</div>
+      <div class="invoice-label">{{#if isPerforma}}PERFORMA INVOICE{{else}}INVOICE{{/if}}</div>
     </div>
 
     <div style="display: flex; justify-content: space-between;">
@@ -255,11 +255,19 @@ export class PdfService {
     <div class="recipient-section">
       <div class="to-label">TO:</div>
       <div class="recipient-details">
-        <div style="font-weight: bold;">{{customer.firstName}} {{customer.lastName}}</div>
-        {{#if customer.company}}<div style="font-weight: bold;">{{customer.company}}</div>{{/if}}
-        {{#if customer.gstin}}<div>GSTIN: {{customer.gstin}}</div>{{/if}}
+        <div style="font-weight: bold;">{{#if customer}}{{customer.firstName}} {{customer.lastName}}{{else}}{{lead.firstName}} {{lead.lastName}}{{/if}}</div>
+        {{#if companyName}}<div style="font-weight: bold;">{{companyName}}</div>{{/if}}
+        {{#if customer}}
+          {{#if customer.gstin}}<div>GSTIN: {{customer.gstin}}</div>{{/if}}
+        {{else}}
+          {{#if lead.gstin}}<div>GSTIN: {{lead.gstin}}</div>{{/if}}
+        {{/if}}
         <div style="max-width: 350px;">
-          {{#if customer.address}}{{customer.address}}{{/if}}
+          {{#if customer}}
+            {{#if customer.address}}{{customer.address}}{{/if}}
+          {{else}}
+            {{#if lead.address}}{{lead.address}}{{/if}}
+          {{/if}}
         </div>
       </div>
     </div>
@@ -378,6 +386,7 @@ export class PdfService {
       bankDetails,
       halfTaxRate,
       halfTaxAmount,
+      isPerforma: invoice.invoiceType === 'PERFORMA',
     };
 
     const template = Handlebars.compile(this.invoiceTemplate);
@@ -446,6 +455,7 @@ export class PdfService {
       bankDetails,
       halfTaxRate,
       halfTaxAmount,
+      isPerforma: invoice.invoiceType === 'PERFORMA',
     };
     const template = Handlebars.compile(this.invoiceTemplate);
     return template(invoiceData);

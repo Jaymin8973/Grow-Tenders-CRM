@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import {
     Table,
     TableBody,
@@ -177,6 +178,7 @@ export default function PaymentsPage() {
             </div>
 
             {/* Stats Cards */}
+            <TooltipProvider>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <Card className="card-hover">
                     <CardContent className="p-5">
@@ -185,7 +187,14 @@ export default function PaymentsPage() {
                                 <Calendar className="h-6 w-6 text-violet-500" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold">{formatCurrency(stats?.todayAmount || 0)}</p>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <p className="text-2xl font-bold cursor-default">{formatCurrency(stats?.todayAmount || 0)}</p>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>₹{(stats?.todayAmount || 0).toLocaleString('en-IN')}</p>
+                                    </TooltipContent>
+                                </Tooltip>
                                 <p className="text-sm text-muted-foreground">Today's Collection</p>
                             </div>
                         </div>
@@ -198,7 +207,14 @@ export default function PaymentsPage() {
                                 <Wallet className="h-6 w-6 text-amber-500" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold">{formatCurrency(stats?.monthlyAmount || 0)}</p>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <p className="text-2xl font-bold cursor-default">{formatCurrency(stats?.monthlyAmount || 0)}</p>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>₹{(stats?.monthlyAmount || 0).toLocaleString('en-IN')}</p>
+                                    </TooltipContent>
+                                </Tooltip>
                                 <p className="text-sm text-muted-foreground">Monthly Collection</p>
                             </div>
                         </div>
@@ -211,7 +227,14 @@ export default function PaymentsPage() {
                                 <IndianRupee className="h-6 w-6 text-emerald-500" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold">{formatCurrency(stats?.yearlyAmount || 0)}</p>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <p className="text-2xl font-bold cursor-default">{formatCurrency(stats?.yearlyAmount || 0)}</p>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>₹{(stats?.yearlyAmount || 0).toLocaleString('en-IN')}</p>
+                                    </TooltipContent>
+                                </Tooltip>
                                 <p className="text-sm text-muted-foreground">Yearly Collection</p>
                             </div>
                         </div>
@@ -224,13 +247,21 @@ export default function PaymentsPage() {
                                 <IndianRupee className="h-6 w-6 text-blue-500" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold">{formatCurrency(stats?.totalAmount || 0)}</p>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <p className="text-2xl font-bold cursor-default">{formatCurrency(stats?.totalAmount || 0)}</p>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>₹{(stats?.totalAmount || 0).toLocaleString('en-IN')}</p>
+                                    </TooltipContent>
+                                </Tooltip>
                                 <p className="text-sm text-muted-foreground">Total Collection</p>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
             </div>
+            </TooltipProvider>
 
             {/* Payments Tabs */}
             <Tabs defaultValue="payments" className="w-full">

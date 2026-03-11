@@ -51,10 +51,11 @@ export class TargetsController {
     @Roles(Role.MANAGER, Role.SUPER_ADMIN)
     async getManagerAllocation(
         @CurrentUser('id') userId: string,
+        @CurrentUser('role') role: Role,
         @Query('month') month?: string,
     ) {
         const date = month ? new Date(month) : new Date();
-        return this.targetsService.getManagerAllocation(userId, date);
+        return this.targetsService.getManagerAllocation(userId, date, role);
     }
 
     /**
@@ -77,9 +78,9 @@ export class TargetsController {
      */
     @Get()
     @Roles(Role.SUPER_ADMIN, Role.MANAGER)
-    async findAll(@Query('month') month?: string) {
+    async findAll(@Req() req: any, @Query('month') month?: string) {
         const date = month ? new Date(month) : new Date();
-        return this.targetsService.findAll(date);
+        return this.targetsService.findAll(date, req.user?.id, req.user?.role);
     }
 
     /**

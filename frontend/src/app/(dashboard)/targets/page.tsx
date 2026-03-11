@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import {
     Table,
     TableBody,
@@ -217,7 +218,7 @@ export default function TargetsPage() {
                             </Avatar>
                             <div>
                                 <p className="font-medium">{target.user?.firstName} {target.user?.lastName}</p>
-                                <p className="text-xs text-muted-foreground">{target.user?.email}</p>
+                                <p className="text-xs text-muted-foreground">{user?.role === 'SUPER_ADMIN' ? target.user?.email : (target.user?.showEmail ? target.user?.email : '-')}</p>
                             </div>
                         </div>
                     </TableCell>
@@ -320,7 +321,7 @@ export default function TargetsPage() {
                             filterRole="EMPLOYEE"
                             title="Assign Target to Team Member"
                             description="Distribute your target among team members."
-                            parentTargetId={managerAllocation?.allocatedTargets?.[0]?.parentTargetId}
+                            parentTargetId={managerAllocation?.managerTarget?.id}
                             maxAmount={managerAllocation?.managerTarget?.remaining}
                         />
                     )}
@@ -370,6 +371,7 @@ export default function TargetsPage() {
             )}
 
             {/* Stats Cards */}
+            <TooltipProvider>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Card>
                     <CardContent className="p-4">
@@ -379,7 +381,14 @@ export default function TargetsPage() {
                             </div>
                             <div>
                                 <p className="text-sm text-gray-500">Total Targets</p>
-                                <p className="text-2xl font-bold">{formatNumber(targets?.length || 0)}</p>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <p className="text-2xl font-bold cursor-default">{formatNumber(targets?.length || 0)}</p>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>{(targets?.length || 0).toLocaleString('en-IN')}</p>
+                                    </TooltipContent>
+                                </Tooltip>
                             </div>
                         </div>
                     </CardContent>
@@ -392,7 +401,14 @@ export default function TargetsPage() {
                             </div>
                             <div>
                                 <p className="text-sm text-gray-500">Managers with Targets</p>
-                                <p className="text-2xl font-bold">{formatNumber(managerTargets.length)}</p>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <p className="text-2xl font-bold cursor-default">{formatNumber(managerTargets.length)}</p>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>{managerTargets.length.toLocaleString('en-IN')}</p>
+                                    </TooltipContent>
+                                </Tooltip>
                             </div>
                         </div>
                     </CardContent>
@@ -405,12 +421,20 @@ export default function TargetsPage() {
                             </div>
                             <div>
                                 <p className="text-sm text-gray-500">Employees with Targets</p>
-                                <p className="text-2xl font-bold">{formatNumber(employeeTargets.length)}</p>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <p className="text-2xl font-bold cursor-default">{formatNumber(employeeTargets.length)}</p>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>{employeeTargets.length.toLocaleString('en-IN')}</p>
+                                    </TooltipContent>
+                                </Tooltip>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
             </div>
+            </TooltipProvider>
 
             {/* Filters */}
             <Card>

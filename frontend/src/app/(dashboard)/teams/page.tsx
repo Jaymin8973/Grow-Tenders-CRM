@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import {
     Table,
     TableBody,
@@ -166,6 +167,7 @@ export default function TeamsPage() {
                 </div>
 
                 {/* Stats Cards */}
+                <TooltipProvider>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                     <Card className="overflow-hidden border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur">
                         <div className="h-1.5 bg-gradient-to-r from-violet-500 to-purple-500" />
@@ -176,7 +178,14 @@ export default function TeamsPage() {
                                 </div>
                                 <div>
                                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Managers</p>
-                                    <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{formatNumber(totals.managers)}</p>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 cursor-default">{formatNumber(totals.managers)}</p>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>{totals.managers.toLocaleString('en-IN')}</p>
+                                        </TooltipContent>
+                                    </Tooltip>
                                 </div>
                             </div>
                         </CardContent>
@@ -191,7 +200,14 @@ export default function TeamsPage() {
                                 </div>
                                 <div>
                                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Team Members</p>
-                                    <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{formatNumber(totals.members)}</p>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 cursor-default">{formatNumber(totals.members)}</p>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>{totals.members.toLocaleString('en-IN')}</p>
+                                        </TooltipContent>
+                                    </Tooltip>
                                 </div>
                             </div>
                         </CardContent>
@@ -206,7 +222,14 @@ export default function TeamsPage() {
                                 </div>
                                 <div>
                                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Leads Assigned</p>
-                                    <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{formatNumber(totals.assigned)}</p>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 cursor-default">{formatNumber(totals.assigned)}</p>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>{totals.assigned.toLocaleString('en-IN')}</p>
+                                        </TooltipContent>
+                                    </Tooltip>
                                 </div>
                             </div>
                         </CardContent>
@@ -221,7 +244,14 @@ export default function TeamsPage() {
                                 </div>
                                 <div>
                                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Conversions</p>
-                                    <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{formatNumber(totals.conversions)}</p>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 cursor-default">{formatNumber(totals.conversions)}</p>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>{totals.conversions.toLocaleString('en-IN')}</p>
+                                        </TooltipContent>
+                                    </Tooltip>
                                 </div>
                             </div>
                         </CardContent>
@@ -236,12 +266,20 @@ export default function TeamsPage() {
                                 </div>
                                 <div>
                                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Revenue</p>
-                                    <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{formatCurrency(totals.revenue)}</p>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 cursor-default">{formatCurrency(totals.revenue)}</p>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>₹{totals.revenue.toLocaleString('en-IN')}</p>
+                                        </TooltipContent>
+                                    </Tooltip>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
                 </div>
+                </TooltipProvider>
 
                 {/* Teams List */}
                 <div className="grid gap-6">
