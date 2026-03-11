@@ -7,6 +7,7 @@ import * as z from 'zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
 import { useToast } from '@/components/ui/use-toast';
+import { getErrorMessage } from '@/lib/error-utils';
 import {
     Dialog,
     DialogContent,
@@ -62,7 +63,7 @@ export function CreateCustomerDialog({ open, onOpenChange }: CreateCustomerDialo
         onError: (error: any) => {
             toast({
                 title: 'Failed to create customer',
-                description: error.response?.data?.message || 'Something went wrong',
+                description: getErrorMessage(error),
                 variant: 'destructive',
             });
         },

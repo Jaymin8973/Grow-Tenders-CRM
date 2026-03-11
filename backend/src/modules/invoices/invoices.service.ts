@@ -284,6 +284,13 @@ export class InvoicesService {
             throw new ForbiddenException('Can only delete draft invoices');
         }
 
+        // Delete related notifications that link to this invoice
+        await this.prisma.notification.deleteMany({
+            where: {
+                link: { contains: `/invoices/${id}` }
+            }
+        });
+
         await this.prisma.invoice.delete({ where: { id } });
         return { message: 'Invoice deleted successfully' };
     }

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
+import { getErrorMessage } from '@/lib/error-utils';
 import { useToast } from '@/components/ui/use-toast';
 import {
     Dialog,
@@ -148,7 +149,7 @@ export function ComposeEmailDialog({
         onError: (error: any) => {
             toast({
                 title: 'Failed to send email',
-                description: error.response?.data?.message || 'Something went wrong',
+                description: getErrorMessage(error),
                 variant: 'destructive',
             });
         }

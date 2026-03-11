@@ -15,6 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import apiClient from '@/lib/api-client';
+import { getErrorMessage } from '@/lib/error-utils';
 
 interface TransferRequestDialogProps {
     isOpen: boolean;
@@ -48,8 +49,8 @@ export function TransferRequestDialog({
         },
         onError: (error: any) => {
             toast({
-                title: 'Error',
-                description: error.response?.data?.message || 'Failed to send request',
+                title: 'Failed to send request',
+                description: getErrorMessage(error),
                 variant: 'destructive',
             });
         },

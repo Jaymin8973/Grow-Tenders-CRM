@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
+import { getErrorMessage } from '@/lib/error-utils';
 import { useToast } from '@/hooks/use-toast';
 import {
     Dialog,
@@ -68,8 +69,8 @@ export function BulkAssignDialog({
         },
         onError: (error: any) => {
             toast({
-                title: 'Error',
-                description: error.response?.data?.message || 'Failed to assign leads',
+                title: 'Failed to assign leads',
+                description: getErrorMessage(error),
                 variant: 'destructive',
             });
         },

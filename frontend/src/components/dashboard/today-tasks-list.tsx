@@ -109,9 +109,6 @@ export function TodayTasksList() {
                                         <AlertCircle className="h-3 w-3" /> Overdue
                                     </Badge>
                                 )}
-                                <Button size="sm" variant="ghost" className="h-8 w-8 p-0 shrink-0">
-                                    <Phone className="h-4 w-4" />
-                                </Button>
                             </div>
                         </div>
                     );

@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
+import { getErrorMessage } from '@/lib/error-utils';
+import { getInitials, formatCurrency, formatNumber, cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import {
     Dialog,
@@ -54,8 +56,8 @@ export function SubmitEodReportDialog() {
         },
         onError: (error: any) => {
             toast({
-                title: 'Error',
-                description: error.response?.data?.message || 'Failed to submit report',
+                title: 'Failed to submit report',
+                description: getErrorMessage(error),
                 variant: 'destructive',
             });
         },
@@ -87,14 +89,14 @@ export function SubmitEodReportDialog() {
                             <Card className="bg-slate-50 border-dashed">
                                 <CardContent className="p-4 flex flex-col items-center justify-center text-center">
                                     <Phone className="h-6 w-6 text-primary mb-2 opacity-80" />
-                                    <p className="text-2xl font-bold">{metrics?.callCount || 0}</p>
+                                    <p className="text-2xl font-bold">{formatNumber(metrics?.callCount || 0)}</p>
                                     <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Calls Made</p>
                                 </CardContent>
                             </Card>
                             <Card className="bg-slate-50 border-dashed">
                                 <CardContent className="p-4 flex flex-col items-center justify-center text-center">
                                     <UserPlus className="h-6 w-6 text-emerald-500 mb-2 opacity-80" />
-                                    <p className="text-2xl font-bold">{metrics?.leadsGenerated || 0}</p>
+                                    <p className="text-2xl font-bold">{formatNumber(metrics?.leadsGenerated || 0)}</p>
                                     <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Leads Won</p>
                                 </CardContent>
                             </Card>

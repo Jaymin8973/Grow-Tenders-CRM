@@ -269,6 +269,13 @@ export class CustomersService {
             throw new ForbiddenException('Employees cannot delete customers');
         }
 
+        // Delete related notifications that link to this customer
+        await this.prisma.notification.deleteMany({
+            where: {
+                link: { contains: `/customers/${id}` }
+            }
+        });
+
         await this.prisma.customer.delete({ where: { id } });
         return { message: 'Customer deleted successfully' };
     }

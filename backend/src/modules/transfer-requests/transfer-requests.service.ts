@@ -120,7 +120,7 @@ export class TransferRequestsService {
             title: 'Transfer Request Approved',
             message: `Your transfer request for ${request.lead.firstName} ${request.lead.lastName} has been approved.`,
             type: 'LEAD_TRANSFER_APPROVED',
-            link: '/transfer-requests',
+            link: `/leads/${request.leadId}`,
           }
         });
 
@@ -144,7 +144,7 @@ export class TransferRequestsService {
             title: 'Transfer Request Rejected',
             message: `Your transfer request for ${request.lead.firstName} ${request.lead.lastName} was rejected. Reason: ${adminNotes || 'No reason provided.'}`,
             type: 'LEAD_TRANSFER_REJECTED',
-            link: '/transfer-requests',
+            link: `/leads/${request.leadId}`,
           }
         });
       }

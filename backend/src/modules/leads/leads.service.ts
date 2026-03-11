@@ -591,6 +591,13 @@ export class LeadsService {
             throw new ForbiddenException('Employees cannot delete leads');
         }
 
+        // Delete related notifications that link to this lead
+        await this.prisma.notification.deleteMany({
+            where: {
+                link: { contains: `/leads/${id}` }
+            }
+        });
+
         await this.prisma.lead.delete({ where: { id } });
         return { message: 'Lead deleted successfully' };
     }

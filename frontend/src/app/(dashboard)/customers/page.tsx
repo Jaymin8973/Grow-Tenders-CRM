@@ -289,16 +289,6 @@ export default function CustomersPage() {
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex items-center gap-2">
-                                                {customer.phone && (
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-8 w-8"
-                                                        onClick={(e) => e.stopPropagation()}
-                                                    >
-                                                        <Phone className="h-4 w-4" />
-                                                    </Button>
-                                                )}
                                                 {customer.email && (
                                                     <Button
                                                         variant="ghost"

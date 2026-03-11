@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
+import { getErrorMessage } from '@/lib/error-utils';
 import {
     Table,
     TableBody,
@@ -52,7 +53,7 @@ export function PaymentApprovalList() {
         onError: (error: any) => {
             toast({
                 title: 'Failed to update request',
-                description: error.response?.data?.message || 'Something went wrong',
+                description: getErrorMessage(error),
                 variant: 'destructive',
             });
         },

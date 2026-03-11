@@ -102,7 +102,7 @@ export function Header() {
     };
 
     const handleResultClick = (result: SearchResult) => {
-        window.location.href = result.url;
+        router.push(result.url);
         setSearchQuery('');
         setSearchOpen(false);
     };
@@ -134,7 +134,7 @@ export function Header() {
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             onFocus={() => setSearchOpen(true)}
-                            onBlur={() => setTimeout(() => setSearchOpen(false), 200)}
+                            onBlur={() => setTimeout(() => setSearchOpen(false), 300)}
                             className="pl-10 h-10 bg-muted/50 border-0 focus-visible:ring-1"
                         />
                         {isLoading && (

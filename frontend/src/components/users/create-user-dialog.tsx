@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
+import { getErrorMessage } from '@/lib/error-utils';
 import { useToast } from '@/components/ui/use-toast';
 import {
     Dialog,
@@ -92,7 +93,7 @@ export function CreateUserDialog({ children, onSuccess }: CreateUserDialogProps)
         onError: (error: any) => {
             toast({
                 title: 'Failed to create user',
-                description: error.response?.data?.message || 'Something went wrong',
+                description: getErrorMessage(error),
                 variant: 'destructive'
             });
         },

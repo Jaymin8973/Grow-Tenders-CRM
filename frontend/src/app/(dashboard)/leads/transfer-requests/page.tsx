@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
+import { getErrorMessage } from '@/lib/error-utils';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -69,7 +70,7 @@ export default function TransferRequestsPage() {
         onError: (error: any) => {
             toast({
                 title: 'Action failed',
-                description: error.response?.data?.message || 'Something went wrong',
+                description: getErrorMessage(error),
                 variant: 'destructive',
             });
         },

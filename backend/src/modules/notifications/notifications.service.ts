@@ -38,16 +38,16 @@ export class NotificationsService {
     }
 
     async markAsRead(id: string, userId: string) {
-        return this.prisma.notification.updateMany({
+        // Delete the notification when it's read
+        return this.prisma.notification.deleteMany({
             where: { id, userId },
-            data: { isRead: true },
         });
     }
 
     async markAllAsRead(userId: string) {
-        return this.prisma.notification.updateMany({
-            where: { userId, isRead: false },
-            data: { isRead: true },
+        // Delete all notifications when marking all as read
+        return this.prisma.notification.deleteMany({
+            where: { userId },
         });
     }
 

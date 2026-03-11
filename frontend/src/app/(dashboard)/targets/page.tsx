@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
+import { getErrorMessage } from '@/lib/error-utils';
 import { useAuth } from '@/contexts/auth-context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,7 +27,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { TargetAssignment } from '@/components/targets/TargetAssignment';
-import { formatCurrency, cn, getInitials } from '@/lib/utils';
+import { getInitials, formatCurrency, formatNumber, cn } from '@/lib/utils';
 import { 
     Search, 
     Filter, 
@@ -107,7 +108,7 @@ export default function TargetsPage() {
         onError: (error: any) => {
             toast({
                 title: 'Failed to update target',
-                description: error.response?.data?.message || 'Something went wrong',
+                description: getErrorMessage(error),
                 variant: 'destructive',
             });
         },
@@ -127,7 +128,7 @@ export default function TargetsPage() {
         onError: (error: any) => {
             toast({
                 title: 'Failed to delete target',
-                description: error.response?.data?.message || 'Something went wrong',
+                description: getErrorMessage(error),
                 variant: 'destructive',
             });
         },
@@ -378,7 +379,7 @@ export default function TargetsPage() {
                             </div>
                             <div>
                                 <p className="text-sm text-gray-500">Total Targets</p>
-                                <p className="text-2xl font-bold">{targets?.length || 0}</p>
+                                <p className="text-2xl font-bold">{formatNumber(targets?.length || 0)}</p>
                             </div>
                         </div>
                     </CardContent>
@@ -391,7 +392,7 @@ export default function TargetsPage() {
                             </div>
                             <div>
                                 <p className="text-sm text-gray-500">Managers with Targets</p>
-                                <p className="text-2xl font-bold">{managerTargets.length}</p>
+                                <p className="text-2xl font-bold">{formatNumber(managerTargets.length)}</p>
                             </div>
                         </div>
                     </CardContent>
@@ -404,7 +405,7 @@ export default function TargetsPage() {
                             </div>
                             <div>
                                 <p className="text-sm text-gray-500">Employees with Targets</p>
-                                <p className="text-2xl font-bold">{employeeTargets.length}</p>
+                                <p className="text-2xl font-bold">{formatNumber(employeeTargets.length)}</p>
                             </div>
                         </div>
                     </CardContent>

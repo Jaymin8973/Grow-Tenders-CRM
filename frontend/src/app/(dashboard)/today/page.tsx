@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RefreshCw, Phone, Loader2, ClipboardList, ChevronRight } from 'lucide-react';
+import { getInitials, formatCurrency, formatNumber, cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 
@@ -99,7 +100,7 @@ export default function TodayPage() {
                     <div className="flex flex-col sm:flex-row gap-4 items-center">
                         <Tabs value="leads">
                             <TabsList>
-                                <TabsTrigger value="leads">Leads ({leadCount})</TabsTrigger>
+                                <TabsTrigger value="leads">Leads ({formatNumber(leadCount)})</TabsTrigger>
                             </TabsList>
                         </Tabs>
 
@@ -209,7 +210,7 @@ export default function TodayPage() {
 
             <div className="flex justify-between items-center text-sm text-muted-foreground">
                 <div>
-                    Showing {leadCount} tasks
+                    Showing {formatNumber(leadCount)} tasks
                 </div>
             </div>
         </div>

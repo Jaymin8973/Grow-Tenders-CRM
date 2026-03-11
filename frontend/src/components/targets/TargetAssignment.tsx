@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
+import { getErrorMessage } from '@/lib/error-utils';
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -120,7 +121,7 @@ export function TargetAssignment({
             onSuccess?.();
         },
         onError: (error: any) => {
-            const message = error.response?.data?.message || 'Something went wrong';
+            const message = getErrorMessage(error);
             setError(message);
             toast({
                 title: 'Failed to assign target',

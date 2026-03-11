@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import apiClient from '@/lib/api-client';
+import { getErrorMessage } from '@/lib/error-utils';
 import { useAuth } from '@/contexts/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -123,8 +124,8 @@ export default function NewLeadPage() {
         },
         onError: (error: any) => {
             toast({
-                title: 'Error',
-                description: error.response?.data?.message || 'Failed to create lead',
+                title: 'Failed to create lead',
+                description: getErrorMessage(error),
                 variant: 'destructive',
             });
         },

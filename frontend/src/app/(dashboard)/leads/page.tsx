@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, keepPreviousData, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
+import { getErrorMessage } from '@/lib/error-utils';
 import { useAuth } from '@/contexts/auth-context';
 import { useDebounce } from '@/hooks/use-debounce';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -41,7 +42,7 @@ import {
     Lock,
     X,
 } from 'lucide-react';
-import { getInitials, cn } from '@/lib/utils';
+import { getInitials, formatCurrency, formatNumber, cn } from '@/lib/utils';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -204,8 +205,8 @@ export default function LeadsPage() {
         },
         onError: (error: any) => {
             toast({
-                title: 'Error',
-                description: error.response?.data?.message || 'Failed to delete lead',
+                title: 'Failed to delete lead',
+                description: getErrorMessage(error),
                 variant: 'destructive',
             });
             setDeleteId(null);
@@ -255,8 +256,8 @@ export default function LeadsPage() {
         },
         onError: (error: any) => {
             toast({
-                title: 'Error',
-                description: error.response?.data?.message || 'Failed to delete leads',
+                title: 'Failed to delete leads',
+                description: getErrorMessage(error),
                 variant: 'destructive',
             });
         },
@@ -344,7 +345,7 @@ export default function LeadsPage() {
                         <CardContent className="p-5">
                             <div className="space-y-1">
                                 <p className="text-sm text-muted-foreground">Total Leads</p>
-                                <p className="text-2xl font-bold">{stats?.total ?? 0}</p>
+                                <p className="text-2xl font-bold">{formatNumber(stats?.total ?? 0)}</p>
                             </div>
                         </CardContent>
                     </Card>

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
+import { getErrorMessage } from '@/lib/error-utils';
 import { useAuth } from '@/contexts/auth-context';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -41,7 +42,7 @@ import {
 import { CreateUserDialog } from '@/components/users/create-user-dialog';
 import { EditUserDialog } from '@/components/users/edit-user-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { getInitials, cn } from '@/lib/utils';
+import { getInitials, formatCurrency, formatNumber, cn } from '@/lib/utils';
 
 const roleConfig: Record<string, { label: string; color: string; bg: string }> = {
     SUPER_ADMIN: { label: 'Super Admin', color: 'text-purple-700', bg: 'bg-purple-50 border-purple-200' },
@@ -78,7 +79,7 @@ export default function UsersPage() {
         onError: (error: any) => {
             toast({
                 title: 'Failed to update user status',
-                description: error.response?.data?.message || 'Something went wrong',
+                description: getErrorMessage(error),
                 variant: 'destructive',
             });
         },
@@ -96,7 +97,7 @@ export default function UsersPage() {
         onError: (error: any) => {
             toast({
                 title: 'Failed to delete user',
-                description: error.response?.data?.message || 'Something went wrong',
+                description: getErrorMessage(error),
                 variant: 'destructive',
             });
         },
@@ -137,7 +138,7 @@ export default function UsersPage() {
                                 <Users className="h-6 w-6 text-blue-500" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold">{users?.length || 0}</p>
+                                <p className="text-2xl font-bold">{formatNumber(users?.length || 0)}</p>
                                 <p className="text-sm text-muted-foreground">Total Users</p>
                             </div>
                         </div>
@@ -150,7 +151,7 @@ export default function UsersPage() {
                                 <UserCheck className="h-6 w-6 text-emerald-500" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold">{activeUsers.length}</p>
+                                <p className="text-2xl font-bold">{formatNumber(activeUsers.length)}</p>
                                 <p className="text-sm text-muted-foreground">Active</p>
                             </div>
                         </div>
@@ -178,7 +179,7 @@ export default function UsersPage() {
                                 <UserX className="h-6 w-6 text-amber-500" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold">{inactiveUsers.length}</p>
+                                <p className="text-2xl font-bold">{formatNumber(inactiveUsers.length)}</p>
                                 <p className="text-sm text-muted-foreground">Inactive</p>
                             </div>
                         </div>

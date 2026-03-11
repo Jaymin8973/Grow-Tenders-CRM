@@ -91,25 +91,43 @@ export class PaymentRequestsService {
                 if (request.leadId && !request.customerId) {
                     const lead = await prisma.lead.findUnique({ where: { id: request.leadId } });
                     if (lead && !lead.convertedToCustomerId) {
-                        const customer = await prisma.customer.create({
-                            data: {
-                                firstName: lead.firstName,
-                                lastName: lead.lastName,
-                                email: lead.email,
-                                phone: lead.mobile,
-                                company: lead.company,
-                                assigneeId: lead.assigneeId || request.requesterId,
-                                leadId: lead.id,
-                            }
-                        });
-                        await prisma.lead.update({
-                            where: { id: lead.id },
-                            data: {
-                                convertedToCustomerId: customer.id,
-                                status: 'CLOSED_LEAD'
-                            }
-                        });
-                        finalCustomerId = customer.id;
+                        // Check if customer with this email already exists
+                        const existingCustomer = lead.email ? await prisma.customer.findFirst({
+                            where: { email: lead.email }
+                        }) : null;
+                        
+                        if (existingCustomer) {
+                            // Use existing customer
+                            await prisma.lead.update({
+                                where: { id: lead.id },
+                                data: {
+                                    convertedToCustomerId: existingCustomer.id,
+                                    status: 'CLOSED_LEAD'
+                                }
+                            });
+                            finalCustomerId = existingCustomer.id;
+                        } else {
+                            // Create new customer
+                            const customer = await prisma.customer.create({
+                                data: {
+                                    firstName: lead.firstName,
+                                    lastName: lead.lastName,
+                                    email: lead.email,
+                                    phone: lead.mobile,
+                                    company: lead.company,
+                                    assigneeId: lead.assigneeId || request.requesterId,
+                                    leadId: lead.id,
+                                }
+                            });
+                            await prisma.lead.update({
+                                where: { id: lead.id },
+                                data: {
+                                    convertedToCustomerId: customer.id,
+                                    status: 'CLOSED_LEAD'
+                                }
+                            });
+                            finalCustomerId = customer.id;
+                        }
                     } else if (lead && lead.convertedToCustomerId) {
                         finalCustomerId = lead.convertedToCustomerId;
                     }
@@ -196,7 +214,7 @@ export class PaymentRequestsService {
             }
 
             // Update Request
-            return prisma.paymentRequest.update({
+            const updatedRequest = await prisma.paymentRequest.update({
                 where: { id },
                 data: {
                     status,
@@ -205,6 +223,31 @@ export class PaymentRequestsService {
                     paymentId,
                 },
             });
+
+            // Create notification for the requester
+            if (status === PaymentRequestStatus.APPROVED) {
+                await prisma.notification.create({
+                    data: {
+                        userId: request.requesterId,
+                        type: 'PAYMENT_APPROVED',
+                        title: 'Payment Request Approved',
+                        message: `Your payment request of ₹${request.amount.toLocaleString('en-IN')} has been approved.`,
+                        link: '/payments',
+                    }
+                });
+            } else if (status === PaymentRequestStatus.REJECTED) {
+                await prisma.notification.create({
+                    data: {
+                        userId: request.requesterId,
+                        type: 'PAYMENT_REJECTED',
+                        title: 'Payment Request Rejected',
+                        message: `Your payment request of ₹${request.amount.toLocaleString('en-IN')} was rejected. Reason: ${rejectionReason || 'No reason provided'}`,
+                        link: '/payments',
+                    }
+                });
+            }
+
+            return updatedRequest;
         });
     }
 }

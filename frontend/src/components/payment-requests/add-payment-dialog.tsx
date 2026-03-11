@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
+import { getErrorMessage } from '@/lib/error-utils';
 import { useToast } from '@/hooks/use-toast';
 import {
     Dialog,
@@ -76,7 +77,7 @@ export function AddPaymentDialog({ open, onOpenChange, leadId, customerId }: Add
         onError: (error: any) => {
             toast({
                 title: 'Submission Failed',
-                description: error.response?.data?.message || 'Something went wrong',
+                description: getErrorMessage(error),
                 variant: 'destructive',
             });
         },

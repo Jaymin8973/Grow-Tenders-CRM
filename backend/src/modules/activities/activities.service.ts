@@ -73,7 +73,7 @@ export class ActivitiesService {
                     title: 'New Task Assigned',
                     message: `You have been assigned a new task: ${createActivityDto.title}`,
                     type: 'ACTIVITY_ASSIGNED',
-                    link: `/today`,
+                    link: `/activities`,
                 },
             });
         }
@@ -408,6 +408,13 @@ export class ActivitiesService {
         if (user.role === Role.EMPLOYEE && activity.assigneeId !== user.id) {
             throw new ForbiddenException('You cannot delete this activity');
         }
+
+        // Delete related notifications that link to this activity
+        await this.prisma.notification.deleteMany({
+            where: {
+                link: { contains: `/activities/${id}` }
+            }
+        });
 
         await this.prisma.activity.delete({ where: { id } });
         return { message: 'Activity deleted successfully' };

@@ -125,6 +125,13 @@ export class TendersService {
     }
 
     async deleteTender(id: string) {
+        // Delete related notifications that link to this tender
+        await this.prisma.notification.deleteMany({
+            where: {
+                link: { contains: `/tenders/${id}` }
+            }
+        });
+
         await this.prisma.tender.delete({ where: { id } });
         return { message: 'Tender deleted successfully' };
     }

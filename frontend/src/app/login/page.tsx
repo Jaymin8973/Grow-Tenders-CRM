@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import apiClient from '@/lib/api-client';
+import { getErrorMessage } from '@/lib/error-utils';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -123,7 +124,7 @@ export default function LoginPage() {
         } catch (error: any) {
             toast({
                 title: 'Login failed',
-                description: error.response?.data?.message || 'Invalid credentials',
+                description: getErrorMessage(error, 'Invalid credentials'),
                 variant: 'destructive',
             });
         } finally {
@@ -149,7 +150,7 @@ export default function LoginPage() {
         } catch (error: any) {
             toast({
                 title: 'OTP verification failed',
-                description: error.response?.data?.message || error.message || 'Invalid OTP',
+                description: getErrorMessage(error, 'Invalid OTP'),
                 variant: 'destructive',
             });
         } finally {

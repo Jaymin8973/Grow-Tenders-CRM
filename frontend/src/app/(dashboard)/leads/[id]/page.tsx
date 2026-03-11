@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
+import { getErrorMessage } from '@/lib/error-utils';
 import { useAuth } from '@/contexts/auth-context';
 import { useToast } from '@/components/ui/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -56,6 +57,13 @@ import {
     Edit,
     Trash2,
     ChevronRight,
+    Tag,
+    FileText,
+    History,
+    MailOpen,
+    CalendarDays,
+    UserCircle,
+    Sparkles,
 } from 'lucide-react';
 import { ComposeEmailDialog } from '@/components/mail/compose-email-dialog';
 import { AssignLeadDialog } from '@/components/leads/assign-lead-dialog';
@@ -65,12 +73,12 @@ import { getInitials, cn, formatCurrency } from '@/lib/utils';
 import { AddPaymentDialog } from '@/components/payment-requests/add-payment-dialog';
 import { IndianRupee } from 'lucide-react';
 
-const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
-    WARM_LEAD: { label: 'Warm Lead', color: 'text-blue-700', bg: 'bg-blue-50' },
-    HOT_LEAD: { label: 'Hot Lead', color: 'text-green-700', bg: 'bg-green-50' },
-    COLD_LEAD: { label: 'Cold Lead', color: 'text-red-700', bg: 'bg-red-50' },
-    CLOSED_LEAD: { label: 'Closed Lead', color: 'text-gray-700', bg: 'bg-gray-50' },
-    PROPOSAL_LEAD: { label: 'Proposal Lead', color: 'text-purple-700', bg: 'bg-purple-50' },
+const statusConfig: Record<string, { label: string; color: string; bg: string; icon: any; gradient: string }> = {
+    WARM_LEAD: { label: 'Warm Lead', color: 'text-amber-700', bg: 'bg-amber-50', icon: Thermometer, gradient: 'from-amber-500 to-orange-500' },
+    HOT_LEAD: { label: 'Hot Lead', color: 'text-rose-700', bg: 'bg-rose-50', icon: Flame, gradient: 'from-rose-500 to-red-500' },
+    COLD_LEAD: { label: 'Cold Lead', color: 'text-blue-700', bg: 'bg-blue-50', icon: Snowflake, gradient: 'from-blue-500 to-cyan-500' },
+    CLOSED_LEAD: { label: 'Closed Lead', color: 'text-emerald-700', bg: 'bg-emerald-50', icon: CheckCircle2, gradient: 'from-emerald-500 to-green-500' },
+    PROPOSAL_LEAD: { label: 'Proposal Lead', color: 'text-purple-700', bg: 'bg-purple-50', icon: Sparkles, gradient: 'from-purple-500 to-violet-500' },
 };
 
 
@@ -246,7 +254,7 @@ export default function LeadDetailPage() {
         onError: (error: any) => {
             toast({
                 title: 'Failed to upload file',
-                description: error.response?.data?.message || 'Something went wrong',
+                description: getErrorMessage(error),
                 variant: 'destructive'
             });
         },
@@ -280,7 +288,7 @@ export default function LeadDetailPage() {
         onError: (error: any) => {
             toast({
                 title: 'Failed to schedule follow-up',
-                description: error.response?.data?.message || 'Something went wrong',
+                description: getErrorMessage(error),
                 variant: 'destructive'
             });
         }
@@ -315,163 +323,201 @@ export default function LeadDetailPage() {
     const isClosed = lead.status === 'CLOSED_LEAD';
     const canUpdateStatus = user?.role !== 'EMPLOYEE' || lead.assigneeId === user?.id;
 
+    const StatusIcon = status.icon;
+
     return (
-        <div className="max-w-7xl mx-auto space-y-6 page-enter pb-16">
-            <div className="sticky top-0 z-30 -mx-4 sm:mx-0 px-4 sm:px-0 pt-4 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                {/* Header */}
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-start gap-4 min-w-0">
-                        <Button variant="ghost" size="icon" onClick={() => router.push('/leads')}>
-                            <ArrowLeft className="h-5 w-5" />
-                        </Button>
-                        <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <h1 className="text-2xl font-bold truncate">
-                                    {lead.salutation} {lead.firstName} {lead.lastName}
-                                </h1>
-                                <Badge className={cn(status.bg, status.color, 'border-0')}>
-                                    {status.label}
-                                </Badge>
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+            <div className="max-w-7xl mx-auto space-y-6 page-enter pb-16 px-4 sm:px-6 lg:px-8 pt-6">
+                {/* Header Section with Gradient Background */}
+                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/10 p-6">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary/20 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                    
+                    <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                        <div className="flex items-start gap-4 min-w-0">
+                            <Button variant="ghost" size="icon" onClick={() => router.push('/leads')} className="shrink-0 bg-white/50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-800">
+                                <ArrowLeft className="h-5 w-5" />
+                            </Button>
+                            
+                            <div className="flex items-center gap-4 min-w-0">
+                                <div className="relative">
+                                    <Avatar className="h-16 w-16 border-4 border-white shadow-lg">
+                                        <AvatarFallback className={cn('text-xl font-bold', status.bg, status.color)}>
+                                            {getInitials(lead.firstName, lead.lastName)}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div className={cn('absolute -bottom-1 -right-1 p-1.5 rounded-full border-2 border-white shadow-md', status.bg)}>
+                                        <StatusIcon className={cn('h-3 w-3', status.color)} />
+                                    </div>
+                                </div>
+                                
+                                <div className="min-w-0">
+                                    <div className="flex flex-wrap items-center gap-3">
+                                        <h1 className="text-2xl font-bold truncate text-slate-900 dark:text-slate-100">
+                                            {lead.salutation} {lead.firstName} {lead.lastName}
+                                        </h1>
+                                        <Badge className={cn('px-3 py-1 text-sm font-medium border-0 shadow-sm bg-gradient-to-r', status.gradient, 'text-white')}>
+                                            {status.label}
+                                        </Badge>
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-3 mt-1 text-muted-foreground">
+                                        <span className="flex items-center gap-1.5 text-sm">
+                                            <Building2 className="h-4 w-4" />
+                                            <span className="truncate max-w-[200px]">{lead.company || 'No company'}</span>
+                                        </span>
+                                        {lead.industry && (
+                                            <>
+                                                <span className="text-muted-foreground/30">•</span>
+                                                <span className="flex items-center gap-1.5 text-sm">
+                                                    <Tag className="h-4 w-4" />
+                                                    <span className="truncate max-w-[150px]">{lead.industry}</span>
+                                                </span>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
-                            <p className="text-sm text-muted-foreground flex items-center gap-2">
-                                <Building2 className="h-3.5 w-3.5" />
-                                <span className="truncate">{lead.company || 'No company'}</span>
-                                {lead.industry && <span className="text-muted-foreground/50 mx-1">•</span>}
-                                {lead.industry && <span className="truncate">{lead.industry}</span>}
-                            </p>
                         </div>
-                    </div>
 
-                    <div className="flex flex-wrap items-center gap-2 justify-end">
-                        <ComposeEmailDialog
-                            isOpen={emailOpen}
-                            onClose={() => setEmailOpen(false)}
-                            defaultTo={lead.email}
-                            relatedTo={{ type: 'Lead', id: lead.id, name: `${lead.firstName} ${lead.lastName}` }}
-                        >
-                            <Button className="gap-2" variant="outline">
-                                <Mail className="h-4 w-4" />
-                                Email
-                            </Button>
-                        </ComposeEmailDialog>
-
-                        {(user?.role === 'SUPER_ADMIN' || user?.role === 'MANAGER') && (
-                            <Button
-                                variant="secondary"
-                                className="gap-2"
-                                onClick={() => convertToCustomerMutation.mutate()}
-                                disabled={convertToCustomerMutation.isPending}
+                        <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                            <ComposeEmailDialog
+                                isOpen={emailOpen}
+                                onClose={() => setEmailOpen(false)}
+                                defaultTo={lead.email}
+                                relatedTo={{ type: 'Lead', id: lead.id, name: `${lead.firstName} ${lead.lastName}` }}
                             >
-                                <User className="h-4 w-4" />
-                                Convert
-                            </Button>
-                        )}
+                                <Button className="gap-2 bg-white dark:bg-slate-800" variant="outline">
+                                    <Mail className="h-4 w-4" />
+                                    Email
+                                </Button>
+                            </ComposeEmailDialog>
 
-                        {(user?.role === 'SUPER_ADMIN' || user?.role === 'MANAGER') && (
-                            <Button
-                                variant="default"
-                                className="gap-2"
-                                onClick={() => setAssignDialogOpen(true)}
-                            >
-                                <User className="h-4 w-4" />
-                                Assign
-                            </Button>
-                        )}
+                            {(user?.role === 'SUPER_ADMIN' || user?.role === 'MANAGER') && (
+                                <Button
+                                    variant="secondary"
+                                    className="gap-2 bg-white dark:bg-slate-800"
+                                    onClick={() => convertToCustomerMutation.mutate()}
+                                    disabled={convertToCustomerMutation.isPending}
+                                >
+                                    <User className="h-4 w-4" />
+                                    Convert to Customer
+                                </Button>
+                            )}
+
+                            {(user?.role === 'SUPER_ADMIN' || user?.role === 'MANAGER') && (
+                                <Button
+                                    variant="default"
+                                    className="gap-2 shadow-md"
+                                    onClick={() => setAssignDialogOpen(true)}
+                                >
+                                    <UserCircle className="h-4 w-4" />
+                                    Assign
+                                </Button>
+                            )}
+                        </div>
                     </div>
                 </div>
 
-                <div className="h-px w-full bg-border mt-4" />
-            </div>
+                <AssignLeadDialog
+                    open={assignDialogOpen}
+                    onOpenChange={setAssignDialogOpen}
+                    leadId={leadId}
+                    currentAssigneeId={lead.assignee?.id}
+                />
 
-            <AssignLeadDialog
-                open={assignDialogOpen}
-                onOpenChange={setAssignDialogOpen}
-                leadId={leadId}
-                currentAssigneeId={lead.assignee?.id}
-            />
+                <TransferLeadDialog
+                    open={transferDialogOpen}
+                    onOpenChange={setTransferDialogOpen}
+                    leadId={leadId}
+                />
 
-            <TransferLeadDialog
-                open={transferDialogOpen}
-                onOpenChange={setTransferDialogOpen}
-                leadId={leadId}
-            />
+                <AddPaymentDialog
+                    open={addPaymentOpen}
+                    onOpenChange={setAddPaymentOpen}
+                    leadId={leadId}
+                />
 
-            <AddPaymentDialog
-                open={addPaymentOpen}
-                onOpenChange={setAddPaymentOpen}
-                leadId={leadId}
-            />
-
-            <div className="grid gap-6 lg:grid-cols-3">
+                <div className="grid gap-6 lg:grid-cols-3">
                 {/* Left Column - Lead Info */}
                 <div className="space-y-6">
                     {/* Contact Info Card */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-lg">Contact Information</CardTitle>
+                    <Card className="overflow-hidden border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur">
+                        <div className="h-2 bg-gradient-to-r from-primary to-primary/50" />
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-lg flex items-center gap-2">
+                                <div className="p-2 rounded-lg bg-primary/10">
+                                    <User className="h-4 w-4 text-primary" />
+                                </div>
+                                Contact Information
+                            </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div className="flex items-center gap-3">
-                                <Avatar className="h-16 w-16">
-                                    <AvatarFallback className="bg-primary/10 text-primary text-xl">
+                            <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+                                <Avatar className="h-14 w-14 border-2 border-white shadow-md">
+                                    <AvatarFallback className={cn('text-lg font-semibold', status.bg, status.color)}>
                                         {getInitials(lead.firstName, lead.lastName)}
                                     </AvatarFallback>
                                 </Avatar>
                                 <div>
-                                    <p className="font-medium">{lead.firstName} {lead.lastName}</p>
+                                    <p className="font-semibold text-slate-900 dark:text-slate-100">{lead.salutation} {lead.firstName} {lead.lastName}</p>
                                     <p className="text-sm text-muted-foreground">{lead.position || 'No position'}</p>
                                 </div>
                             </div>
 
-                            <div className="space-y-3 pt-2">
-                                <div className="flex items-center gap-3 text-sm">
-                                    <Mail className="h-4 w-4 text-muted-foreground" />
-                                    <a href={`mailto:${lead.email}`} className="text-primary hover:underline">
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-3 text-sm p-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                    <div className="p-2 rounded-md bg-blue-50 dark:bg-blue-900/30">
+                                        <Mail className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                    </div>
+                                    <a href={`mailto:${lead.email}`} className="text-primary hover:underline flex-1 truncate">
                                         {lead.email}
                                     </a>
                                 </div>
-                                {lead.phone && (
-                                    <div className="flex items-center gap-3 text-sm">
-                                        <Phone className="h-4 w-4 text-muted-foreground" />
-                                        <a href={`tel:${lead.phone}`} className="hover:underline">
-                                            {lead.phone}
-                                        </a>
-                                    </div>
-                                )}
                                 {lead.mobile && (
-                                    <div className="flex items-center gap-3 text-sm">
-                                        <Phone className="h-4 w-4 text-muted-foreground" />
-                                        <span className="text-muted-foreground mr-1">Mobile:</span>
-                                        <a href={`tel:${lead.mobile}`} className="hover:underline">
+                                    <div className="flex items-center gap-3 text-sm p-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                        <div className="p-2 rounded-md bg-green-50 dark:bg-green-900/30">
+                                            <Phone className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                        </div>
+                                        <span className="text-muted-foreground text-xs">Mobile</span>
+                                        <a href={`tel:${lead.mobile}`} className="hover:underline flex-1 text-right truncate">
                                             {lead.mobile}
                                         </a>
                                     </div>
                                 )}
-                                {lead.fax && (
-                                    <div className="flex items-center gap-3 text-sm">
-                                        <Phone className="h-4 w-4 text-muted-foreground rotate-90" />
-                                        <span className="text-muted-foreground mr-1">Fax:</span>
-                                        <span>{lead.fax}</span>
+                                {lead.phone && (
+                                    <div className="flex items-center gap-3 text-sm p-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                        <div className="p-2 rounded-md bg-emerald-50 dark:bg-emerald-900/30">
+                                            <Phone className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                                        </div>
+                                        <span className="text-muted-foreground text-xs">Phone</span>
+                                        <a href={`tel:${lead.phone}`} className="hover:underline flex-1 text-right truncate">
+                                            {lead.phone}
+                                        </a>
                                     </div>
                                 )}
                                 {lead.company && (
-                                    <div className="flex items-center gap-3 text-sm">
-                                        <Building2 className="h-4 w-4 text-muted-foreground" />
-                                        <span>{lead.company}</span>
+                                    <div className="flex items-center gap-3 text-sm p-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                        <div className="p-2 rounded-md bg-purple-50 dark:bg-purple-900/30">
+                                            <Building2 className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                                        </div>
+                                        <span className="truncate flex-1">{lead.company}</span>
                                     </div>
                                 )}
                                 {(lead.city || lead.state) && (
-                                    <div className="flex items-center gap-3 text-sm">
-                                        <MapPin className="h-4 w-4 text-muted-foreground" />
-                                        <span>
+                                    <div className="flex items-center gap-3 text-sm p-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                        <div className="p-2 rounded-md bg-rose-50 dark:bg-rose-900/30">
+                                            <MapPin className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+                                        </div>
+                                        <span className="truncate flex-1">
                                             {[lead.city, lead.state].filter(Boolean).join(', ')}
                                         </span>
                                     </div>
                                 )}
                                 {lead.website && (
-                                    <div className="flex items-center gap-3 text-sm">
-                                        <Globe className="h-4 w-4 text-muted-foreground" />
-                                        <a href={lead.website} target="_blank" rel="noopener" className="text-primary hover:underline">
+                                    <div className="flex items-center gap-3 text-sm p-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                        <div className="p-2 rounded-md bg-cyan-50 dark:bg-cyan-900/30">
+                                            <Globe className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+                                        </div>
+                                        <a href={lead.website} target="_blank" rel="noopener" className="text-primary hover:underline flex-1 truncate">
                                             {lead.website}
                                         </a>
                                     </div>
@@ -481,22 +527,20 @@ export default function LeadDetailPage() {
                     </Card>
 
                     {/* Quick Actions */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-lg">Quick Actions</CardTitle>
+                    <Card className="overflow-hidden border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur">
+                        <div className="h-2 bg-gradient-to-r from-emerald-500 to-teal-500" />
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-lg flex items-center gap-2">
+                                <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
+                                    <Sparkles className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                                </div>
+                                Quick Actions
+                            </CardTitle>
                         </CardHeader>
-                        <CardContent className="grid gap-2">
-                            <div className="flex flex-wrap gap-2">
-                                {lead.phone && (
-                                    <a href={`tel:${lead.phone}`} className="inline-flex">
-                                        <Button variant="outline" size="sm" className="gap-2">
-                                            <Phone className="h-4 w-4" />
-                                            Call
-                                        </Button>
-                                    </a>
-                                )}
+                        <CardContent>
+                            <div className="grid grid-cols-2 gap-2">
                                 <a href={`mailto:${lead.email}`} className="inline-flex">
-                                    <Button variant="outline" size="sm" className="gap-2">
+                                    <Button variant="outline" size="sm" className="gap-2 w-full bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-700 dark:text-blue-400">
                                         <Mail className="h-4 w-4" />
                                         Email
                                     </Button>
@@ -505,7 +549,7 @@ export default function LeadDetailPage() {
                                     <Button
                                         variant="outline"
                                         size="sm"
-                                        className="gap-2"
+                                        className="gap-2 bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800 hover:bg-purple-100 dark:hover:bg-purple-900/30 text-purple-700 dark:text-purple-400"
                                         onClick={() => setTransferDialogOpen(true)}
                                     >
                                         <ChevronRight className="h-4 w-4" />
@@ -515,131 +559,215 @@ export default function LeadDetailPage() {
                                 <Button
                                     variant="default"
                                     size="sm"
-                                    className="gap-2 bg-emerald-600 hover:bg-emerald-700"
+                                    className="gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-md"
                                     onClick={() => setAddPaymentOpen(true)}
                                 >
                                     <IndianRupee className="h-4 w-4" />
-                                    Add Payment
+                                    Payment
                                 </Button>
                             </div>
                         </CardContent>
                     </Card>
 
                     {/* Lead Status */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-lg">Lead Status</CardTitle>
+                    <Card className="overflow-hidden border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur">
+                        <div className={cn('h-2 bg-gradient-to-r', status.gradient)} />
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-lg flex items-center gap-2">
+                                <div className={cn('p-2 rounded-lg', status.bg)}>
+                                    <StatusIcon className={cn('h-4 w-4', status.color)} />
+                                </div>
+                                Lead Status
+                            </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="space-y-2">
-                                <Label>Status</Label>
+                                <Label className="text-xs text-muted-foreground uppercase tracking-wider">Current Status</Label>
                                 <Select
                                     value={lead.status}
                                     onValueChange={(value) => updateLeadMutation.mutate({ status: value })}
                                     disabled={!canUpdateStatus || updateLeadMutation.isPending}
                                 >
-                                    <SelectTrigger>
+                                    <SelectTrigger className={cn('border-2', status.bg, 'border-transparent hover:border-primary/20')}>
                                         <SelectValue placeholder="Select status" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="WARM_LEAD">Warm Lead</SelectItem>
-                                        <SelectItem value="HOT_LEAD">Hot Lead</SelectItem>
-                                        <SelectItem value="COLD_LEAD">Cold Lead</SelectItem>
-                                        <SelectItem value="CLOSED_LEAD">Closed Lead</SelectItem>
-                                        <SelectItem value="PROPOSAL_LEAD">Proposal Lead</SelectItem>
+                                        <SelectItem value="WARM_LEAD" className="flex items-center gap-2">
+                                            <div className="flex items-center gap-2">
+                                                <Thermometer className="h-4 w-4 text-amber-500" />
+                                                Warm Lead
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="HOT_LEAD">
+                                            <div className="flex items-center gap-2">
+                                                <Flame className="h-4 w-4 text-rose-500" />
+                                                Hot Lead
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="COLD_LEAD">
+                                            <div className="flex items-center gap-2">
+                                                <Snowflake className="h-4 w-4 text-blue-500" />
+                                                Cold Lead
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="CLOSED_LEAD">
+                                            <div className="flex items-center gap-2">
+                                                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                                                Closed Lead
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="PROPOSAL_LEAD">
+                                            <div className="flex items-center gap-2">
+                                                <Sparkles className="h-4 w-4 text-purple-500" />
+                                                Proposal Lead
+                                            </div>
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                             {!canUpdateStatus && (
-                                <p className="text-xs text-muted-foreground">
-                                    You can update status only for leads assigned to you.
+                                <p className="text-xs text-muted-foreground flex items-center gap-1.5 p-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400">
+                                    <Clock className="h-3 w-3" />
+                                    Only assignees can update status
                                 </p>
                             )}
                         </CardContent>
                     </Card>
 
                     {/* Next Follow-up */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-lg">Next Follow-up</CardTitle>
+                    <Card className="overflow-hidden border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur">
+                        <div className="h-2 bg-gradient-to-r from-blue-500 to-indigo-500" />
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-lg flex items-center gap-2">
+                                <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                                    <CalendarDays className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                </div>
+                                Next Follow-up
+                            </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm font-medium">
-                                        {lead.nextFollowUp ? format(new Date(lead.nextFollowUp), 'PPP') : 'Not scheduled'}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                        {lead.nextFollowUp
-                                            ? formatDistanceToNow(new Date(lead.nextFollowUp), { addSuffix: true })
-                                            : 'Add a follow-up so it appears in daily tasks.'}
-                                    </p>
+                            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+                                <div className="flex items-center gap-3">
+                                    <div className={cn(
+                                        'p-2 rounded-lg',
+                                        lead.nextFollowUp ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-slate-100 dark:bg-slate-700'
+                                    )}>
+                                        <CalendarIcon className={cn(
+                                            'h-5 w-5',
+                                            lead.nextFollowUp ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'
+                                        )} />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                            {lead.nextFollowUp ? format(new Date(lead.nextFollowUp), 'PPP') : 'Not scheduled'}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {lead.nextFollowUp
+                                                ? formatDistanceToNow(new Date(lead.nextFollowUp), { addSuffix: true })
+                                                : 'Add a follow-up so it appears in daily tasks.'}
+                                        </p>
+                                    </div>
                                 </div>
                                 <Button
                                     size="sm"
                                     variant="outline"
+                                    className="gap-1.5"
                                     onClick={() => setFollowUpOpen(true)}
                                     disabled={isClosed}
                                 >
+                                    <Plus className="h-3.5 w-3.5" />
                                     Schedule
                                 </Button>
                             </div>
                             {isClosed && (
-                                <p className="text-xs text-muted-foreground">
-                                    Follow-ups are disabled after a lead is closed.
+                                <p className="text-xs text-muted-foreground flex items-center gap-1.5 p-2 rounded-lg bg-slate-100 dark:bg-slate-800">
+                                    <CheckCircle2 className="h-3 w-3" />
+                                    Follow-ups disabled for closed leads
                                 </p>
                             )}
                         </CardContent>
                     </Card>
 
                     {/* Lead Details Card */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-lg">Lead Details</CardTitle>
+                    <Card className="overflow-hidden border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur">
+                        <div className="h-2 bg-gradient-to-r from-slate-400 to-slate-500" />
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-lg flex items-center gap-2">
+                                <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800">
+                                    <FileText className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                                </div>
+                                Lead Details
+                            </CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-3">
-                            <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Source</span>
-                                <span className="font-medium">{lead.source || 'Unknown'}</span>
+                        <CardContent className="space-y-2">
+                            <div className="flex justify-between items-center text-sm p-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                <span className="text-muted-foreground flex items-center gap-2">
+                                    <Tag className="h-3.5 w-3.5" />
+                                    Source
+                                </span>
+                                <Badge variant="outline" className="font-medium">{lead.source || 'Unknown'}</Badge>
                             </div>
 
                             {lead.department && (
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-muted-foreground">Department</span>
+                                <div className="flex justify-between items-center text-sm p-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                    <span className="text-muted-foreground flex items-center gap-2">
+                                        <Building2 className="h-3.5 w-3.5" />
+                                        Department
+                                    </span>
                                     <span className="font-medium">{lead.department}</span>
                                 </div>
                             )}
 
-                            {lead.postalCode && (
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-muted-foreground">Postal Code</span>
-                                    <span className="font-medium">{lead.postalCode}</span>
+                            {lead.gstin && (
+                                <div className="flex justify-between items-center text-sm p-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                    <span className="text-muted-foreground flex items-center gap-2">
+                                        <FileText className="h-3.5 w-3.5" />
+                                        GSTIN
+                                    </span>
+                                    <span className="font-medium font-mono text-xs">{lead.gstin}</span>
                                 </div>
                             )}
 
-                            <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Assigned To</span>
+                            <div className="flex justify-between items-center text-sm p-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                <span className="text-muted-foreground flex items-center gap-2">
+                                    <UserCircle className="h-3.5 w-3.5" />
+                                    Assigned To
+                                </span>
                                 <div className="flex items-center gap-2">
-                                    <span className="font-medium">
-                                        {lead.assignee ? `${lead.assignee.firstName} ${lead.assignee.lastName}` : 'Unassigned'}
-                                    </span>
+                                    {lead.assignee ? (
+                                        <div className="flex items-center gap-2">
+                                            <Avatar className="h-6 w-6">
+                                                <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                                                    {getInitials(lead.assignee.firstName, lead.assignee.lastName)}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                            <span className="font-medium">
+                                                {lead.assignee.firstName} {lead.assignee.lastName}
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        <span className="text-muted-foreground italic">Unassigned</span>
+                                    )}
                                     {(user?.role === 'SUPER_ADMIN' || user?.role === 'MANAGER') && (
                                         <Button
                                             variant="ghost"
                                             size="sm"
-                                            className="h-6 w-6 p-0"
+                                            className="h-6 w-6 p-0 hover:bg-primary/10"
                                             onClick={() => setAssignDialogOpen(true)}
                                         >
                                             <Edit className="h-3 w-3" />
                                         </Button>
                                     )}
-
                                 </div>
                             </div>
-                            <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Created</span>
+                            
+                            <div className="flex justify-between items-center text-sm p-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                <span className="text-muted-foreground flex items-center gap-2">
+                                    <Clock className="h-3.5 w-3.5" />
+                                    Created
+                                </span>
                                 <span className="font-medium">
-                                    {new Date(lead.createdAt).toLocaleDateString()}
+                                    {format(new Date(lead.createdAt), 'PPP')}
                                 </span>
                             </div>
                         </CardContent>
@@ -904,5 +1032,6 @@ export default function LeadDetailPage() {
                 </div>
             </div>
         </div>
+    </div>
     );
 }

@@ -163,6 +163,14 @@ export default function InvoiceDetailPage() {
     const saveMutation = useMutation({
         mutationFn: async () => {
             const selectedCustomer = customers?.find((c: any) => c.id === selectedCustomerId);
+            
+            // Filter out empty line items
+            const validLineItems = lineItems.filter(item => item.description.trim() !== '');
+            
+            if (validLineItems.length === 0) {
+                throw new Error('At least one line item with description is required');
+            }
+            
             const payload: any = {
                 customerId: selectedCustomerId,
                 companyName: selectedCustomer?.company || 'N/A',
@@ -170,7 +178,7 @@ export default function InvoiceDetailPage() {
                 discount: discount || undefined,
                 discountType: discount ? 'percentage' : undefined,
                 notes: notes || undefined,
-                lineItems: lineItems.map(item => ({
+                lineItems: validLineItems.map(item => ({
                     description: item.description,
                     quantity: item.quantity,
                     unitPrice: item.rate,
@@ -190,8 +198,11 @@ export default function InvoiceDetailPage() {
                 router.push(`/invoices/${response.data.id}`);
             }
         },
-        onError: () => {
-            toast({ title: 'Failed to save invoice', variant: 'destructive' });
+        onError: (error: any) => {
+            toast({ 
+                title: error?.message || 'Failed to save invoice', 
+                variant: 'destructive' 
+            });
         },
     });
 

@@ -49,7 +49,7 @@ export class DailyReportsService {
     }
 
     async findAll(userId: string, role: string, query: any) {
-        const { employeeId, date } = query;
+        const { employeeId, date, page = 1, limit = 10 } = query;
         const where: Prisma.DailyReportWhereInput = {};
 
         if (role === 'EMPLOYEE') {
@@ -72,31 +72,47 @@ export class DailyReportsService {
             };
         }
 
-        return this.prisma.dailyReport.findMany({
-            where,
-            include: {
-                employee: {
-                    select: {
-                        id: true,
-                        firstName: true,
-                        lastName: true,
-                        email: true,
-                        role: true,
+        const skip = (Number(page) - 1) * Number(limit);
+        const take = Number(limit);
+
+        const [data, total] = await Promise.all([
+            this.prisma.dailyReport.findMany({
+                where,
+                include: {
+                    employee: {
+                        select: {
+                            id: true,
+                            firstName: true,
+                            lastName: true,
+                            email: true,
+                            role: true,
+                        },
                     },
-                },
-                paymentReceivedFromCustomers: {
-                    select: {
-                        id: true,
-                        firstName: true,
-                        lastName: true,
-                        company: true,
+                    paymentReceivedFromCustomers: {
+                        select: {
+                            id: true,
+                            firstName: true,
+                            lastName: true,
+                            company: true,
+                        }
                     }
-                }
-            },
-            orderBy: {
-                date: 'desc',
-            },
-        });
+                },
+                orderBy: {
+                    date: 'desc',
+                },
+                skip,
+                take,
+            }),
+            this.prisma.dailyReport.count({ where }),
+        ]);
+
+        return {
+            data,
+            total,
+            page: Number(page),
+            limit: Number(limit),
+            totalPages: Math.ceil(total / Number(limit)),
+        };
     }
 
     async findOne(id: string) {

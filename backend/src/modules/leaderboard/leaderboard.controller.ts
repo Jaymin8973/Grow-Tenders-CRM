@@ -27,7 +27,6 @@ export class LeaderboardController {
     }
 
     @Get('global')
-    @Roles(Role.SUPER_ADMIN, Role.MANAGER)
     @ApiOperation({ summary: 'Get global leaderboard' })
     @ApiQuery({ name: 'startDate', required: false })
     @ApiQuery({ name: 'endDate', required: false })

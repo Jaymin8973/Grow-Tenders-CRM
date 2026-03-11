@@ -8,11 +8,15 @@ export interface LeaderboardEntry {
     lastName: string;
     email: string;
     avatar?: string;
+    role?: string;
+    branch?: { name: string } | null;
     metrics: {
         revenueClosed: number;
         activitiesCompleted: number;
         followUpCompletionRate: number;
         leadConversionRate: number;
+        leadsConverted?: number;
+        teamSize?: number;
     };
     rank: number;
 }
@@ -31,6 +35,7 @@ export class LeaderboardService {
                 email: true,
                 avatar: true,
                 role: true,
+                branch: { select: { name: true } },
             },
         });
 
@@ -41,7 +46,11 @@ export class LeaderboardService {
             ? { createdAt: { gte: period.startDate, lte: period.endDate } }
             : undefined;
 
-        const [activitiesCompletedAgg, totalActivitiesAgg, leadsAssignedAgg, leadsConvertedAgg] = await Promise.all([
+        const paymentDateFilter = period
+            ? { paymentDate: { gte: period.startDate, lte: period.endDate } }
+            : undefined;
+
+        const [activitiesCompletedAgg, totalActivitiesAgg, leadsAssignedAgg, leadsConvertedAgg, revenueAgg] = await Promise.all([
             this.prisma.activity.groupBy({
                 by: ['assigneeId'],
                 where: {
@@ -76,6 +85,14 @@ export class LeaderboardService {
                 },
                 _count: { _all: true },
             }),
+            this.prisma.payment.groupBy({
+                by: ['createdById'],
+                where: {
+                    createdById: { in: userIds },
+                    ...(paymentDateFilter ? paymentDateFilter : {}),
+                },
+                _sum: { totalAmount: true },
+            }),
         ]);
 
         const toCountMap = (rows: Array<{ assigneeId: string | null; _count: { _all: number } }>) => {
@@ -86,24 +103,35 @@ export class LeaderboardService {
             return map;
         };
 
+        const toRevenueMap = (rows: Array<{ createdById: string | null; _sum: { totalAmount: number | null } }>) => {
+            const map = new Map<string, number>();
+            for (const r of rows) {
+                if (r.createdById) map.set(r.createdById, r._sum.totalAmount || 0);
+            }
+            return map;
+        };
+
         const activitiesCompletedMap = toCountMap(activitiesCompletedAgg as any);
         const totalActivitiesMap = toCountMap(totalActivitiesAgg as any);
         const leadsAssignedMap = toCountMap(leadsAssignedAgg as any);
         const leadsConvertedMap = toCountMap(leadsConvertedAgg as any);
+        const revenueMap = toRevenueMap(revenueAgg as any);
 
         const leaderboard = users.map((user) => {
             const activitiesCompleted = activitiesCompletedMap.get(user.id) ?? 0;
             const totalActivities = totalActivitiesMap.get(user.id) ?? 0;
             const leadsAssigned = leadsAssignedMap.get(user.id) ?? 0;
             const leadsConverted = leadsConvertedMap.get(user.id) ?? 0;
+            const revenueClosed = revenueMap.get(user.id) ?? 0;
 
             const metrics = {
-                revenueClosed: 0,
+                revenueClosed,
                 activitiesCompleted,
                 followUpCompletionRate:
                     totalActivities > 0 ? Math.round((activitiesCompleted / totalActivities) * 100) : 0,
                 leadConversionRate:
                     leadsAssigned > 0 ? Math.round((leadsConverted / leadsAssigned) * 100) : 0,
+                leadsConverted,
             };
 
             return {
@@ -113,12 +141,13 @@ export class LeaderboardService {
                 email: user.email,
                 avatar: user.avatar || undefined,
                 role: user.role,
+                branch: user.branch,
                 metrics,
                 rank: 0,
             };
         });
 
-        // Sort by activities completed, then by lead conversion rate
+        // Sort by revenue closed, then by activities completed
         leaderboard.sort((a, b) => {
             if (b.metrics.revenueClosed !== a.metrics.revenueClosed) {
                 return b.metrics.revenueClosed - a.metrics.revenueClosed;
@@ -143,6 +172,8 @@ export class LeaderboardService {
                 lastName: true,
                 email: true,
                 avatar: true,
+                role: true,
+                branch: { select: { name: true } },
             },
         });
 
@@ -153,7 +184,11 @@ export class LeaderboardService {
             ? { createdAt: { gte: period.startDate, lte: period.endDate } }
             : undefined;
 
-        const [activitiesCompletedAgg, totalActivitiesAgg, leadsAssignedAgg, leadsConvertedAgg] = await Promise.all([
+        const paymentDateFilter = period
+            ? { paymentDate: { gte: period.startDate, lte: period.endDate } }
+            : undefined;
+
+        const [activitiesCompletedAgg, totalActivitiesAgg, leadsAssignedAgg, leadsConvertedAgg, revenueAgg] = await Promise.all([
             this.prisma.activity.groupBy({
                 by: ['assigneeId'],
                 where: {
@@ -188,6 +223,14 @@ export class LeaderboardService {
                 },
                 _count: { _all: true },
             }),
+            this.prisma.payment.groupBy({
+                by: ['createdById'],
+                where: {
+                    createdById: { in: userIds },
+                    ...(paymentDateFilter ? paymentDateFilter : {}),
+                },
+                _sum: { totalAmount: true },
+            }),
         ]);
 
         const toCountMap = (rows: Array<{ assigneeId: string | null; _count: { _all: number } }>) => {
@@ -198,24 +241,35 @@ export class LeaderboardService {
             return map;
         };
 
+        const toRevenueMap = (rows: Array<{ createdById: string | null; _sum: { totalAmount: number | null } }>) => {
+            const map = new Map<string, number>();
+            for (const r of rows) {
+                if (r.createdById) map.set(r.createdById, r._sum.totalAmount || 0);
+            }
+            return map;
+        };
+
         const activitiesCompletedMap = toCountMap(activitiesCompletedAgg as any);
         const totalActivitiesMap = toCountMap(totalActivitiesAgg as any);
         const leadsAssignedMap = toCountMap(leadsAssignedAgg as any);
         const leadsConvertedMap = toCountMap(leadsConvertedAgg as any);
+        const revenueMap = toRevenueMap(revenueAgg as any);
 
         const leaderboard = teamMembers.map((user) => {
             const activitiesCompleted = activitiesCompletedMap.get(user.id) ?? 0;
             const totalActivities = totalActivitiesMap.get(user.id) ?? 0;
             const leadsAssigned = leadsAssignedMap.get(user.id) ?? 0;
             const leadsConverted = leadsConvertedMap.get(user.id) ?? 0;
+            const revenueClosed = revenueMap.get(user.id) ?? 0;
 
             const metrics = {
-                revenueClosed: 0,
+                revenueClosed,
                 activitiesCompleted,
                 followUpCompletionRate:
                     totalActivities > 0 ? Math.round((activitiesCompleted / totalActivities) * 100) : 0,
                 leadConversionRate:
                     leadsAssigned > 0 ? Math.round((leadsConverted / leadsAssigned) * 100) : 0,
+                leadsConverted,
             };
 
             return {
@@ -224,12 +278,19 @@ export class LeaderboardService {
                 lastName: user.lastName,
                 email: user.email,
                 avatar: user.avatar || undefined,
+                role: user.role,
+                branch: user.branch,
                 metrics,
                 rank: 0,
             };
         });
 
-        leaderboard.sort((a, b) => b.metrics.revenueClosed - a.metrics.revenueClosed);
+        leaderboard.sort((a, b) => {
+            if (b.metrics.revenueClosed !== a.metrics.revenueClosed) {
+                return b.metrics.revenueClosed - a.metrics.revenueClosed;
+            }
+            return b.metrics.activitiesCompleted - a.metrics.activitiesCompleted;
+        });
         leaderboard.forEach((entry, index) => {
             entry.rank = index + 1;
         });
@@ -272,6 +333,10 @@ export class LeaderboardService {
             createdAt: { gte: period.startDate, lte: period.endDate },
         } : {};
 
+        const paymentDateFilter = period ? {
+            paymentDate: { gte: period.startDate, lte: period.endDate },
+        } : {};
+
         // Activities completed
         const activitiesCompleted = await this.prisma.activity.count({
             where: {
@@ -303,8 +368,17 @@ export class LeaderboardService {
             },
         });
 
+        // Revenue from payments
+        const revenueResult = await this.prisma.payment.aggregate({
+            where: {
+                createdById: userId,
+                ...paymentDateFilter,
+            },
+            _sum: { totalAmount: true },
+        });
+
         return {
-            revenueClosed: 0,
+            revenueClosed: revenueResult._sum.totalAmount || 0,
             activitiesCompleted,
             followUpCompletionRate: totalActivities > 0
                 ? Math.round((activitiesCompleted / totalActivities) * 100)
@@ -312,6 +386,7 @@ export class LeaderboardService {
             leadConversionRate: leadsAssigned > 0
                 ? Math.round((leadsConverted / leadsAssigned) * 100)
                 : 0,
+            leadsConverted,
         };
     }
 
@@ -341,6 +416,7 @@ export class LeaderboardService {
                 email: true,
                 avatar: true,
                 role: true,
+                branch: { select: { name: true } },
             },
         });
 
@@ -361,8 +437,10 @@ export class LeaderboardService {
                         email: manager.email,
                         avatar: manager.avatar,
                         role: manager.role,
+                        branch: manager.branch,
                         metrics: {
                             revenueClosed: 0,
+                            leadsConverted: 0,
                             teamSize: 0,
                         },
                         rank: 0,
@@ -374,13 +452,26 @@ export class LeaderboardService {
                     createdAt: { gte: period.startDate, lte: period.endDate },
                 } : {};
 
-                const leadsConverted = await this.prisma.lead.count({
-                    where: {
-                        assigneeId: { in: teamIds },
-                        status: LeadStatus.CLOSED_LEAD,
-                        ...dateFilter,
-                    },
-                });
+                const paymentDateFilter = period ? {
+                    paymentDate: { gte: period.startDate, lte: period.endDate },
+                } : {};
+
+                const [leadsConverted, revenueResult] = await Promise.all([
+                    this.prisma.lead.count({
+                        where: {
+                            assigneeId: { in: teamIds },
+                            status: LeadStatus.CLOSED_LEAD,
+                            ...dateFilter,
+                        },
+                    }),
+                    this.prisma.payment.aggregate({
+                        where: {
+                            createdById: { in: teamIds },
+                            ...paymentDateFilter,
+                        },
+                        _sum: { totalAmount: true },
+                    }),
+                ]);
 
                 return {
                     userId: manager.id,
@@ -389,8 +480,9 @@ export class LeaderboardService {
                     email: manager.email,
                     avatar: manager.avatar,
                     role: manager.role,
+                    branch: manager.branch,
                     metrics: {
-                        revenueClosed: 0,
+                        revenueClosed: revenueResult._sum.totalAmount || 0,
                         leadsConverted,
                         teamSize: teamIds.length,
                     },
@@ -399,8 +491,13 @@ export class LeaderboardService {
             })
         );
 
-        // Sort by leads converted
-        leaderboard.sort((a, b) => (b.metrics as any).leadsConverted - (a.metrics as any).leadsConverted);
+        // Sort by revenue closed, then by leads converted
+        leaderboard.sort((a, b) => {
+            if ((b.metrics as any).revenueClosed !== (a.metrics as any).revenueClosed) {
+                return (b.metrics as any).revenueClosed - (a.metrics as any).revenueClosed;
+            }
+            return (b.metrics as any).leadsConverted - (a.metrics as any).leadsConverted;
+        });
 
         // Assign ranks
         leaderboard.forEach((entry, index) => {

@@ -225,10 +225,10 @@ model Lead {
   
   
   assigneeId    String?     @db.ObjectId
-  assignee      User?       @relation("LeadAssignee", fields: [assigneeId], references: [id])
+  assignee      User?       @relation("LeadAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
   
   createdById   String?     @db.ObjectId
-  createdBy     User?       @relation("LeadCreator", fields: [createdById], references: [id])
+  createdBy     User?       @relation("LeadCreator", fields: [createdById], references: [id], onDelete: SetNull)
   
   // Branch relation
   branchId      String?     @db.ObjectId
@@ -265,7 +265,7 @@ model RoleScreenAccess {
 model SuperAdminLoginOtp {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   userId      String   @db.ObjectId
-  user        User     @relation(fields: [userId], references: [id])
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   otpHash     String
   expiresAt   DateTime
@@ -325,7 +325,7 @@ model Customer {
   lastLoginAt       DateTime?
 
   assigneeId    String?           @db.ObjectId
-  assignee      User?             @relation("CustomerAssignee", fields: [assigneeId], references: [id])
+  assignee      User?             @relation("CustomerAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
   
   // Branch relation
   branchId      String?           @db.ObjectId
@@ -396,13 +396,13 @@ model Activity {
   outcome       String?
   
   assigneeId    String         @db.ObjectId
-  assignee      User           @relation("ActivityAssignee", fields: [assigneeId], references: [id])
+  assignee      User           @relation("ActivityAssignee", fields: [assigneeId], references: [id], onDelete: Cascade)
   
   createdById   String         @db.ObjectId
-  createdBy     User           @relation("ActivityCreator", fields: [createdById], references: [id])
+  createdBy     User           @relation("ActivityCreator", fields: [createdById], references: [id], onDelete: Cascade)
   
   leadId        String?        @db.ObjectId
-  lead          Lead?          @relation(fields: [leadId], references: [id])
+  lead          Lead?          @relation(fields: [leadId], references: [id], onDelete: Cascade)
   
   customerId    String?        @db.ObjectId
   customer      Customer?      @relation(fields: [customerId], references: [id], onDelete: Cascade)
@@ -452,7 +452,7 @@ model Invoice {
   
   // Created by
   createdById     String         @db.ObjectId
-  createdBy       User           @relation("InvoiceCreator", fields: [createdById], references: [id])
+  createdBy       User           @relation("InvoiceCreator", fields: [createdById], references: [id], onDelete: Cascade)
   
   // PDF
   pdfUrl          String?
@@ -526,7 +526,7 @@ model Tender {
   requirements  String?
   
   createdById   String?      @db.ObjectId
-  createdBy     User?        @relation("TenderCreator", fields: [createdById], references: [id])
+  createdBy     User?        @relation("TenderCreator", fields: [createdById], references: [id], onDelete: SetNull)
   
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
@@ -632,13 +632,13 @@ model EmailLog {
   customer    Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
   
   leadId      String?   @db.ObjectId
-  lead        Lead?     @relation(fields: [leadId], references: [id])
+  lead        Lead?     @relation(fields: [leadId], references: [id], onDelete: Cascade)
   
   invoiceId   String?   @db.ObjectId
-  invoice     Invoice?  @relation(fields: [invoiceId], references: [id])
+  invoice     Invoice?  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   
   tenderId    String?   @db.ObjectId
-  tender      Tender?   @relation(fields: [tenderId], references: [id])
+  tender      Tender?   @relation(fields: [tenderId], references: [id], onDelete: Cascade)
   
   createdAt   DateTime  @default(now())
 
@@ -648,7 +648,7 @@ model EmailLog {
 model Notification {
   id          String           @id @default(auto()) @map("_id") @db.ObjectId
   userId      String           @db.ObjectId
-  user        User             @relation(fields: [userId], references: [id])
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   type        NotificationType
   title       String
@@ -664,7 +664,7 @@ model Notification {
 model AuditLog {
   id          String    @id @default(auto()) @map("_id") @db.ObjectId
   userId      String    @db.ObjectId
-  user        User      @relation(fields: [userId], references: [id])
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   action      String    // CREATE, UPDATE, DELETE
   module      String    // leads, customers, activities, etc.
@@ -684,7 +684,7 @@ model Note {
   content     String
   
   leadId      String?   @db.ObjectId
-  lead        Lead?     @relation(fields: [leadId], references: [id])
+  lead        Lead?     @relation(fields: [leadId], references: [id], onDelete: Cascade)
   
   customerId  String?   @db.ObjectId
   customer    Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
@@ -709,7 +709,7 @@ model Attachment {
   s3Key       String?
   
   leadId      String?   @db.ObjectId
-  lead        Lead?     @relation(fields: [leadId], references: [id])
+  lead        Lead?     @relation(fields: [leadId], references: [id], onDelete: Cascade)
   
   customerId  String?   @db.ObjectId
   customer    Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
@@ -717,7 +717,7 @@ model Attachment {
 
   
   tenderId    String?   @db.ObjectId
-  tender      Tender?   @relation(fields: [tenderId], references: [id])
+  tender      Tender?   @relation(fields: [tenderId], references: [id], onDelete: Cascade)
   
   createdAt   DateTime  @default(now())
 
@@ -751,11 +751,11 @@ model Payment {
   
   // Optional Invoice link
   invoiceId       String?        @db.ObjectId
-  invoice         Invoice?       @relation(fields: [invoiceId], references: [id])
+  invoice         Invoice?       @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
   
   // Created by
   createdById     String         @db.ObjectId
-  createdBy       User           @relation("PaymentCreator", fields: [createdById], references: [id])
+  createdBy       User           @relation("PaymentCreator", fields: [createdById], references: [id], onDelete: Cascade)
   
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
@@ -770,10 +770,10 @@ model LeadTransferRequest {
   lead        Lead           @relation(fields: [leadId], references: [id], onDelete: Cascade)
   
   requesterId String         @db.ObjectId
-  requester   User           @relation("TransferRequester", fields: [requesterId], references: [id])
+  requester   User           @relation("TransferRequester", fields: [requesterId], references: [id], onDelete: Cascade)
   
   targetUserId String?       @db.ObjectId
-  targetUser   User?         @relation("TransferTarget", fields: [targetUserId], references: [id])
+  targetUser   User?         @relation("TransferTarget", fields: [targetUserId], references: [id], onDelete: SetNull)
   
   status      TransferStatus @default(PENDING)
   reason      String?
@@ -805,7 +805,7 @@ model TenderScrapeJob {
 model TenderDispatchQueue {
   id              String      @id @default(auto()) @map("_id") @db.ObjectId
   tenderId        String      @db.ObjectId
-  tender          Tender      @relation(fields: [tenderId], references: [id])
+  tender          Tender      @relation(fields: [tenderId], references: [id], onDelete: Cascade)
   
   customerId      String      @db.ObjectId
   customer        Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
@@ -827,7 +827,7 @@ model TenderDispatchQueue {
 model LeaderboardScore {
   id              String      @id @default(auto()) @map("_id") @db.ObjectId
   employeeId      String      @db.ObjectId
-  employee        User        @relation(fields: [employeeId], references: [id])
+  employee        User        @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   
   month           DateTime    // First day of the month
   points          Int         @default(0)
@@ -857,7 +857,7 @@ model DailyReport {
   paymentReceivedFromCustomers   Customer[] @relation(fields: [paymentReceivedFromCustomerIds], references: [id])
   
   employeeId  String   @db.ObjectId
-  employee    User     @relation("EmployeeReports", fields: [employeeId], references: [id])
+  employee    User     @relation("EmployeeReports", fields: [employeeId], references: [id], onDelete: Cascade)
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -867,7 +867,7 @@ model DailyReport {
 model Target {
   id          String    @id @default(auto()) @map("_id") @db.ObjectId
   userId      String    @db.ObjectId
-  user        User      @relation(fields: [userId], references: [id])
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   month       DateTime  // First day of the month
   amount      Float     @default(0)      // Total target amount assigned
@@ -904,13 +904,13 @@ model PaymentRequest {
   
   // Relations
   requesterId     String    @db.ObjectId
-  requester       User      @relation("PaymentRequestRequester", fields: [requesterId], references: [id])
+  requester       User      @relation("PaymentRequestRequester", fields: [requesterId], references: [id], onDelete: Cascade)
   
   approverId      String?   @db.ObjectId
-  approver        User?     @relation("PaymentRequestApprover", fields: [approverId], references: [id])
+  approver        User?     @relation("PaymentRequestApprover", fields: [approverId], references: [id], onDelete: SetNull)
   
   leadId          String?   @db.ObjectId
-  lead            Lead?     @relation(fields: [leadId], references: [id])
+  lead            Lead?     @relation(fields: [leadId], references: [id], onDelete: Cascade)
   
   customerId      String?   @db.ObjectId
   customer        Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
