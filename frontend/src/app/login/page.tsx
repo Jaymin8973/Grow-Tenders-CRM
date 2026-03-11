@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import apiClient from '@/lib/api-client';
 import { getErrorMessage } from '@/lib/error-utils';
 import { useForm } from 'react-hook-form';
