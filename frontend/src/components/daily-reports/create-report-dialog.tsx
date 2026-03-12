@@ -24,6 +24,7 @@ import {
     FormDescription,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { useToast } from '@/hooks/use-toast';
 import apiClient from '@/lib/api-client';
 import { Plus } from 'lucide-react';
@@ -222,16 +223,17 @@ export function CreateReportDialog({ onSuccess }: CreateReportDialogProps) {
                             {paymentDetails.map((detail, index) => (
                                 <div key={index} className="flex gap-2 items-start p-3 border rounded-lg bg-slate-50 dark:bg-slate-800/50">
                                     <div className="flex-1 grid grid-cols-3 gap-2">
-                                        <select
-                                            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                                        <SearchableSelect
                                             value={detail.leadId || ''}
-                                            onChange={(e) => updatePaymentDetail(index, 'leadId', e.target.value || undefined)}
-                                        >
-                                            <option value="">Select Lead</option>
-                                            {leads.map(l => (
-                                                <option key={l.id} value={l.id}>{l.firstName} {l.lastName} {l.company ? `(${l.company})` : ''}</option>
-                                            ))}
-                                        </select>
+                                            onValueChange={(value) => updatePaymentDetail(index, 'leadId', value || undefined)}
+                                            placeholder="Select Lead"
+                                            emptyMessage="No leads found."
+                                            options={leads.map(l => ({
+                                                value: l.id,
+                                                label: `${l.firstName} ${l.lastName} ${l.company ? `(${l.company})` : ''}`,
+                                                searchTerms: `${l.company || ''} ${l.firstName} ${l.lastName}`,
+                                            }))}
+                                        />
                                         <Input
                                             type="number"
                                             placeholder="Amount (₹)"

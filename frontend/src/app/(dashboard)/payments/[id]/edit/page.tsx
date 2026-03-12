@@ -10,13 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
     ArrowLeft,
@@ -253,41 +247,31 @@ export default function EditPaymentPage() {
                         <div className="grid gap-4 sm:grid-cols-2">
                             <div className="space-y-2">
                                 <Label>Select Customer</Label>
-                                <Select
+                                <SearchableSelect
                                     value={formData.customerId}
                                     onValueChange={(value) => setFormData(prev => ({ ...prev, customerId: value }))}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select a customer" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {customers?.map((customer: any) => (
-                                            <SelectItem key={customer.id} value={customer.id}>
-                                                {customer.firstName} {customer.lastName}
-                                                {customer.company && ` - ${customer.company}`}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                    placeholder="Select a customer"
+                                    emptyMessage="No customers found."
+                                    options={customers?.map((customer: any) => ({
+                                        value: customer.id,
+                                        label: `${customer.firstName} ${customer.lastName}${customer.company ? ` - ${customer.company}` : ''}`,
+                                        searchTerms: `${customer.company || ''} ${customer.firstName} ${customer.lastName}`,
+                                    })) || []}
+                                />
                             </div>
                             <div className="space-y-2">
                                 <Label>Or Select Lead</Label>
-                                <Select
+                                <SearchableSelect
                                     value={formData.leadId}
                                     onValueChange={(value) => setFormData(prev => ({ ...prev, leadId: value }))}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select a lead" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {leads?.map((lead: any) => (
-                                            <SelectItem key={lead.id} value={lead.id}>
-                                                {lead.firstName} {lead.lastName}
-                                                {lead.company && ` (${lead.company})`}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                    placeholder="Select a lead"
+                                    emptyMessage="No leads found."
+                                    options={leads?.map((lead: any) => ({
+                                        value: lead.id,
+                                        label: `${lead.firstName} ${lead.lastName}${lead.company ? ` (${lead.company})` : ''}`,
+                                        searchTerms: `${lead.company || ''} ${lead.firstName} ${lead.lastName}`,
+                                    })) || []}
+                                />
                             </div>
                         </div>
 
@@ -425,21 +409,16 @@ export default function EditPaymentPage() {
                             </div>
                             <div className="space-y-2">
                                 <Label>Payment Method *</Label>
-                                <Select
+                                <SearchableSelect
                                     value={formData.paymentMethod}
                                     onValueChange={(value) => setFormData(prev => ({ ...prev, paymentMethod: value }))}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select method" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {paymentMethods.map((method) => (
-                                            <SelectItem key={method.value} value={method.value}>
-                                                {method.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                    placeholder="Select method"
+                                    emptyMessage="No methods found."
+                                    options={paymentMethods.map((method) => ({
+                                        value: method.value,
+                                        label: method.label,
+                                    }))}
+                                />
                             </div>
                         </div>
 

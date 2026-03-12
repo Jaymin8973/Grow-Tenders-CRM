@@ -10,13 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
     ArrowLeft,
@@ -190,22 +184,17 @@ export default function NewPaymentPage() {
                     <CardContent className="space-y-4">
                         <div className="space-y-2">
                             <Label>Select Customer *</Label>
-                            <Select
+                            <SearchableSelect
                                 value={formData.customerId}
                                 onValueChange={(value) => setFormData(prev => ({ ...prev, customerId: value }))}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select a customer" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {customers?.map((customer: any) => (
-                                        <SelectItem key={customer.id} value={customer.id}>
-                                            {customer.firstName} {customer.lastName}
-                                            {customer.company && ` - ${customer.company}`}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                                placeholder="Select a customer"
+                                emptyMessage="No customers found."
+                                options={customers?.map((customer: any) => ({
+                                    value: customer.id,
+                                    label: `${customer.firstName} ${customer.lastName}${customer.company ? ` - ${customer.company}` : ''}`,
+                                    searchTerms: `${customer.company || ''} ${customer.firstName} ${customer.lastName}`,
+                                })) || []}
+                            />
                         </div>
 
                         <div className="space-y-2">
@@ -332,17 +321,16 @@ export default function NewPaymentPage() {
                             </div>
                             <div className="space-y-2">
                                 <Label>Payment Method *</Label>
-                                <select
-                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                                <SearchableSelect
                                     value={formData.paymentMethod}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, paymentMethod: e.target.value }))}
-                                >
-                                    {paymentMethods.map((method) => (
-                                        <option key={method.value} value={method.value}>
-                                            {method.label}
-                                        </option>
-                                    ))}
-                                </select>
+                                    onValueChange={(value) => setFormData(prev => ({ ...prev, paymentMethod: value }))}
+                                    placeholder="Select method"
+                                    emptyMessage="No methods found."
+                                    options={paymentMethods.map((method) => ({
+                                        value: method.value,
+                                        label: method.label,
+                                    }))}
+                                />
                             </div>
                         </div>
 

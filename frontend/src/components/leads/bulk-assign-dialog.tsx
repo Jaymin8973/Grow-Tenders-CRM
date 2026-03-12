@@ -12,13 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 
@@ -91,25 +85,24 @@ export function BulkAssignDialog({
                 <div className="grid gap-4 py-4">
                     <div className="space-y-2">
                         <Label>Select Employee</Label>
-                        <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select an employee" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {isLoading ? (
-                                    <div className="flex items-center justify-center p-2">
-                                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                        Loading...
-                                    </div>
-                                ) : (
-                                    employees?.filter((u: any) => u.role === 'EMPLOYEE').map((user: any) => (
-                                        <SelectItem key={user.id} value={user.id}>
-                                            {user.firstName} {user.lastName}
-                                        </SelectItem>
-                                    ))
-                                )}
-                            </SelectContent>
-                        </Select>
+                        {isLoading ? (
+                            <div className="flex items-center gap-2 p-2 border rounded-md">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <span className="text-sm text-muted-foreground">Loading...</span>
+                            </div>
+                        ) : (
+                            <SearchableSelect
+                                value={selectedUserId}
+                                onValueChange={setSelectedUserId}
+                                placeholder="Select an employee"
+                                emptyMessage="No employees found."
+                                options={employees?.filter((u: any) => u.role === 'EMPLOYEE').map((user: any) => ({
+                                    value: user.id,
+                                    label: `${user.firstName} ${user.lastName}`,
+                                    searchTerms: `${user.firstName} ${user.lastName}`,
+                                })) || []}
+                            />
+                        )}
                     </div>
                 </div>
                 <DialogFooter>

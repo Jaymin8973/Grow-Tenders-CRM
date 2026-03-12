@@ -16,13 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Loader2, Plus, Trash2 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 
@@ -164,23 +158,22 @@ export function CreateInvoiceDialog({
                                 No {invoiceType === 'PERFORMA' ? 'Proposal' : 'Hot'} leads available
                             </div>
                         ) : (
-                            <Select value={selectedLeadId} onValueChange={(leadId) => {
-                                setSelectedLeadId(leadId);
-                                // Auto-fill company name from selected lead
-                                const selectedLead = leads.find((l: any) => l.id === leadId);
-                                setCompanyName(selectedLead?.company || '');
-                            }}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder={`Select a ${invoiceType === 'PERFORMA' ? 'Proposal' : 'Hot'} Lead`} />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {leads.map((lead: any) => (
-                                        <SelectItem key={lead.id} value={lead.id}>
-                                            {lead.firstName} {lead.lastName} {lead.company ? `(${lead.company})` : ''}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <SearchableSelect
+                                value={selectedLeadId}
+                                onValueChange={(leadId) => {
+                                    setSelectedLeadId(leadId);
+                                    // Auto-fill company name from selected lead
+                                    const selectedLead = leads.find((l: any) => l.id === leadId);
+                                    setCompanyName(selectedLead?.company || '');
+                                }}
+                                placeholder={`Select a ${invoiceType === 'PERFORMA' ? 'Proposal' : 'Hot'} Lead`}
+                                emptyMessage="No leads found."
+                                options={leads.map((lead: any) => ({
+                                    value: lead.id,
+                                    label: `${lead.firstName} ${lead.lastName} ${lead.company ? `(${lead.company})` : ''}`,
+                                    searchTerms: `${lead.company || ''} ${lead.firstName} ${lead.lastName}`,
+                                }))}
+                            />
                         )}
                     </div>
 

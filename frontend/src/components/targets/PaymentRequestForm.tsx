@@ -8,13 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { useToast } from '@/hooks/use-toast';
 import { Upload, Loader2, CheckCircle } from 'lucide-react';
 
@@ -107,36 +101,38 @@ export function PaymentRequestForm() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="lead">Related Lead (Optional)</Label>
-                            <Select value={leadId} onValueChange={setLeadId}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select Lead" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="none">None</SelectItem>
-                                    {leads?.map((lead: any) => (
-                                        <SelectItem key={lead.id} value={lead.id}>
-                                            {lead.firstName} {lead.lastName} - {lead.company || 'No Company'}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <SearchableSelect
+                                value={leadId || ''}
+                                onValueChange={setLeadId}
+                                placeholder="Select Lead"
+                                emptyMessage="No leads found."
+                                options={[
+                                    { value: 'none', label: 'None' },
+                                    ...(leads?.map((lead: any) => ({
+                                        value: lead.id,
+                                        label: `${lead.firstName} ${lead.lastName} - ${lead.company || 'No Company'}`,
+                                        searchTerms: `${lead.company || ''} ${lead.firstName} ${lead.lastName}`,
+                                    })) || [])
+                                ]}
+                            />
                         </div>
 
                         <div className="space-y-2">
                             <Label htmlFor="customer">Related Customer (Optional)</Label>
-                            <Select value={customerId} onValueChange={setCustomerId}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select Customer" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="none">None</SelectItem>
-                                    {customers?.map((customer: any) => (
-                                        <SelectItem key={customer.id} value={customer.id}>
-                                            {customer.firstName} {customer.lastName} - {customer.company || 'No Company'}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <SearchableSelect
+                                value={customerId || ''}
+                                onValueChange={setCustomerId}
+                                placeholder="Select Customer"
+                                emptyMessage="No customers found."
+                                options={[
+                                    { value: 'none', label: 'None' },
+                                    ...(customers?.map((customer: any) => ({
+                                        value: customer.id,
+                                        label: `${customer.firstName} ${customer.lastName} - ${customer.company || 'No Company'}`,
+                                        searchTerms: `${customer.company || ''} ${customer.firstName} ${customer.lastName}`,
+                                    })) || [])
+                                ]}
+                            />
                         </div>
                     </div>
 

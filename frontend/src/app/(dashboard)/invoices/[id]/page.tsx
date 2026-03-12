@@ -18,13 +18,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import {
     Table,
     TableBody,
@@ -351,26 +345,17 @@ export default function InvoiceDetailPage() {
                             <CardTitle className="text-lg">Customer</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select a customer" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {customers?.map((customer: any) => (
-                                        <SelectItem key={customer.id} value={customer.id}>
-                                            <div className="flex items-center gap-2">
-                                                <User className="h-4 w-4 text-muted-foreground" />
-                                                {customer.firstName} {customer.lastName}
-                                                {customer.company && (
-                                                    <span className="text-muted-foreground">
-                                                        ({customer.company})
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <SearchableSelect
+                                value={selectedCustomerId}
+                                onValueChange={setSelectedCustomerId}
+                                placeholder="Select a customer"
+                                emptyMessage="No customers found."
+                                options={customers?.map((customer: any) => ({
+                                    value: customer.id,
+                                    label: `${customer.firstName} ${customer.lastName}${customer.company ? ` (${customer.company})` : ''}`,
+                                    searchTerms: `${customer.company || ''} ${customer.firstName} ${customer.lastName}`,
+                                })) || []}
+                            />
                             {selectedCustomer && (
                                 <div className="mt-4 p-4 bg-muted rounded-lg">
                                     <div className="flex items-center gap-2 font-medium">
