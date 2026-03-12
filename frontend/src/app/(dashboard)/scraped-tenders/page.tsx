@@ -28,15 +28,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import {
-    Command,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
-} from '@/components/ui/command';
+import { InfiniteAutocomplete } from '@/components/ui/infinite-autocomplete';
 import {
     Table,
     TableBody,
@@ -101,10 +93,7 @@ export default function ScrapedTendersPage() {
     const [status, setStatus] = useState<string>('');
     const [state, setState] = useState<string>('');
     const [city, setCity] = useState<string>('');
-    const [category, setCategory] = useState<string>('');
-    const [categoryOpen, setCategoryOpen] = useState(false);
-    const [categorySearch, setCategorySearch] = useState('');
-    const [debouncedCategorySearch, setDebouncedCategorySearch] = useState('');
+    const [category, setCategory] = useState<string>('all');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [page, setPage] = useState(1);
     const [limit, setLimit] = useState(20);
@@ -118,12 +107,7 @@ export default function ScrapedTendersPage() {
         return () => clearTimeout(timer);
     }, [search]);
 
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setDebouncedCategorySearch(categorySearch);
-        }, 400);
-        return () => clearTimeout(timer);
-    }, [categorySearch]);
+    const [categorySearch, setCategorySearch] = useState('');
 
     // Reset page when filters change
     useEffect(() => {
@@ -182,14 +166,7 @@ export default function ScrapedTendersPage() {
         enabled: !!state && state !== 'all',
     });
 
-    const categoryLimit = 50;
-
-    const categoriesParams = useMemo(() => {
-        const params = new URLSearchParams();
-        params.append('limit', categoryLimit.toString());
-        if (debouncedCategorySearch) params.append('search', debouncedCategorySearch);
-        return params;
-    }, [categoryLimit, debouncedCategorySearch]);
+    const debouncedCategorySearch = categorySearch;
 
     const {
         data: categoriesPages,
@@ -198,9 +175,11 @@ export default function ScrapedTendersPage() {
         fetchNextPage: fetchNextCategoryPage,
         hasNextPage: hasNextCategoryPage,
     } = useInfiniteQuery<PaginatedStringResponse>({
-        queryKey: ['scraped-tenders-categories-paginated', debouncedCategorySearch],
+        queryKey: ['scraped-tenders-categories-paginated', categorySearch],
         queryFn: async ({ pageParam }) => {
-            const params = new URLSearchParams(categoriesParams);
+            const params = new URLSearchParams();
+            params.append('limit', '50');
+            if (categorySearch) params.append('search', categorySearch);
             params.append('page', String(pageParam || 1));
             const res = await apiClient.get(`/scraped-tenders/categories?${params.toString()}`);
             return res.data;
@@ -218,9 +197,11 @@ export default function ScrapedTendersPage() {
         const out: string[] = [];
         for (const p of pages) {
             for (const c of p.data || []) {
-                if (!seen.has(c)) {
-                    seen.add(c);
-                    out.push(c);
+                // Backend returns objects with name property
+                const name = typeof c === 'string' ? c : c.name;
+                if (name && !seen.has(name)) {
+                    seen.add(name);
+                    out.push(name);
                 }
             }
         }
@@ -396,88 +377,20 @@ export default function ScrapedTendersPage() {
                             ))}
                         </SelectContent>
                     </Select>
-                    <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
-                        <PopoverTrigger asChild>
-                            <Button
-                                variant="outline"
-                                role="combobox"
-                                aria-expanded={categoryOpen}
-                                className="w-full md:w-[240px] justify-between font-normal text-foreground"
-                            >
-                                <span className="truncate">
-                                    {category && category !== 'all' ? category : 'Category'}
-                                </span>
-                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                            <Command shouldFilter={false}>
-                                <CommandInput
-                                    placeholder="Search category..."
-                                    value={categorySearch}
-                                    onValueChange={setCategorySearch}
-                                />
-                                <CommandList
-                                    className="pointer-events-auto"
-                                    onScroll={(e) => {
-                                        const el = e.currentTarget;
-                                        const nearBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 40;
-                                        if (nearBottom && hasNextCategoryPage && !isFetchingNextCategoryPage) {
-                                            fetchNextCategoryPage();
-                                        }
-                                    }}
-                                >
-                                    <CommandEmpty>
-                                        {isFetchingCategories ? 'Loading...' : 'No categories found'}
-                                    </CommandEmpty>
-                                    <CommandGroup>
-                                        <CommandItem
-                                            value="__all__"
-                                            onSelect={() => {
-                                                setCategory('all');
-                                                setCategoryOpen(false);
-                                            }}
-                                            onMouseDown={(e) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                setCategory('all');
-                                                setCategoryOpen(false);
-                                            }}
-                                            className="cursor-pointer"
-                                        >
-                                            <Check className={cn('mr-2 h-4 w-4', !category || category === 'all' ? 'opacity-100' : 'opacity-0')} />
-                                            All Categories
-                                        </CommandItem>
-                                        {categories.map((c) => (
-                                            <CommandItem
-                                                key={c}
-                                                value={c}
-                                                className="text-foreground cursor-pointer"
-                                                onSelect={() => {
-                                                    setCategory(c);
-                                                    setCategoryOpen(false);
-                                                }}
-                                                onMouseDown={(e) => {
-                                                    e.preventDefault();
-                                                    e.stopPropagation();
-                                                    setCategory(c);
-                                                    setCategoryOpen(false);
-                                                }}
-                                            >
-                                                <Check className={cn('mr-2 h-4 w-4', category === c ? 'opacity-100' : 'opacity-0')} />
-                                                <span className="truncate">{c}</span>
-                                            </CommandItem>
-                                        ))}
-                                        {(hasNextCategoryPage || isFetchingNextCategoryPage) && (
-                                            <CommandItem value="__loading__" disabled>
-                                                {isFetchingNextCategoryPage ? 'Loading more...' : 'Scroll to load more'}
-                                            </CommandItem>
-                                        )}
-                                    </CommandGroup>
-                                </CommandList>
-                            </Command>
-                        </PopoverContent>
-                    </Popover>
+                    <InfiniteAutocomplete
+                        value={category}
+                        onValueChange={setCategory}
+                        placeholder="Category"
+                        emptyMessage="No categories found"
+                        options={categories}
+                        onLoadMore={fetchNextCategoryPage}
+                        hasMore={hasNextCategoryPage}
+                        loadingMore={isFetchingNextCategoryPage}
+                        loading={isFetchingCategories && categories.length === 0}
+                        searchValue={categorySearch}
+                        onSearchChange={setCategorySearch}
+                        className="w-full md:w-[240px]"
+                    />
                     <Select value={limit.toString()} onValueChange={(v) => { setLimit(parseInt(v)); setPage(1); }}>
                         <SelectTrigger className="w-full md:w-[120px]">
                             <SelectValue placeholder="Per page" />

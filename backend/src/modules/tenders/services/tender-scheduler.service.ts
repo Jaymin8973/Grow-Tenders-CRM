@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { GemScraperService } from './gem-scraper.service';
+import { GeMCategoriesService } from './gem-categories.service';
 import { TenderNotificationService } from './tender-notification.service';
 import { TenderAlertService } from '../../alerts/services/tender-alert.service';
 
@@ -11,12 +12,13 @@ export class TenderSchedulerService {
 
     constructor(
         private gemScraperService: GemScraperService,
+        private gemCategoriesService: GeMCategoriesService,
         private notificationService: TenderNotificationService,
         private tenderAlertService: TenderAlertService,
     ) { }
 
-    // Run every hour
-    @Cron(CronExpression.EVERY_4_HOURS)
+    // Run every 4 hours
+    @Cron(CronExpression.EVERY_MINUTE)
     async handleCron() {
         if (this.isRunning) {
             this.logger.warn('Scraper already running, skipping...');
@@ -27,17 +29,18 @@ export class TenderSchedulerService {
         this.logger.log('Starting scheduled tender scraping...');
 
         try {
-            // Scrape from start of today
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+            // First, sync categories from GeM portal
+            this.logger.log('Syncing GeM categories...');
+            const categoryResult = await this.gemCategoriesService.syncCategories();
+            this.logger.log(`Categories sync: ${categoryResult.added} added, ${categoryResult.updated} updated, ${categoryResult.total} total`);
 
-            const result = await this.gemScraperService.scrapeTenders(0, today);
-            this.logger.log(`Scraping complete: ${result.added} added, ${result.skipped} duplicates, ${result.skippedOld} old skipped, ${result.pagesScraped} pages scraped`);
+            // Then, delete expired tenders from database
+            const deleted = await this.gemScraperService.deleteExpiredTenders();
+            this.logger.log(`Deleted ${deleted} expired tenders`);
 
-
-            // Update expired tenders
-            const expired = await this.gemScraperService.updateExpiredTenders();
-            this.logger.log(`Marked ${expired} tenders as expired`);
+            // Scrape ALL active tenders from GeM (no date filter)
+            const result = await this.gemScraperService.scrapeTenders(0, null);
+            this.logger.log(`Scraping complete: ${result.added} added, ${result.skipped} duplicates, ${result.pagesScraped} pages scraped`);
 
             // Send notifications for new tenders
             if (result.added > 0 && result.newTenders.length > 0) {
@@ -73,7 +76,7 @@ export class TenderSchedulerService {
             }
 
             const result = await this.gemScraperService.scrapeTenders(pages, fromDate);
-            await this.gemScraperService.updateExpiredTenders();
+            await this.gemScraperService.deleteExpiredTenders();
 
             // Send notifications if any new tenders found
             if (result.added > 0 && result.newTenders.length > 0) {

@@ -18,7 +18,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
-import { SearchableSelect } from '@/components/ui/searchable-select';
+import { Autocomplete } from '@/components/ui/autocomplete';
 import {
     Table,
     TableBody,
@@ -345,14 +345,15 @@ export default function InvoiceDetailPage() {
                             <CardTitle className="text-lg">Customer</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <SearchableSelect
+                            <Autocomplete
                                 value={selectedCustomerId}
                                 onValueChange={setSelectedCustomerId}
-                                placeholder="Select a customer"
-                                emptyMessage="No customers found."
+                                placeholder="Search customer by name or company..."
+                                emptyMessage="No customers found"
                                 options={customers?.map((customer: any) => ({
                                     value: customer.id,
-                                    label: `${customer.firstName} ${customer.lastName}${customer.company ? ` (${customer.company})` : ''}`,
+                                    label: `${customer.firstName} ${customer.lastName}`,
+                                    subtitle: customer.company || 'No Company',
                                     searchTerms: `${customer.company || ''} ${customer.firstName} ${customer.lastName}`,
                                 })) || []}
                             />

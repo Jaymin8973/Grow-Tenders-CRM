@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { SearchableSelect } from '@/components/ui/searchable-select';
+import { Autocomplete } from '@/components/ui/autocomplete';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
     ArrowLeft,
@@ -184,14 +184,15 @@ export default function NewPaymentPage() {
                     <CardContent className="space-y-4">
                         <div className="space-y-2">
                             <Label>Select Customer *</Label>
-                            <SearchableSelect
+                            <Autocomplete
                                 value={formData.customerId}
                                 onValueChange={(value) => setFormData(prev => ({ ...prev, customerId: value }))}
-                                placeholder="Select a customer"
-                                emptyMessage="No customers found."
+                                placeholder="Search customer by name or company..."
+                                emptyMessage="No customers found"
                                 options={customers?.map((customer: any) => ({
                                     value: customer.id,
-                                    label: `${customer.firstName} ${customer.lastName}${customer.company ? ` - ${customer.company}` : ''}`,
+                                    label: `${customer.firstName} ${customer.lastName}`,
+                                    subtitle: customer.company || 'No Company',
                                     searchTerms: `${customer.company || ''} ${customer.firstName} ${customer.lastName}`,
                                 })) || []}
                             />
@@ -321,11 +322,11 @@ export default function NewPaymentPage() {
                             </div>
                             <div className="space-y-2">
                                 <Label>Payment Method *</Label>
-                                <SearchableSelect
+                                <Autocomplete
                                     value={formData.paymentMethod}
                                     onValueChange={(value) => setFormData(prev => ({ ...prev, paymentMethod: value }))}
-                                    placeholder="Select method"
-                                    emptyMessage="No methods found."
+                                    placeholder="Search method..."
+                                    emptyMessage="No methods found"
                                     options={paymentMethods.map((method) => ({
                                         value: method.value,
                                         label: method.label,

@@ -509,6 +509,22 @@ model TenderCategory {
   @@map("tender_categories")
 }
 
+// GeM Categories - Synced daily from GeM portal
+model GeMCategory {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  gemId       String    @unique  // Unique ID from GeM API
+  name        String             // Category display name
+  gemUrl      String?            // URL path from GeM
+  isActive    Boolean   @default(true)
+  lastSynced  DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([name])
+  @@index([isActive])
+  @@map("gem_categories")
+}
+
 model Tender {
   id            String       @id @default(auto()) @map("_id") @db.ObjectId
   title         String

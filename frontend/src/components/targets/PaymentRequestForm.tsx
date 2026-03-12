@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { SearchableSelect } from '@/components/ui/searchable-select';
+import { Autocomplete } from '@/components/ui/autocomplete';
 import { useToast } from '@/hooks/use-toast';
 import { Upload, Loader2, CheckCircle } from 'lucide-react';
 
@@ -101,16 +101,17 @@ export function PaymentRequestForm() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="lead">Related Lead (Optional)</Label>
-                            <SearchableSelect
+                            <Autocomplete
                                 value={leadId || ''}
                                 onValueChange={setLeadId}
-                                placeholder="Select Lead"
-                                emptyMessage="No leads found."
+                                placeholder="Search lead by name or company..."
+                                emptyMessage="No leads found"
                                 options={[
                                     { value: 'none', label: 'None' },
                                     ...(leads?.map((lead: any) => ({
                                         value: lead.id,
-                                        label: `${lead.firstName} ${lead.lastName} - ${lead.company || 'No Company'}`,
+                                        label: `${lead.firstName} ${lead.lastName}`,
+                                        subtitle: lead.company || 'No Company',
                                         searchTerms: `${lead.company || ''} ${lead.firstName} ${lead.lastName}`,
                                     })) || [])
                                 ]}
@@ -119,16 +120,17 @@ export function PaymentRequestForm() {
 
                         <div className="space-y-2">
                             <Label htmlFor="customer">Related Customer (Optional)</Label>
-                            <SearchableSelect
+                            <Autocomplete
                                 value={customerId || ''}
                                 onValueChange={setCustomerId}
-                                placeholder="Select Customer"
-                                emptyMessage="No customers found."
+                                placeholder="Search customer by name or company..."
+                                emptyMessage="No customers found"
                                 options={[
                                     { value: 'none', label: 'None' },
                                     ...(customers?.map((customer: any) => ({
                                         value: customer.id,
-                                        label: `${customer.firstName} ${customer.lastName} - ${customer.company || 'No Company'}`,
+                                        label: `${customer.firstName} ${customer.lastName}`,
+                                        subtitle: customer.company || 'No Company',
                                         searchTerms: `${customer.company || ''} ${customer.firstName} ${customer.lastName}`,
                                     })) || [])
                                 ]}

@@ -2,6 +2,7 @@ import {
     Controller,
     Get,
     Post,
+    Delete,
     Param,
     Query,
     Res,
@@ -12,6 +13,7 @@ import { Response } from 'express';
 import { Role } from '@prisma/client';
 import { ScrapedTendersService } from './services/scraped-tenders.service';
 import { TenderSchedulerService } from './services/tender-scheduler.service';
+import { GeMCategoriesService } from './services/gem-categories.service';
 import { JwtAuthGuard, RolesGuard } from '../../common/guards';
 import { Roles } from '../../common/decorators';
 
@@ -23,6 +25,7 @@ export class ScrapedTendersController {
     constructor(
         private readonly scrapedTendersService: ScrapedTendersService,
         private readonly schedulerService: TenderSchedulerService,
+        private readonly gemCategoriesService: GeMCategoriesService,
     ) { }
 
     @Get()
@@ -102,7 +105,7 @@ export class ScrapedTendersController {
     }
 
     @Get('categories')
-    @ApiOperation({ summary: 'Get list of available categories' })
+    @ApiOperation({ summary: 'Get list of available categories from GeM' })
     @ApiQuery({ name: 'page', required: false, description: 'Optional. If provided, returns paginated response' })
     @ApiQuery({ name: 'limit', required: false, description: 'Optional. Items per page when paginating' })
     @ApiQuery({ name: 'search', required: false, description: 'Optional. Search within category name when paginating' })
@@ -112,13 +115,27 @@ export class ScrapedTendersController {
         @Query('search') search?: string,
     ) {
         if (page || limit || search) {
-            return this.scrapedTendersService.getCategoriesPaginated({
+            return this.gemCategoriesService.getCategoriesPaginated(
+                page ? parseInt(page, 10) : 1,
+                limit ? parseInt(limit, 10) : 20,
                 search,
-                page: page ? parseInt(page, 10) : 1,
-                limit: limit ? parseInt(limit, 10) : 20,
-            });
+            );
         }
-        return this.scrapedTendersService.getCategories();
+        return this.gemCategoriesService.getAllCategories();
+    }
+
+    @Post('categories/sync')
+    @Roles(Role.SUPER_ADMIN)
+    @ApiOperation({ summary: 'Manually sync categories from GeM portal' })
+    async syncCategories() {
+        return this.gemCategoriesService.syncCategories();
+    }
+
+    @Delete('categories')
+    @Roles(Role.SUPER_ADMIN)
+    @ApiOperation({ summary: 'Delete all categories from database' })
+    async deleteCategories() {
+        return this.gemCategoriesService.deleteAllCategories();
     }
 
     @Get('logs')

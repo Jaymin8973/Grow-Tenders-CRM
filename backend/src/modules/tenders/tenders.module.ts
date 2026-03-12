@@ -11,6 +11,7 @@ import {
     ScrapedTendersService,
     TenderSchedulerService,
     TenderNotificationService,
+    GeMCategoriesService,
 } from './services';
 import { EmailModule } from '../email/email.module';
 import { AlertsModule } from '../alerts/alerts.module';
@@ -30,7 +31,8 @@ import { AlertsModule } from '../alerts/alerts.module';
         ScrapedTendersService,
         TenderSchedulerService,
         TenderNotificationService,
+        GeMCategoriesService,
     ],
-    exports: [TendersService, ScrapedTendersService],
+    exports: [TendersService, ScrapedTendersService, GeMCategoriesService],
 })
 export class TendersModule { }

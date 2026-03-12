@@ -4,6 +4,9 @@ import {
     IsString,
     IsOptional,
     IsNumber,
+    IsBoolean,
+    IsDateString,
+    IsArray,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -82,4 +85,43 @@ export class CreateCustomerDto {
     @IsString()
     @IsOptional()
     assigneeId?: string;
+
+    // Subscription fields
+    @ApiPropertyOptional({ example: true })
+    @IsBoolean()
+    @IsOptional()
+    subscriptionActive?: boolean;
+
+    @ApiPropertyOptional({ example: '2024-01-01' })
+    @IsDateString()
+    @IsOptional()
+    subscriptionStartDate?: string;
+
+    @ApiPropertyOptional({ example: '2025-01-01' })
+    @IsDateString()
+    @IsOptional()
+    subscriptionEndDate?: string;
+
+    @ApiPropertyOptional({ example: 'BASIC' })
+    @IsString()
+    @IsOptional()
+    planType?: string;
+
+    @ApiPropertyOptional({ example: ['Maharashtra', 'Gujarat'] })
+    @IsArray()
+    @IsString({ each: true })
+    @IsOptional()
+    statePreferences?: string[];
+
+    @ApiPropertyOptional({ example: ['IT Services', 'Office Supplies'] })
+    @IsArray()
+    @IsString({ each: true })
+    @IsOptional()
+    categoryPreferences?: string[];
+
+    @ApiPropertyOptional({ example: ['email1@example.com', 'email2@example.com'] })
+    @IsArray()
+    @IsString({ each: true })
+    @IsOptional()
+    emailRecipients?: string[];
 }

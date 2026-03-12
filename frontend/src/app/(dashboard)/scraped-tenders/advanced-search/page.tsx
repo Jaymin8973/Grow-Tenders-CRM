@@ -26,15 +26,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import {
-    Command,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
-} from '@/components/ui/command';
+import { Autocomplete } from '@/components/ui/autocomplete';
 import { useToast } from '@/hooks/use-toast';
 import { apiClient } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
@@ -86,15 +78,12 @@ export default function ScrapedTendersAdvancedSearchPage() {
     const [endDateTo, setEndDateTo] = useState('');
 
     const [selectedCategory, setSelectedCategory] = useState<string>('');
-    const [categoryOpen, setCategoryOpen] = useState(false);
-
     const [categorySearch, setCategorySearch] = useState('');
 
     const [resultsPage, setResultsPage] = useState(1);
     const [resultsLimit, setResultsLimit] = useState(20);
 
     const [debouncedKeyword, setDebouncedKeyword] = useState('');
-    const [debouncedCategorySearch, setDebouncedCategorySearch] = useState('');
 
     useEffect(() => {
         const t = setTimeout(() => {
@@ -104,12 +93,7 @@ export default function ScrapedTendersAdvancedSearchPage() {
         return () => clearTimeout(t);
     }, [keyword]);
 
-    useEffect(() => {
-        const t = setTimeout(() => {
-            setDebouncedCategorySearch(categorySearch);
-        }, 400);
-        return () => clearTimeout(t);
-    }, [categorySearch]);
+    const debouncedCategorySearch = categorySearch;
 
     useEffect(() => {
         setCity('');
@@ -123,19 +107,19 @@ export default function ScrapedTendersAdvancedSearchPage() {
         const params = new URLSearchParams();
         params.append('page', '1');
         params.append('limit', '50');
-        if (debouncedCategorySearch) params.append('search', debouncedCategorySearch);
+        if (categorySearch) params.append('search', categorySearch);
         return params;
-    }, [debouncedCategorySearch]);
+    }, [categorySearch]);
 
     const { data: categoriesResp, isLoading: categoriesLoading } = useQuery<PaginatedResponse<string>>({
-        queryKey: ['scraped-tenders-adv-categories', debouncedCategorySearch],
+        queryKey: ['scraped-tenders-adv-categories', categorySearch],
         queryFn: async () => {
             const res = await apiClient.get(`/scraped-tenders/categories?${categoryParams.toString()}`);
             return res.data;
         },
     });
 
-    const categories = categoriesResp?.data || [];
+    const categories = (categoriesResp?.data || []).map((c: any) => typeof c === 'string' ? c : c.name);
 
     const { data: states, isLoading: statesLoading } = useQuery<string[]>({
         queryKey: ['scraped-tenders-states'],
@@ -259,62 +243,14 @@ export default function ScrapedTendersAdvancedSearchPage() {
 
                     <div className="space-y-2">
                         <Label>Category</Label>
-                        <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    variant="outline"
-                                    role="combobox"
-                                    aria-expanded={categoryOpen}
-                                    className="w-full justify-between font-normal"
-                                >
-                                    <span className="truncate">
-                                        {selectedCategory
-                                            ? selectedCategory
-                                            : (categoriesLoading ? 'Loading categories...' : 'Select category')}
-                                    </span>
-                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                                <Command>
-                                    <CommandInput
-                                        placeholder="Search category..."
-                                        value={categorySearch}
-                                        onValueChange={setCategorySearch}
-                                    />
-                                    <CommandList>
-                                        <CommandEmpty>
-                                            {categoriesLoading ? 'Loading...' : 'No categories found'}
-                                        </CommandEmpty>
-                                        <CommandGroup>
-                                            <CommandItem
-                                                value="__all__"
-                                                onSelect={() => {
-                                                    setSelectedCategory('');
-                                                    setCategoryOpen(false);
-                                                }}
-                                            >
-                                                <Check className={cn('mr-2 h-4 w-4', !selectedCategory ? 'opacity-100' : 'opacity-0')} />
-                                                All Categories
-                                            </CommandItem>
-                                            {categories.map((c) => (
-                                                <CommandItem
-                                                    key={c}
-                                                    value={c}
-                                                    onSelect={() => {
-                                                        setSelectedCategory(c);
-                                                        setCategoryOpen(false);
-                                                    }}
-                                                >
-                                                    <Check className={cn('mr-2 h-4 w-4', selectedCategory === c ? 'opacity-100' : 'opacity-0')} />
-                                                    <span className="truncate">{c}</span>
-                                                </CommandItem>
-                                            ))}
-                                        </CommandGroup>
-                                    </CommandList>
-                                </Command>
-                            </PopoverContent>
-                        </Popover>
+                        <Autocomplete
+                            value={selectedCategory}
+                            onValueChange={setSelectedCategory}
+                            placeholder="Search category..."
+                            emptyMessage="No categories found"
+                            options={categories.map(c => ({ value: c, label: c }))}
+                            loading={categoriesLoading}
+                        />
                     </div>
 
                     <div className="space-y-2">

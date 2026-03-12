@@ -36,20 +36,18 @@ export class GemScraperService {
     /**
      * Scrape tenders from GeM portal
      * @param maxPages Maximum pages to scrape (0 = unlimited, scrape all pages)
-     * @param todayOnly If true, only fetch tenders published today (best-effort based on start_date)
+     * @param fromDate Optional - only fetch tenders published on/after this date. If not provided, fetches ALL active tenders.
      */
     async scrapeTenders(
         maxPages: number = 0,
-        fromDate?: Date,
+        fromDate?: Date | null,
     ): Promise<{ added: number; skipped: number; skippedOld: number; pagesScraped: number; newTenders: any[] }> {
-        // Default to today 00:00:00 if not provided
-        if (!fromDate) {
-            fromDate = new Date();
-            fromDate.setHours(0, 0, 0, 0);
-        }
+        // If fromDate is explicitly null or undefined, fetch ALL active tenders
+        // Only use today's date if fromDate is explicitly passed as a valid Date
 
         const pagesInfo = maxPages === 0 ? 'all pages' : `max ${maxPages} pages`;
-        this.logger.log(`Starting GeM tender scraping... (${pagesInfo}, fromDate: ${fromDate.toISOString()})`);
+        const fromDateInfo = fromDate ? `fromDate: ${fromDate.toISOString()}` : 'ALL active tenders';
+        this.logger.log(`Starting GeM tender scraping... (${pagesInfo}, ${fromDateInfo})`);
 
         // Create Scrape Job
         const job = await this.prisma.tenderScrapeJob.create({
@@ -236,9 +234,9 @@ export class GemScraperService {
                         const startDateObj = tender.startDate ? new Date(tender.startDate) : null;
                         const endDateObj = tender.endDate ? new Date(tender.endDate) : null;
 
-                        // Skip tenders older than fromDate, but keep scanning the page.
+                        // Skip tenders older than fromDate (if provided), but keep scanning the page.
                         // We only stop after seeing consecutive pages with no fresh tenders.
-                        if (startDateObj && startDateObj < fromDate!) {
+                        if (fromDate && startDateObj && startDateObj < fromDate) {
                             skippedOld++;
                             pageOldCount++;
                             continue;
@@ -337,8 +335,8 @@ export class GemScraperService {
                     consecutiveOldPages++;
                 }
 
-                if (consecutiveOldPages >= maxConsecutiveOldPages) {
-                    this.logger.log(`No tenders on/after ${fromDate!.toDateString()} for ${consecutiveOldPages} consecutive pages. Stopping.`);
+                if (fromDate && consecutiveOldPages >= maxConsecutiveOldPages) {
+                    this.logger.log(`No tenders on/after ${fromDate.toDateString()} for ${consecutiveOldPages} consecutive pages. Stopping.`);
                     hasMorePages = false;
                     break;
                 }
@@ -899,19 +897,19 @@ export class GemScraperService {
     }
 
     /**
-     * Mark expired tenders
+     * Delete expired/closed tenders from database
+     * Tenders whose closing date has passed are no longer active on GeM
      */
-    async updateExpiredTenders(): Promise<number> {
-        const result = await this.prisma.tender.updateMany({
+    async deleteExpiredTenders(): Promise<number> {
+        // Delete tenders where closing date has passed
+        const result = await this.prisma.tender.deleteMany({
             where: {
-                status: 'PUBLISHED',
+                source: 'GEM',
                 closingDate: { lt: new Date() },
-            },
-            data: {
-                status: 'CLOSED',
             },
         });
 
+        this.logger.log(`Deleted ${result.count} expired tenders from database`);
         return result.count;
     }
 }

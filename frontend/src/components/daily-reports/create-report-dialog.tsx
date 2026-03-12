@@ -24,7 +24,7 @@ import {
     FormDescription,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { SearchableSelect } from '@/components/ui/searchable-select';
+import { Autocomplete } from '@/components/ui/autocomplete';
 import { useToast } from '@/hooks/use-toast';
 import apiClient from '@/lib/api-client';
 import { Plus } from 'lucide-react';
@@ -223,14 +223,15 @@ export function CreateReportDialog({ onSuccess }: CreateReportDialogProps) {
                             {paymentDetails.map((detail, index) => (
                                 <div key={index} className="flex gap-2 items-start p-3 border rounded-lg bg-slate-50 dark:bg-slate-800/50">
                                     <div className="flex-1 grid grid-cols-3 gap-2">
-                                        <SearchableSelect
+                                        <Autocomplete
                                             value={detail.leadId || ''}
                                             onValueChange={(value) => updatePaymentDetail(index, 'leadId', value || undefined)}
-                                            placeholder="Select Lead"
-                                            emptyMessage="No leads found."
+                                            placeholder="Search lead..."
+                                            emptyMessage="No leads found"
                                             options={leads.map(l => ({
                                                 value: l.id,
-                                                label: `${l.firstName} ${l.lastName} ${l.company ? `(${l.company})` : ''}`,
+                                                label: `${l.firstName} ${l.lastName}`,
+                                                subtitle: l.company || 'No Company',
                                                 searchTerms: `${l.company || ''} ${l.firstName} ${l.lastName}`,
                                             }))}
                                         />

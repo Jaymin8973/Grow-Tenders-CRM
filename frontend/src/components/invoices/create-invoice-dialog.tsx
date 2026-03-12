@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { SearchableSelect } from '@/components/ui/searchable-select';
+import { Autocomplete } from '@/components/ui/autocomplete';
 import { Loader2, Plus, Trash2 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 
@@ -158,7 +158,7 @@ export function CreateInvoiceDialog({
                                 No {invoiceType === 'PERFORMA' ? 'Proposal' : 'Hot'} leads available
                             </div>
                         ) : (
-                            <SearchableSelect
+                            <Autocomplete
                                 value={selectedLeadId}
                                 onValueChange={(leadId) => {
                                     setSelectedLeadId(leadId);
@@ -166,11 +166,12 @@ export function CreateInvoiceDialog({
                                     const selectedLead = leads.find((l: any) => l.id === leadId);
                                     setCompanyName(selectedLead?.company || '');
                                 }}
-                                placeholder={`Select a ${invoiceType === 'PERFORMA' ? 'Proposal' : 'Hot'} Lead`}
-                                emptyMessage="No leads found."
+                                placeholder={`Search ${invoiceType === 'PERFORMA' ? 'Proposal' : 'Hot'} lead...`}
+                                emptyMessage="No leads found"
                                 options={leads.map((lead: any) => ({
                                     value: lead.id,
-                                    label: `${lead.firstName} ${lead.lastName} ${lead.company ? `(${lead.company})` : ''}`,
+                                    label: `${lead.firstName} ${lead.lastName}`,
+                                    subtitle: lead.company || 'No Company',
                                     searchTerms: `${lead.company || ''} ${lead.firstName} ${lead.lastName}`,
                                 }))}
                             />

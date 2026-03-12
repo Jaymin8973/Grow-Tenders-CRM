@@ -287,8 +287,11 @@ export class TendersService {
         category?: string;
         search?: string;
         state?: string;
+        city?: string;
         ministry?: string;
         status?: string;
+        fromDate?: string;
+        toDate?: string;
         limit?: number;
         offset?: number;
     }) {
@@ -311,6 +314,21 @@ export class TendersService {
         }
         if (filters?.state) {
             where.state = { contains: filters.state, mode: 'insensitive' };
+        }
+
+        if (filters?.city) {
+            where.city = { contains: filters.city, mode: 'insensitive' };
+        }
+
+        if (filters?.fromDate || filters?.toDate) {
+            const range: any = {};
+            const from = filters?.fromDate ? new Date(filters.fromDate) : null;
+            const to = filters?.toDate ? new Date(filters.toDate) : null;
+            if (from && !isNaN(from.getTime())) range.gte = from;
+            if (to && !isNaN(to.getTime())) range.lte = to;
+            if (Object.keys(range).length > 0) {
+                where.closingDate = range;
+            }
         }
 
         const limit = filters?.limit || 20;
@@ -346,6 +364,35 @@ export class TendersService {
                 hasMore: offset + limit < total,
             },
         };
+    }
+
+    async getPublicStates(): Promise<string[]> {
+        const tenders = await this.prisma.tender.findMany({
+            where: {
+                status: 'PUBLISHED',
+                state: { not: null },
+            },
+            select: { state: true },
+            distinct: ['state'],
+        });
+
+        return tenders.map(t => t.state!).filter(Boolean).sort();
+    }
+
+    async getPublicCities(state: string): Promise<string[]> {
+        if (!state) return [];
+
+        const tenders = await this.prisma.tender.findMany({
+            where: {
+                status: 'PUBLISHED',
+                state: { contains: state, mode: 'insensitive' },
+                city: { not: null },
+            },
+            select: { city: true },
+            distinct: ['city'],
+        });
+
+        return tenders.map(t => t.city!).filter(Boolean).sort();
     }
 
     async findOnePublicTender(id: string) {

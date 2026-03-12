@@ -190,7 +190,8 @@ export default function CustomerDetailPage() {
     // Save subscription mutation
     const saveSubscriptionMutation = useMutation({
         mutationFn: async () => {
-            return apiClient.post('/tenders/subscriptions', {
+            // Update tender subscription
+            const subResponse = await apiClient.post('/tenders/subscriptions', {
                 customerId,
                 categories: selectedCategories,
                 states: selectedStates,
@@ -198,9 +199,24 @@ export default function CustomerDetailPage() {
                 isActive: subscriptionActive,
                 durationMonths: subscriptionMonths,
             });
+
+            // Calculate subscription dates
+            const startDate = new Date();
+            const endDate = new Date();
+            endDate.setMonth(endDate.getMonth() + subscriptionMonths);
+
+            // Also update customer's subscriptionActive and dates
+            await apiClient.patch(`/customers/${customerId}`, {
+                subscriptionActive: subscriptionActive,
+                subscriptionStartDate: startDate.toISOString(),
+                subscriptionEndDate: endDate.toISOString(),
+            });
+
+            return subResponse;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['tender-subscription', customerId] });
+            queryClient.invalidateQueries({ queryKey: ['customer', customerId] });
             toast({ title: 'Subscription preferences saved successfully' });
         },
         onError: () => {

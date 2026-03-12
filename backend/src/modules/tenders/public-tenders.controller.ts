@@ -28,16 +28,22 @@ export class PublicTendersController {
     @ApiQuery({ name: 'category', required: false })
     @ApiQuery({ name: 'search', required: false })
     @ApiQuery({ name: 'state', required: false })
+    @ApiQuery({ name: 'city', required: false })
     @ApiQuery({ name: 'ministry', required: false })
     @ApiQuery({ name: 'status', required: false })
+    @ApiQuery({ name: 'fromDate', required: false })
+    @ApiQuery({ name: 'toDate', required: false })
     @ApiQuery({ name: 'limit', required: false })
     @ApiQuery({ name: 'offset', required: false })
     findAll(
         @Query('category') category?: string,
         @Query('search') search?: string,
         @Query('state') state?: string,
+        @Query('city') city?: string,
         @Query('ministry') ministry?: string,
         @Query('status') status?: string,
+        @Query('fromDate') fromDate?: string,
+        @Query('toDate') toDate?: string,
         @Query('limit') limit?: string,
         @Query('offset') offset?: string,
     ) {
@@ -45,8 +51,11 @@ export class PublicTendersController {
             category,
             search,
             state,
+            city,
             ministry,
             status,
+            fromDate,
+            toDate,
             limit: limit ? parseInt(limit) : 20,
             offset: offset ? parseInt(offset) : 0,
         });
@@ -77,6 +86,23 @@ export class PublicTendersController {
     @ApiOperation({ summary: 'Get tender statistics (public endpoint)' })
     getStats() {
         return this.tendersService.getPublicStats();
+    }
+
+    @Get('states')
+    @Public()
+    @ApiOperation({ summary: 'Get list of available states (public endpoint)' })
+    getStates() {
+        return this.tendersService.getPublicStates();
+    }
+
+    @Get('cities')
+    @Public()
+    @ApiOperation({ summary: 'Get list of available cities for a given state (public endpoint)' })
+    @ApiQuery({ name: 'state', required: true, description: 'Filter cities by a single state' })
+    getCities(
+        @Query('state') state: string,
+    ) {
+        return this.tendersService.getPublicCities(state);
     }
 
     @Get('subscription/check')

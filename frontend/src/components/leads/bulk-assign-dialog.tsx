@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { SearchableSelect } from '@/components/ui/searchable-select';
+import { Autocomplete } from '@/components/ui/autocomplete';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 
@@ -91,15 +91,14 @@ export function BulkAssignDialog({
                                 <span className="text-sm text-muted-foreground">Loading...</span>
                             </div>
                         ) : (
-                            <SearchableSelect
+                            <Autocomplete
                                 value={selectedUserId}
                                 onValueChange={setSelectedUserId}
-                                placeholder="Select an employee"
-                                emptyMessage="No employees found."
+                                placeholder="Search employee..."
+                                emptyMessage="No employees found"
                                 options={employees?.filter((u: any) => u.role === 'EMPLOYEE').map((user: any) => ({
                                     value: user.id,
                                     label: `${user.firstName} ${user.lastName}`,
-                                    searchTerms: `${user.firstName} ${user.lastName}`,
                                 })) || []}
                             />
                         )}
