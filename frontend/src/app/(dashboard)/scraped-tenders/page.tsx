@@ -71,7 +71,7 @@ interface PaginatedResponse {
 }
 
 interface PaginatedStringResponse {
-    data: string[];
+    data: string[] | { name: string }[];
     meta: {
         total: number;
         page: number;
