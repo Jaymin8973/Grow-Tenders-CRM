@@ -38,7 +38,7 @@ async function main() {
             name: 'Head Office',
             code: 'HO',
             address: '123 Main Street, City Center',
-            phone: '+919876543210',
+            phone: '+9106130870',
             email: 'headoffice@company.com',
         },
     });

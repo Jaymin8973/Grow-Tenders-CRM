@@ -288,6 +288,7 @@ export class TendersService {
         search?: string;
         state?: string;
         city?: string;
+        department?: string;
         ministry?: string;
         status?: string;
         fromDate?: string;
@@ -318,6 +319,10 @@ export class TendersService {
 
         if (filters?.city) {
             where.city = { contains: filters.city, mode: 'insensitive' };
+        }
+
+        if (filters?.department) {
+            where.department = { contains: filters.department, mode: 'insensitive' };
         }
 
         if (filters?.fromDate || filters?.toDate) {
@@ -395,8 +400,21 @@ export class TendersService {
         return tenders.map(t => t.city!).filter(Boolean).sort();
     }
 
+    async getPublicDepartments(): Promise<string[]> {
+        const tenders = await this.prisma.tender.findMany({
+            where: {
+                status: 'PUBLISHED',
+                department: { not: null },
+            },
+            select: { department: true },
+            distinct: ['department'],
+        }) as unknown as Array<{ department: string | null }>;
+
+        return tenders.map(t => t.department!).filter(Boolean).sort();
+    }
+
     async findOnePublicTender(id: string) {
-        const tender = await this.prisma.tender.findUnique({
+        const tender = await this.prisma.tender.findFirst({
             where: { id, status: 'PUBLISHED' },
             include: {
                 category: {

@@ -86,6 +86,7 @@ import { Textarea } from '@/components/ui/textarea';
 const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
     WARM_LEAD: { label: 'Warm Lead', color: 'text-blue-700', bg: 'bg-blue-50 border-blue-200' },
     HOT_LEAD: { label: 'Hot Lead', color: 'text-green-700', bg: 'bg-green-50 border-green-200' },
+    WEBSITE_LEAD: { label: 'Website Lead', color: 'text-orange-700', bg: 'bg-orange-50 border-orange-200' },
     COLD_LEAD: { label: 'Cold Lead', color: 'text-red-700', bg: 'bg-red-50 border-red-200' },
     CLOSED_LEAD: { label: 'Closed Lead', color: 'text-gray-700', bg: 'bg-gray-50 border-gray-200' },
     PROPOSAL_LEAD: { label: 'Proposal Lead', color: 'text-purple-700', bg: 'bg-purple-50 border-purple-200' },

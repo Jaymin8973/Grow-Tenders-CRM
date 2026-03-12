@@ -22,6 +22,7 @@ enum Role {
 enum LeadStatus {
   WARM_LEAD
   HOT_LEAD
+  WEBSITE_LEAD
   COLD_LEAD
   CLOSED_LEAD
   PROPOSAL_LEAD
@@ -540,6 +541,7 @@ model Tender {
   tenderUrl     String?
   state         String?
   city          String?
+  department    String?
   address       String?
   categoryName  String?      // If categoryId is not mapped yet
 

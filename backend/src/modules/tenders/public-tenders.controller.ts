@@ -29,6 +29,7 @@ export class PublicTendersController {
     @ApiQuery({ name: 'search', required: false })
     @ApiQuery({ name: 'state', required: false })
     @ApiQuery({ name: 'city', required: false })
+    @ApiQuery({ name: 'department', required: false })
     @ApiQuery({ name: 'ministry', required: false })
     @ApiQuery({ name: 'status', required: false })
     @ApiQuery({ name: 'fromDate', required: false })
@@ -40,6 +41,7 @@ export class PublicTendersController {
         @Query('search') search?: string,
         @Query('state') state?: string,
         @Query('city') city?: string,
+        @Query('department') department?: string,
         @Query('ministry') ministry?: string,
         @Query('status') status?: string,
         @Query('fromDate') fromDate?: string,
@@ -52,6 +54,7 @@ export class PublicTendersController {
             search,
             state,
             city,
+            department,
             ministry,
             status,
             fromDate,
@@ -93,6 +96,13 @@ export class PublicTendersController {
     @ApiOperation({ summary: 'Get list of available states (public endpoint)' })
     getStates() {
         return this.tendersService.getPublicStates();
+    }
+
+    @Get('departments')
+    @Public()
+    @ApiOperation({ summary: 'Get list of available departments (public endpoint)' })
+    getDepartments() {
+        return this.tendersService.getPublicDepartments();
     }
 
     @Get('cities')

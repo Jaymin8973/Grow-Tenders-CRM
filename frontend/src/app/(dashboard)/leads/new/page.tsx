@@ -54,7 +54,7 @@ const leadSchema = z.object({
     gstin: z.string().optional(),
 
     description: z.string().optional(),
-    status: z.enum(['WARM_LEAD', 'HOT_LEAD', 'COLD_LEAD', 'CLOSED_LEAD', 'PROPOSAL_LEAD']),
+    status: z.enum(['WARM_LEAD', 'HOT_LEAD', 'WEBSITE_LEAD', 'COLD_LEAD', 'CLOSED_LEAD', 'PROPOSAL_LEAD']),
     source: z.string().optional(),
 
     assigneeId: z.string().optional(),
@@ -275,33 +275,17 @@ export default function NewLeadPage() {
                             <CardContent className="pt-6 space-y-4">
                                 <div>
                                     <Label className="text-xs text-muted-foreground">Lead Status</Label>
-                                    <Select onValueChange={(val) => setValue('status', val as any)} defaultValue="COLD_LEAD">
+                                    <Select onValueChange={(val) => setValue('status', val as any)} defaultValue={watch('status') || 'COLD_LEAD'}>
                                         <SelectTrigger className="h-9">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="WARM_LEAD">Warm Lead</SelectItem>
                                             <SelectItem value="HOT_LEAD">Hot Lead</SelectItem>
+                                            <SelectItem value="WEBSITE_LEAD">Website Lead</SelectItem>
                                             <SelectItem value="COLD_LEAD">Cold Lead</SelectItem>
                                             <SelectItem value="CLOSED_LEAD">Closed Lead</SelectItem>
                                             <SelectItem value="PROPOSAL_LEAD">Proposal Lead</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div>
-                                    <Label className="text-xs text-muted-foreground">Source</Label>
-                                    <Select onValueChange={(val) => setValue('source', val)} defaultValue="WEBSITE">
-                                        <SelectTrigger className="h-9">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="WEBSITE">Website</SelectItem>
-                                            <SelectItem value="REFERRAL">Referral</SelectItem>
-                                            <SelectItem value="COLD_CALL">Cold Call</SelectItem>
-                                            <SelectItem value="SOCIAL_MEDIA">Social Media</SelectItem>
-                                            <SelectItem value="ADVERTISEMENT">Advertisement</SelectItem>
-                                            <SelectItem value="TRADE_SHOW">Trade Show</SelectItem>
-                                            <SelectItem value="OTHER">Other</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -365,7 +349,7 @@ export default function NewLeadPage() {
                         </Card>
                     </div>
                 </div>
-            </form >
-        </div >
+            </form>
+        </div>
     );
 }

@@ -76,6 +76,7 @@ import { IndianRupee } from 'lucide-react';
 const statusConfig: Record<string, { label: string; color: string; bg: string; icon: any; gradient: string }> = {
     WARM_LEAD: { label: 'Warm Lead', color: 'text-amber-700', bg: 'bg-amber-50', icon: Thermometer, gradient: 'from-amber-500 to-orange-500' },
     HOT_LEAD: { label: 'Hot Lead', color: 'text-rose-700', bg: 'bg-rose-50', icon: Flame, gradient: 'from-rose-500 to-red-500' },
+    WEBSITE_LEAD: { label: 'Website Lead', color: 'text-orange-700', bg: 'bg-orange-50', icon: Globe, gradient: 'from-orange-500 to-amber-500' },
     COLD_LEAD: { label: 'Cold Lead', color: 'text-blue-700', bg: 'bg-blue-50', icon: Snowflake, gradient: 'from-blue-500 to-cyan-500' },
     CLOSED_LEAD: { label: 'Closed Lead', color: 'text-emerald-700', bg: 'bg-emerald-50', icon: CheckCircle2, gradient: 'from-emerald-500 to-green-500' },
     PROPOSAL_LEAD: { label: 'Proposal Lead', color: 'text-purple-700', bg: 'bg-purple-50', icon: Sparkles, gradient: 'from-purple-500 to-violet-500' },
@@ -612,6 +613,12 @@ export default function LeadDetailPage() {
                                             <div className="flex items-center gap-2">
                                                 <Flame className="h-4 w-4 text-rose-500" />
                                                 Hot Lead
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="WEBSITE_LEAD">
+                                            <div className="flex items-center gap-2">
+                                                <Globe className="h-4 w-4 text-orange-500" />
+                                                Website Lead
                                             </div>
                                         </SelectItem>
                                         <SelectItem value="COLD_LEAD">

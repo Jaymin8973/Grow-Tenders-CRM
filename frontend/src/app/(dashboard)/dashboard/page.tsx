@@ -44,6 +44,7 @@ const COLORS = ['#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'
 const PIPELINE_COLORS: Record<string, string> = {
     WARM_LEAD: '#3b82f6',
     HOT_LEAD: '#22c55e',
+    WEBSITE_LEAD: '#f97316',
     COLD_LEAD: '#ef4444',
     CLOSED_LEAD: '#000000',
     PROPOSAL_LEAD: '#8b5cf6',

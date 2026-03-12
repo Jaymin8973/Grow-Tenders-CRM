@@ -57,7 +57,7 @@ const leadSchema = z.object({
     gstin: z.string().optional(),
 
     description: z.string().optional(),
-    status: z.enum(['WARM_LEAD', 'HOT_LEAD', 'COLD_LEAD', 'CLOSED_LEAD', 'PROPOSAL_LEAD']),
+    status: z.enum(['WARM_LEAD', 'HOT_LEAD', 'WEBSITE_LEAD', 'COLD_LEAD', 'CLOSED_LEAD', 'PROPOSAL_LEAD']),
     source: z.string().optional(),
 
     assigneeId: z.string().optional(),
@@ -316,6 +316,7 @@ export default function EditLeadPage() {
                                         <SelectContent>
                                             <SelectItem value="WARM_LEAD">Warm Lead</SelectItem>
                                             <SelectItem value="HOT_LEAD">Hot Lead</SelectItem>
+                                            <SelectItem value="WEBSITE_LEAD">Website Lead</SelectItem>
                                             <SelectItem value="COLD_LEAD">Cold Lead</SelectItem>
                                             <SelectItem value="CLOSED_LEAD">Closed Lead</SelectItem>
                                             <SelectItem value="PROPOSAL_LEAD">Proposal Lead</SelectItem>

@@ -125,7 +125,7 @@ export class ScrapedTendersService {
             bidNo: t.referenceId,
             title: t.title,
             category: t.categoryName,
-            department: t.description,
+            department: (t as any).department ?? t.description,
             state: t.state,
             city: t.city,
             quantity: '', // Not in new schema yet, optional
@@ -163,7 +163,7 @@ export class ScrapedTendersService {
             bidNo: tender.referenceId,
             title: tender.title,
             category: tender.categoryName,
-            department: tender.description,
+            department: (tender as any).department ?? null,
             state: tender.state,
             city: tender.city,
             startDate: tender.publishDate,

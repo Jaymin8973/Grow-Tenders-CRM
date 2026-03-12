@@ -54,6 +54,8 @@ export default function TodayPage() {
                 return <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">Hot</Badge>;
             case 'WARM_LEAD':
                 return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">Warm</Badge>;
+            case 'WEBSITE_LEAD':
+                return <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">Website</Badge>;
             case 'COLD_LEAD':
                 return <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200">Cold</Badge>;
             case 'PROPOSAL_LEAD':
@@ -114,6 +116,7 @@ export default function TodayPage() {
                                     <SelectItem value="COLD_LEAD">Cold Lead</SelectItem>
                                     <SelectItem value="WARM_LEAD">Warm Lead</SelectItem>
                                     <SelectItem value="HOT_LEAD">Hot Lead</SelectItem>
+                                    <SelectItem value="WEBSITE_LEAD">Website Lead</SelectItem>
                                     <SelectItem value="PROPOSAL_LEAD">Proposal Lead</SelectItem>
                                     <SelectItem value="CLOSED_LEAD">Closed Lead</SelectItem>
                                 </SelectContent>

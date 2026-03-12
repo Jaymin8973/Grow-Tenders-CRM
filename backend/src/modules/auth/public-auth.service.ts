@@ -64,7 +64,7 @@ export class PublicAuthService {
                     email,
                     mobile: phone,
                     company,
-                    status: LeadStatus.HOT_LEAD,
+                    status: LeadStatus.WEBSITE_LEAD,
                     source: LeadSource.WEBSITE,
                     description: 'Lead created from website registration',
                 },

@@ -298,6 +298,7 @@ export class GemScraperService {
                             data: {
                                 title: tender.title,
                                 description: tender.department || '',
+                                department: tender.department || null,
                                 status: 'PUBLISHED',
                                 source: 'GEM',
                                 referenceId: tender.bidNo,
@@ -308,7 +309,7 @@ export class GemScraperService {
                                 address: address,
                                 publishDate: startDateObj,
                                 closingDate: endDateObj,
-                            }
+                            } as any,
                         });
 
                         newTenders.push(newTender);
