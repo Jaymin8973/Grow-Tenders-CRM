@@ -73,7 +73,7 @@ export class ActivitiesService {
                     title: 'New Task Assigned',
                     message: `You have been assigned a new task: ${createActivityDto.title}`,
                     type: 'ACTIVITY_ASSIGNED',
-                    link: `/activities`,
+                    link: `/tasks`,
                 },
             });
         }

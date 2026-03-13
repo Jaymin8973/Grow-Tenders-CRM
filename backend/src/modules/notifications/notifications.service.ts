@@ -70,23 +70,13 @@ export class NotificationsService {
 
 
 
-    async notifyActivityReminder(userId: string, activityTitle: string, activityId: string) {
-        return this.create({
-            userId,
-            type: NotificationType.ACTIVITY_REMINDER,
-            title: 'Activity Reminder',
-            message: `Upcoming activity: ${activityTitle}`,
-            link: `/activities/${activityId}`,
-        });
-    }
-
     async notifyOverdueFollowUp(userId: string, count: number) {
         return this.create({
             userId,
             type: NotificationType.FOLLOW_UP_OVERDUE,
             title: 'Overdue Follow-ups',
             message: `You have ${count} overdue follow-up(s)`,
-            link: '/activities?status=overdue',
+            link: '/today',
         });
     }
 }

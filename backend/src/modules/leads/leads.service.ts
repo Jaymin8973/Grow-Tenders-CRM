@@ -41,13 +41,14 @@ export class LeadsService {
             userId,
         );
 
-        // Keep notification type as follow-up overdue; for scheduled reminders, reuse activity reminder channel text.
-        // This keeps existing UX while removing Activity records.
-        await this.notificationsService.notifyActivityReminder(
-            lead.assigneeId || userId,
-            `Follow-up with ${lead.firstName} ${lead.lastName}`,
-            followUp.id,
-        );
+        // Notification links to the lead page for follow-up reminders
+        await this.notificationsService.create({
+            userId: lead.assigneeId || userId,
+            type: 'ACTIVITY_REMINDER' as any,
+            title: 'Follow-up Reminder',
+            message: `Follow-up with ${lead.firstName} ${lead.lastName}`,
+            link: `/leads/${lead.id}`,
+        });
     }
 
     async bulkImportFromFile(file: Express.Multer.File, user: UserContext) {
