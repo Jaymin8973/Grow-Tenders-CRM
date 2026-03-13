@@ -33,6 +33,7 @@ import { TransferRequestsModule } from './modules/transfer-requests/transfer-req
 import { SchedulerModule } from './modules/scheduler/scheduler.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
 import { AlertsModule } from './modules/alerts/alerts.module';
+import { HealthModule } from './common/controllers/health.module';
 
 @Module({
     imports: [
@@ -83,6 +84,7 @@ import { AlertsModule } from './modules/alerts/alerts.module';
         SchedulerModule,
         PermissionsModule,
         AlertsModule,
+        HealthModule,
     ],
     providers: [
         // Apply rate limiting globally

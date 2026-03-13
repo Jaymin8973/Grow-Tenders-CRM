@@ -404,10 +404,22 @@ export class LeadsService {
         }
 
         if (filters?.todayTasks) {
-            const todayStart = new Date();
-            todayStart.setHours(0, 0, 0, 0);
-            const todayEnd = new Date();
-            todayEnd.setHours(23, 59, 59, 999);
+            // Use IST timezone (UTC+5:30) for today's date range since users are in India
+            const now = new Date();
+            
+            // Get IST date string
+            const istOffset = 5.5 * 60 * 60 * 1000; // 5 hours 30 minutes in ms
+            const istDate = new Date(now.getTime() + istOffset);
+            const istDateString = istDate.toISOString().split('T')[0]; // YYYY-MM-DD in IST
+            
+            // Create today's range in IST
+            const todayStart = new Date(`${istDateString}T00:00:00.000Z`);
+            const todayEnd = new Date(`${istDateString}T23:59:59.999Z`);
+            
+            // Adjust for IST offset (subtract because we want UTC times that correspond to IST dates)
+            todayStart.setTime(todayStart.getTime() - 5.5 * 60 * 60 * 1000);
+            todayEnd.setTime(todayEnd.getTime() - 5.5 * 60 * 60 * 1000);
+            
             where.nextFollowUp = {
                 gte: todayStart,
                 lte: todayEnd,
