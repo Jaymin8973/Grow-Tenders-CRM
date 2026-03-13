@@ -7,6 +7,7 @@ import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import * as jwt from 'jsonwebtoken';
+import { INDIAN_CITY_STATE_MAP } from './data/indian-locations';
 
 @Injectable()
 export class TendersService {
@@ -19,6 +20,22 @@ export class TendersService {
         const d = new Date(date);
         d.setMonth(d.getMonth() + months);
         return d;
+    }
+
+    private normalizeCityKey(input: string): string {
+        return String(input || '')
+            .toUpperCase()
+            .replace(/\s+CITY$/i, '')
+            .replace(/\s+CANTT$/i, ' CANTT')
+            .replace(/[^A-Z\s]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    private isKnownCity(city: string): boolean {
+        const key = this.normalizeCityKey(city);
+        if (!key) return false;
+        return Boolean(INDIAN_CITY_STATE_MAP[key]);
     }
 
     // Tender CRUD
@@ -397,18 +414,22 @@ export class TendersService {
             distinct: ['city'],
         });
 
-        return tenders.map(t => t.city!).filter(Boolean).sort();
+        return tenders
+            .map(t => t.city!)
+            .filter(Boolean)
+            .filter(c => this.isKnownCity(c))
+            .sort();
     }
 
     async getPublicDepartments(): Promise<string[]> {
-        const tenders = await this.prisma.tender.findMany({
+        const tenders = await (this.prisma.tender as any).findMany({
             where: {
                 status: 'PUBLISHED',
                 department: { not: null },
             },
             select: { department: true },
-            distinct: ['department'],
-        }) as unknown as Array<{ department: string | null }>;
+            distinct: ['department' as any],
+        }) as Array<{ department: string | null }>;
 
         return tenders.map(t => t.department!).filter(Boolean).sort();
     }

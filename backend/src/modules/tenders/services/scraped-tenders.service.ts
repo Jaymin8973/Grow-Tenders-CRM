@@ -6,10 +6,27 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as https from 'https';
 import * as http from 'http';
+import { INDIAN_CITY_STATE_MAP } from '../data/indian-locations';
 
 @Injectable()
 export class ScrapedTendersService {
     constructor(private prisma: PrismaService) { }
+
+    private normalizeCityKey(input: string): string {
+        return String(input || '')
+            .toUpperCase()
+            .replace(/\s+CITY$/i, '')
+            .replace(/\s+CANTT$/i, ' CANTT')
+            .replace(/[^A-Z\s]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    private isKnownCity(city: string): boolean {
+        const key = this.normalizeCityKey(city);
+        if (!key) return false;
+        return Boolean(INDIAN_CITY_STATE_MAP[key]);
+    }
 
     private getHeaderLogoBuffer(): Buffer | null {
         const candidates = [
@@ -218,7 +235,11 @@ export class ScrapedTendersService {
             distinct: ['city'],
         });
 
-        return tenders.map(t => t.city!).filter(Boolean).sort();
+        return tenders
+            .map(t => t.city!)
+            .filter(Boolean)
+            .filter(c => this.isKnownCity(c))
+            .sort();
     }
 
     async getCategories(): Promise<string[]> {

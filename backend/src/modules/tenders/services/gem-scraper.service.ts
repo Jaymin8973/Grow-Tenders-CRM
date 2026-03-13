@@ -31,6 +31,22 @@ export class GemScraperService {
     // Base URL for all bids page (sort applied via UI dropdown click)
     private readonly baseUrl = 'https://bidplus.gem.gov.in/all-bids';
 
+    private normalizeCityKey(input: string): string {
+        return String(input || '')
+            .toUpperCase()
+            .replace(/\s+CITY$/i, '')
+            .replace(/\s+CANTT$/i, ' CANTT')
+            .replace(/[^A-Z\s]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    private isKnownCity(city: string): boolean {
+        const key = this.normalizeCityKey(city);
+        if (!key) return false;
+        return Boolean(this.getCityStateMap()[key]);
+    }
+
     constructor(private prisma: PrismaService) { }
 
     /**
@@ -268,6 +284,10 @@ export class GemScraperService {
                             if (extractedCity) city = extractedCity;
                         }
 
+                        if (city && !this.isKnownCity(city)) {
+                            city = null;
+                        }
+
                         // Extract city and state from PDF (most reliable)
                         let address: string | null = null;
                         try {
@@ -281,9 +301,16 @@ export class GemScraperService {
                             this.logger.warn(`PDF city extraction failed for ${tender.bidNo}: ${err.message}`);
                         }
 
-                        // Fallback: derive state from city if PDF didn't provide state directly
-                        if (city && !state) {
-                            state = this.getStateFromCity(city);
+                        if (city && !this.isKnownCity(city)) {
+                            city = null;
+                        }
+
+                        // Enforce: if city is known, state must match city->state map
+                        if (city) {
+                            const cityState = this.getStateFromCity(city);
+                            if (cityState) {
+                                state = cityState;
+                            }
                         }
 
                         // Last resort: use department-derived state only if nothing else worked
@@ -473,7 +500,7 @@ export class GemScraperService {
             // Validate it's not a common non-city word
             const nonCityWords = /^(office|division|unit|branch|dept|department|ministry)$/i;
             if (!nonCityWords.test(city) && city.length >= 3) {
-                return city;
+                if (this.isKnownCity(city)) return city;
             }
         }
 
@@ -482,7 +509,7 @@ export class GemScraperService {
         if (parts.length > 1) {
             const lastPart = parts[parts.length - 1].trim();
             if (lastPart.length >= 3 && /^[A-Z]/.test(lastPart)) {
-                return lastPart;
+                if (this.isKnownCity(lastPart)) return lastPart;
             }
         }
 

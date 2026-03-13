@@ -198,6 +198,9 @@ export class ScrapedTendersController {
         @Query('todayOnly') todayOnly?: string,
     ) {
         const todayOnlyBool = todayOnly !== 'false'; // Default to true
-        return this.schedulerService.runManually(pages || 3, todayOnlyBool);
+        const pagesNumber = pages === undefined || pages === null
+            ? 3
+            : Number(pages);
+        return this.schedulerService.runManually(Number.isFinite(pagesNumber) ? pagesNumber : 3, todayOnlyBool);
     }
 }

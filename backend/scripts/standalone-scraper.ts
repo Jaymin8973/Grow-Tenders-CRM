@@ -2,11 +2,29 @@ import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 import * as fs from 'fs';
 
+import { INDIAN_CITY_STATE_MAP } from '../src/modules/tenders/data/indian-locations';
+
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 puppeteer.use(StealthPlugin());
 
 const prisma = new PrismaClient();
+
+function normalizeCityKey(input: string): string {
+    return String(input || '')
+        .toUpperCase()
+        .replace(/\s+CITY$/i, '')
+        .replace(/\s+CANTT$/i, ' CANTT')
+        .replace(/[^A-Z\s]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function isKnownCity(city: string): boolean {
+    const key = normalizeCityKey(city);
+    if (!key) return false;
+    return Boolean((INDIAN_CITY_STATE_MAP as any)[key]);
+}
 
 // Indian states list
 const STATES = [
@@ -92,7 +110,7 @@ function extractCityFromCreatedBy(createdBy: string): string | null {
         const city = match[1].trim();
         const nonCityWords = /^(office|division|unit|branch|dept|department|ministry)$/i;
         if (!nonCityWords.test(city) && city.length >= 3) {
-            return city;
+            if (isKnownCity(city)) return city;
         }
     }
     
@@ -213,7 +231,10 @@ async function scrapeTenders(maxPages: number = 0) {
                 
                 // Extract state and city
                 const state = extractState(department);
-                const city = extractCityFromCreatedBy(createdBy);
+                let city = extractCityFromCreatedBy(createdBy);
+                if (city && !isKnownCity(city)) {
+                    city = null;
+                }
                 
                 log(`Tender ${bidNo}: department="${department}", createdBy="${createdBy}" => state=${state || 'null'}, city=${city || 'null'}`);
                 
