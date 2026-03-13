@@ -103,6 +103,7 @@ export default function LeadDetailPage() {
 
     const [followUpOpen, setFollowUpOpen] = useState(false);
     const [followUpDate, setFollowUpDate] = useState<Date>();
+    const [datePopoverOpen, setDatePopoverOpen] = useState(false);
     const [followUpDescription, setFollowUpDescription] = useState('');
     const [timelineLimit, setTimelineLimit] = useState(10);
 
@@ -821,7 +822,7 @@ export default function LeadDetailPage() {
                                                 <div className="space-y-4 py-4">
                                                     <div className="space-y-2">
                                                         <Label>Date</Label>
-                                                        <Popover>
+                                                        <Popover open={datePopoverOpen} onOpenChange={setDatePopoverOpen}>
                                                             <PopoverTrigger asChild>
                                                                 <Button
                                                                     variant={"outline"}
@@ -838,7 +839,10 @@ export default function LeadDetailPage() {
                                                                 <Calendar
                                                                     mode="single"
                                                                     selected={followUpDate}
-                                                                    onSelect={setFollowUpDate}
+                                                                    onSelect={(date) => {
+                                                                        setFollowUpDate(date);
+                                                                        setDatePopoverOpen(false);
+                                                                    }}
                                                                     initialFocus
                                                                 />
                                                             </PopoverContent>

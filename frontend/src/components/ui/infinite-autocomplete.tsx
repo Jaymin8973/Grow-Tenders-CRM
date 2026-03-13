@@ -44,6 +44,7 @@ export function InfiniteAutocomplete({
     const containerRef = React.useRef<HTMLDivElement>(null)
     const inputRef = React.useRef<HTMLInputElement>(null)
     const listRef = React.useRef<HTMLUListElement>(null)
+    const ignoreNextFocusRef = React.useRef(false)
 
     const displayValue = value && value !== "all" ? value : ""
 
@@ -74,6 +75,7 @@ export function InfiniteAutocomplete({
     const handleSelect = (option: string) => {
         onValueChange(option)
         setOpen(false)
+        ignoreNextFocusRef.current = true
         inputRef.current?.focus()
     }
 
@@ -82,6 +84,7 @@ export function InfiniteAutocomplete({
         onValueChange("all")
         setInternalSearch("")
         onSearchChange?.("")
+        ignoreNextFocusRef.current = true
         inputRef.current?.focus()
     }
 
@@ -141,7 +144,13 @@ export function InfiniteAutocomplete({
                     type="text"
                     value={open ? internalSearch : (displayValue || internalSearch)}
                     onChange={handleInputChange}
-                    onFocus={() => setOpen(true)}
+                    onFocus={() => {
+                        if (ignoreNextFocusRef.current) {
+                            ignoreNextFocusRef.current = false
+                            return
+                        }
+                        setOpen(true)
+                    }}
                     onKeyDown={handleKeyDown}
                     placeholder={placeholder}
                     disabled={disabled}

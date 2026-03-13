@@ -84,6 +84,7 @@ export default function DailyReportsPage() {
 
     // Filters
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+    const [datePopoverOpen, setDatePopoverOpen] = useState(false);
     const [selectedEmployee, setSelectedEmployee] = useState<string>('all');
     const [employees, setEmployees] = useState<User[]>([]);
 
@@ -273,7 +274,7 @@ export default function DailyReportsPage() {
                                 <Tabs defaultValue="today" value={activeTab} onValueChange={setActiveTab} className="w-full">
                                     <TabsList className="grid w-full max-w-md grid-cols-2">
                                         <TabsTrigger value="today" className="gap-2">
-                                            <Clock className="h-4 w-4" />
+                                         <Clock className="h-4 w-4" />
                                             Today's Reports
                                         </TabsTrigger>
                                         <TabsTrigger value="all" className="gap-2">
@@ -303,7 +304,7 @@ export default function DailyReportsPage() {
                                     {activeTab === 'all' && (
                                         <>
                                             <div className="w-[240px]">
-                                                <Popover>
+                                                <Popover open={datePopoverOpen} onOpenChange={setDatePopoverOpen}>
                                                     <PopoverTrigger asChild>
                                                         <Button
                                                             variant="outline"
@@ -320,7 +321,10 @@ export default function DailyReportsPage() {
                                                         <Calendar
                                                             mode="single"
                                                             selected={selectedDate}
-                                                            onSelect={setSelectedDate}
+                                                            onSelect={(date) => {
+                                                                setSelectedDate(date);
+                                                                setDatePopoverOpen(false);
+                                                            }}
                                                             initialFocus
                                                         />
                                                     </PopoverContent>

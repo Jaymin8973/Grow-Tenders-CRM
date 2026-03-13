@@ -39,6 +39,7 @@ export function Autocomplete({
     const containerRef = React.useRef<HTMLDivElement>(null)
     const inputRef = React.useRef<HTMLInputElement>(null)
     const listRef = React.useRef<HTMLUListElement>(null)
+    const ignoreNextFocusRef = React.useRef(false)
 
     const selectedOption = React.useMemo(() => {
         return options.find(opt => opt.value === value)
@@ -87,6 +88,7 @@ export function Autocomplete({
         onValueChange(option.value)
         setInputValue(option.label)
         setOpen(false)
+        ignoreNextFocusRef.current = true
         inputRef.current?.focus()
     }
 
@@ -147,7 +149,13 @@ export function Autocomplete({
                     type="text"
                     value={inputValue}
                     onChange={handleInputChange}
-                    onFocus={() => setOpen(true)}
+                    onFocus={() => {
+                        if (ignoreNextFocusRef.current) {
+                            ignoreNextFocusRef.current = false
+                            return
+                        }
+                        setOpen(true)
+                    }}
                     onKeyDown={handleKeyDown}
                     placeholder={placeholder}
                     disabled={disabled}

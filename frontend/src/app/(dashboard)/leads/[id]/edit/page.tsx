@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
@@ -91,6 +91,7 @@ export default function EditLeadPage() {
     });
 
     const activeFollowUpDate = watch('nextFollowUp');
+    const [datePopoverOpen, setDatePopoverOpen] = useState(false);
 
     const { data: leadData, isLoading: isLoadingLead } = useQuery({
         queryKey: ['lead', id],
@@ -343,7 +344,7 @@ export default function EditLeadPage() {
 
                                 <div className="flex flex-col space-y-2">
                                     <Label className="text-xs text-muted-foreground">Next Follow-up</Label>
-                                    <Popover>
+                                    <Popover open={datePopoverOpen} onOpenChange={setDatePopoverOpen}>
                                         <PopoverTrigger asChild>
                                             <Button
                                                 variant={"outline"}
@@ -360,7 +361,10 @@ export default function EditLeadPage() {
                                             <Calendar
                                                 mode="single"
                                                 selected={activeFollowUpDate}
-                                                onSelect={(date) => setValue('nextFollowUp', date)}
+                                                onSelect={(date) => {
+                                                    setValue('nextFollowUp', date);
+                                                    setDatePopoverOpen(false);
+                                                }}
                                                 initialFocus
                                             />
                                         </PopoverContent>

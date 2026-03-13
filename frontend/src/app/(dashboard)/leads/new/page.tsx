@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -88,6 +88,7 @@ export default function NewLeadPage() {
 
 
     const activeFollowUpDate = watch('nextFollowUp');
+    const [datePopoverOpen, setDatePopoverOpen] = useState(false);
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -291,7 +292,7 @@ export default function NewLeadPage() {
                                 </div>
                                 <div className="flex flex-col space-y-2">
                                     <Label className="text-xs text-muted-foreground">Next Follow-up</Label>
-                                    <Popover>
+                                    <Popover open={datePopoverOpen} onOpenChange={setDatePopoverOpen}>
                                         <PopoverTrigger asChild>
                                             <Button
                                                 variant={"outline"}
@@ -308,7 +309,10 @@ export default function NewLeadPage() {
                                             <Calendar
                                                 mode="single"
                                                 selected={activeFollowUpDate}
-                                                onSelect={(date) => setValue('nextFollowUp', date)}
+                                                onSelect={(date) => {
+                                                    setValue('nextFollowUp', date);
+                                                    setDatePopoverOpen(false);
+                                                }}
                                                 initialFocus
                                             />
                                         </PopoverContent>
