@@ -188,7 +188,7 @@ export class LeadsService {
                             status: status || LeadStatus.COLD_LEAD,
                             source: source || LeadSource.OTHER,
                             createdById: user.id,
-                            assigneeId: assigneeId || user.id,
+                            assigneeId: assigneeId || undefined,
                             nextFollowUp: nextFollowUp || undefined,
                         } as any,
                     });
@@ -255,7 +255,7 @@ export class LeadsService {
                         status: LeadStatus.COLD_LEAD,
                         source: source || LeadSource.COLD_CALL,
                         createdById: userId,
-                        assigneeId: assigneeId || userId,
+                        assigneeId: assigneeId || undefined,
                     } as any,
                 });
                 result.created++;
@@ -306,6 +306,7 @@ export class LeadsService {
         status?: LeadStatus;
         source?: LeadSource;
         assigneeId?: string;
+        assigned?: boolean;
         search?: string;
         excludeAssigneeId?: string;
         todayTasks?: boolean;
@@ -340,7 +341,7 @@ export class LeadsService {
         // Allow filtering by assignee only if user has permission to see others
         if (filters?.assigneeId) {
             if (filters.assigneeId === 'unassigned') {
-                where.assigneeId = null;
+                (where as any).assigneeId = { isSet: false };
             } else {
                 // If Manager, ensure the requested assignee is in their team
                 if (user.role === Role.MANAGER) {
@@ -367,6 +368,21 @@ export class LeadsService {
                     // Admin and Employee can filter freely (Employee has global read)
                     where.assigneeId = filters.assigneeId;
                 }
+            }
+        }
+
+        // Assigned/Unassigned filter (only when not filtering by a specific assignee)
+        if (typeof filters?.assigned === 'boolean' && !filters?.assigneeId) {
+            if (filters.assigned) {
+                // Assigned leads (assigneeId is set)
+                // If there's already an IN restriction (manager scope), keep it.
+                // Otherwise, filter for set values.
+                if (!where.assigneeId) {
+                    (where as any).assigneeId = { isSet: true };
+                }
+            } else {
+                // Unassigned leads (assigneeId is not set)
+                (where as any).assigneeId = { isSet: false };
             }
         }
 

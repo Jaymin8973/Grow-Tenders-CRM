@@ -73,6 +73,7 @@ export class LeadsController {
     @ApiQuery({ name: 'status', required: false, enum: LeadStatus })
     @ApiQuery({ name: 'source', required: false, enum: LeadSource })
     @ApiQuery({ name: 'assigneeId', required: false })
+    @ApiQuery({ name: 'assigned', required: false, enum: ['true', 'false'] })
     @ApiQuery({ name: 'search', required: false })
     @ApiQuery({ name: 'excludeAssigneeId', required: false })
     @ApiQuery({ name: 'todayTasks', required: false })
@@ -86,6 +87,7 @@ export class LeadsController {
         @Query('status') status?: LeadStatus,
         @Query('source') source?: LeadSource,
         @Query('assigneeId') assigneeId?: string,
+        @Query('assigned') assigned?: 'true' | 'false',
         @Query('search') search?: string,
         @Query('excludeAssigneeId') excludeAssigneeId?: string,
         @Query('todayTasks') todayTasks?: string,
@@ -99,6 +101,7 @@ export class LeadsController {
             status,
             source,
             assigneeId,
+            assigned: assigned === 'true' ? true : assigned === 'false' ? false : undefined,
             search,
             excludeAssigneeId,
             todayTasks: todayTasks === 'true',

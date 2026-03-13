@@ -122,8 +122,9 @@ export default function LeadsPage() {
     const router = useRouter();
     const { user } = useAuth();
     const [search, setSearch] = useState('');
-    const [statusFilter, setStatusFilter] = useState<string | null>(null);
+    const [statusFilter, setStatusFilter] = useState<string>('COLD_LEAD');
     const [activeTab, setActiveTab] = useState('all'); // 'all' | 'my'
+    const [assignmentTab, setAssignmentTab] = useState<'assigned' | 'unassigned'>('assigned');
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(25);
     const [emailDialogOpen, setEmailDialogOpen] = useState(false);
@@ -155,7 +156,7 @@ export default function LeadsPage() {
     const clearSelection = () => setSelectedIds(new Set());
 
     const { data: leadsData, isLoading, isFetching } = useQuery({
-        queryKey: ['leads', debouncedSearch, statusFilter, activeTab, page, pageSize],
+        queryKey: ['leads', debouncedSearch, statusFilter, activeTab, assignmentTab, page, pageSize],
         queryFn: async () => {
             const params = new URLSearchParams();
             if (debouncedSearch) params.append('search', debouncedSearch);
@@ -169,6 +170,11 @@ export default function LeadsPage() {
             } else if (activeTab === 'all' && user?.role === 'EMPLOYEE') {
                 // For Employees in 'All Leads', exclude their own leads
                 params.append('excludeAssigneeId', user?.id || '');
+            }
+
+            // For SUPER_ADMIN: allow Assigned/Unassigned toggle
+            if (user?.role === 'SUPER_ADMIN') {
+                params.append('assigned', assignmentTab === 'assigned' ? 'true' : 'false');
             }
 
             const response = await apiClient.get(`/leads?${params.toString()}`);
@@ -438,6 +444,25 @@ export default function LeadsPage() {
                 </TooltipProvider>
             )}
 
+            {/* Assigned / Unassigned Tabs - Only for Super Admin */}
+            {user?.role === 'SUPER_ADMIN' && (
+                <Tabs
+                    defaultValue="assigned"
+                    value={assignmentTab}
+                    onValueChange={(val) => {
+                        setAssignmentTab(val as 'assigned' | 'unassigned');
+                        setPage(1);
+                        clearSelection();
+                    }}
+                    className="w-full"
+                >
+                    <TabsList>
+                        <TabsTrigger value="assigned">Assigned Leads</TabsTrigger>
+                        <TabsTrigger value="unassigned">Unassigned Leads</TabsTrigger>
+                    </TabsList>
+                </Tabs>
+            )}
+
             {/* Filters & Search */}
             <Card>
                 <CardContent className="p-4">
@@ -461,9 +486,9 @@ export default function LeadsPage() {
                         </div>
                         <div className="w-full sm:w-[200px]">
                             <Select
-                                value={statusFilter || 'ALL'}
+                                value={statusFilter}
                                 onValueChange={(val) => {
-                                    setStatusFilter(val === 'ALL' ? null : val);
+                                    setStatusFilter(val);
                                     setPage(1);
                                     clearSelection();
                                 }}
@@ -472,7 +497,6 @@ export default function LeadsPage() {
                                     <SelectValue placeholder="Filter by Status" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="ALL">All Status</SelectItem>
                                     {Object.entries(statusConfig).map(([key, config]) => (
                                         <SelectItem key={key} value={key}>
                                             {config.label}
