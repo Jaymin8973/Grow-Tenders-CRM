@@ -393,8 +393,12 @@ export class LeadsService {
                 // If we have an IN clause, we just filter the list
                 where.assigneeId.in = (where.assigneeId.in as string[]).filter((id: string) => id !== filters.excludeAssigneeId);
             } else {
-                // Standard exclusion
-                where.assigneeId = { not: filters.excludeAssigneeId };
+                // Standard exclusion - include unassigned leads and leads assigned to others
+                // Use OR to include both: not assigned to excluded user, OR unassigned
+                where.OR = [
+                    { assigneeId: { not: filters.excludeAssigneeId } },
+                    { assigneeId: { isSet: false } }
+                ];
             }
         }
 
