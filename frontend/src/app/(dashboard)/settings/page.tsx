@@ -69,6 +69,7 @@ export default function SettingsPage() {
             { key: 'dailyReports', label: 'Daily Reports' },
             { key: 'scrapedTenders', label: 'GeM Tenders' },
             { key: 'leaderboard', label: 'Leaderboard' },
+            { key: 'inquiries', label: 'Inquiries' },
             { key: 'payments', label: 'Payments' },
             { key: 'invoices', label: 'Invoices' },
             { key: 'transferRequests', label: 'Transfer Requests' },

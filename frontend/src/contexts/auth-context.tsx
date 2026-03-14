@@ -24,6 +24,7 @@ type ScreenKey =
     | 'dailyReports'
     | 'scrapedTenders'
     | 'leaderboard'
+    | 'inquiries'
     | 'payments'
     | 'invoices'
     | 'transferRequests'

@@ -34,6 +34,7 @@ import { SchedulerModule } from './modules/scheduler/scheduler.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
 import { AlertsModule } from './modules/alerts/alerts.module';
 import { HealthModule } from './common/controllers/health.module';
+import { InquiriesModule } from './modules/inquiries/inquiries.module';
 
 @Module({
     imports: [
@@ -84,6 +85,7 @@ import { HealthModule } from './common/controllers/health.module';
         SchedulerModule,
         PermissionsModule,
         AlertsModule,
+        InquiriesModule,
         HealthModule,
     ],
     providers: [

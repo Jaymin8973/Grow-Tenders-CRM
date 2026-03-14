@@ -11,6 +11,7 @@ export type ScreenKey =
     | 'dailyReports'
     | 'scrapedTenders'
     | 'leaderboard'
+    | 'inquiries'
     | 'payments'
     | 'invoices'
     | 'transferRequests'
@@ -32,6 +33,7 @@ function buildDefaultManagerScreens(): ScreenAccessMap {
         dailyReports: true,
         scrapedTenders: true,
         leaderboard: true,
+        inquiries: false,
         payments: true,
         invoices: true,
         transferRequests: true,
@@ -53,6 +55,7 @@ function buildDefaultEmployeeScreens(): ScreenAccessMap {
         dailyReports: true,
         scrapedTenders: true,
         leaderboard: true,
+        inquiries: true,
         payments: false,
         invoices: false,
         transferRequests: false,
@@ -86,6 +89,18 @@ export class PermissionsService {
         });
 
         if (existing) {
+            // Backfill new/required keys for older stored configs.
+            // Inquiries should be available to employees (assigned-only on the API layer).
+            if (role === Role.EMPLOYEE) {
+                const screens = (existing as any).screens as ScreenAccessMap;
+                if (screens?.inquiries !== true) {
+                    const updated = await this.prisma.roleScreenAccess.update({
+                        where: { role },
+                        data: { screens: { ...(screens as any), inquiries: true } },
+                    });
+                    return updated;
+                }
+            }
             return existing;
         }
 

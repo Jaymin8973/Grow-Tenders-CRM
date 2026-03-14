@@ -16,13 +16,18 @@ async function bootstrap() {
     app.useGlobalFilters(new HttpExceptionFilter());
 
     // Enable CORS
+    const corsOrigins = (
+        process.env.CORS_ORIGINS ||
+        [process.env.FRONTEND_URL, process.env.WEBSITE_FRONTEND_URL]
+            .filter(Boolean)
+            .join(',')
+    )
+        .split(',')
+        .map((x) => x.trim())
+        .filter(Boolean);
+
     app.enableCors({
-        origin: [
-            'http://localhost:3000',
-            'http://localhost:5173',
-            process.env.FRONTEND_URL,
-            process.env.WEBSITE_FRONTEND_URL,
-        ].filter(Boolean),
+        origin: corsOrigins,
         credentials: true,
     });
 

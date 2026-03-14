@@ -19,6 +19,7 @@ import {
     Wallet,
     FileSearch,
     Target,
+    MessageSquare,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -33,6 +34,7 @@ type ScreenKey =
     | 'dailyReports'
     | 'scrapedTenders'
     | 'leaderboard'
+    | 'inquiries'
     | 'payments'
     | 'invoices'
     | 'transferRequests'
@@ -56,6 +58,8 @@ const navigation: NavItem[] = [
     { name: 'Leads', href: '/leads', icon: UserPlus, screenKey: 'leads' },
     { name: 'Customers', href: '/customers', icon: Users, screenKey: 'customers' },
 
+    { name: 'Inquiries', href: '/inquiries', icon: MessageSquare, roles: ['EMPLOYEE'], screenKey: 'inquiries' },
+
     { name: 'Teams', href: '/teams', icon: Users, roles: ['SUPER_ADMIN', 'MANAGER'], screenKey: 'teams' },
     { name: 'Daily Reports', href: '/daily-reports', icon: BarChart3, screenKey: 'dailyReports' },
     { name: 'GeM Tenders', href: '/scraped-tenders', icon: FileSearch, screenKey: 'scrapedTenders' },
@@ -63,6 +67,7 @@ const navigation: NavItem[] = [
 ];
 
 const adminNav: NavItem[] = [
+    { name: 'Inquiries', href: '/inquiries', icon: MessageSquare, roles: ['SUPER_ADMIN'], screenKey: 'inquiries' },
     { name: 'Payments', href: '/payments', icon: Wallet, roles: ['SUPER_ADMIN', 'MANAGER'], screenKey: 'payments' },
     { name: 'Invoices', href: '/invoices', icon: FileText, roles: ['SUPER_ADMIN', 'MANAGER'], screenKey: 'invoices' },
     { name: 'Transfer Requests', href: '/leads/transfer-requests', icon: UserPlus, roles: ['SUPER_ADMIN', 'MANAGER'], screenKey: 'transferRequests' },
@@ -97,7 +102,7 @@ export function Sidebar() {
         if (!user) return [] as NavItem[];
 
         if (user.role === 'EMPLOYEE') {
-            const employeeOrder: ScreenKey[] = ['dashboard', 'today', 'leaderboard', 'leads', 'dailyReports', 'scrapedTenders'];
+            const employeeOrder: ScreenKey[] = ['dashboard', 'today', 'inquiries', 'leaderboard', 'leads', 'dailyReports', 'scrapedTenders'];
             const employeeAllowed = new Set(employeeOrder);
             const rank = new Map(employeeOrder.map((k, idx) => [k, idx] as const));
 

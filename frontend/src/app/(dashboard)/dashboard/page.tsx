@@ -17,6 +17,7 @@ import {
     Target,
     ArrowUpRight,
     ArrowDownRight,
+    MessageSquare,
 } from 'lucide-react';
 import {
     BarChart,
@@ -52,6 +53,15 @@ const PIPELINE_COLORS: Record<string, string> = {
 
 export default function DashboardPage() {
     const { user } = useAuth();
+
+    const { data: inquiryStats } = useQuery({
+        queryKey: ['inquiries', 'assigned-count'],
+        queryFn: async () => {
+            const res = await apiClient.get('/inquiries?page=1&pageSize=1');
+            return res.data;
+        },
+        enabled: user?.role === 'EMPLOYEE',
+    });
 
     const { data: stats, isLoading } = useQuery({
         queryKey: ['dashboard-analytics'],
@@ -197,6 +207,21 @@ export default function DashboardPage() {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <PaymentRequestForm />
                         <TodayTasksList />
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <Card className="card-hover cursor-pointer" onClick={() => (window.location.href = '/inquiries')}>
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-lg flex items-center gap-2">
+                                    <MessageSquare className="h-5 w-5 text-primary" />
+                                    Assigned Inquiries
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-3xl font-bold">{inquiryStats?.total || 0}</p>
+                                <p className="text-xs text-muted-foreground mt-1">Inquiries assigned to you</p>
+                            </CardContent>
+                        </Card>
                     </div>
                 </div>
             )}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, keepPreviousData, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
@@ -155,6 +155,26 @@ export default function LeadsPage() {
 
     const clearSelection = () => setSelectedIds(new Set());
 
+    // Avoid showing stale table rows when switching filters/tabs.
+    // Keep previous data only for pagination changes (page/pageSize), not for Assigned/Unassigned tab switches.
+    const filterKey = useMemo(
+        () => JSON.stringify([debouncedSearch, statusFilter, activeTab, assignmentTab, user?.role, user?.id]),
+        [debouncedSearch, statusFilter, activeTab, assignmentTab, user?.role, user?.id],
+    );
+    const prevFilterKeyRef = useRef<string>(filterKey);
+    const prevPageRef = useRef<number>(page);
+    const prevPageSizeRef = useRef<number>(pageSize);
+
+    const keepPrevForPagination =
+        prevFilterKeyRef.current === filterKey &&
+        (prevPageRef.current !== page || prevPageSizeRef.current !== pageSize);
+
+    useEffect(() => {
+        prevFilterKeyRef.current = filterKey;
+        prevPageRef.current = page;
+        prevPageSizeRef.current = pageSize;
+    }, [filterKey, page, pageSize]);
+
     const { data: leadsData, isLoading, isFetching } = useQuery({
         queryKey: ['leads', debouncedSearch, statusFilter, activeTab, assignmentTab, page, pageSize],
         queryFn: async () => {
@@ -180,7 +200,7 @@ export default function LeadsPage() {
             const response = await apiClient.get(`/leads?${params.toString()}`);
             return response.data;
         },
-        placeholderData: keepPreviousData,
+        placeholderData: keepPrevForPagination ? keepPreviousData : undefined,
         enabled: true,
     });
 

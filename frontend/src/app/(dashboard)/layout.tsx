@@ -31,6 +31,7 @@ function pathToScreenKey(pathname: string): ScreenKey | null {
     if (pathname === '/daily-reports' || pathname.startsWith('/daily-reports/')) return 'dailyReports';
     if (pathname === '/scraped-tenders' || pathname.startsWith('/scraped-tenders/')) return 'scrapedTenders';
     if (pathname === '/leaderboard' || pathname.startsWith('/leaderboard/')) return 'leaderboard';
+    if (pathname === '/inquiries' || pathname.startsWith('/inquiries/')) return 'inquiries';
     if (pathname === '/payments' || pathname.startsWith('/payments/')) return 'payments';
     if (pathname === '/invoices' || pathname.startsWith('/invoices/')) return 'invoices';
     if (pathname === '/leads/transfer-requests' || pathname.startsWith('/leads/transfer-requests/')) return 'transferRequests';

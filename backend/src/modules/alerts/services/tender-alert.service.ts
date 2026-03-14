@@ -130,6 +130,8 @@ export class TenderAlertService {
 
     private async sendTenderAlert(match: TenderMatch) {
         try {
+            const websiteUrl = process.env.WEBSITE_FRONTEND_URL || 'http://localhost:5173';
+
             // Create alert record
             await this.prisma.tenderAlert.create({
                 data: {
@@ -203,7 +205,7 @@ export class TenderAlertService {
                         </div>
                         
                         <div style="text-align: center; margin: 30px 0;">
-                            <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/tender/${match.tenderId}" 
+                            <a href="${websiteUrl}/tender/${match.tenderId}" 
                                style="background: #f5820d; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold;">
                                 View Tender Details
                             </a>
@@ -212,7 +214,7 @@ export class TenderAlertService {
                         <p style="font-size: 14px; color: #6b7280; margin-top: 30px;">
                             You received this email because your alert preferences match this tender.
                             <br>
-                            <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/alert-settings">Manage your alert preferences</a>
+                            <a href="${websiteUrl}/alert-settings">Manage your alert preferences</a>
                         </p>
                     </div>
                     <div style="background: #1a4f72; padding: 15px; text-align: center;">
