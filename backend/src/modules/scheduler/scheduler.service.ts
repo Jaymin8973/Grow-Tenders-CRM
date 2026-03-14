@@ -264,10 +264,10 @@ export class SchedulerService {
                                 <!-- Action Buttons -->
                                 <div class="button-container" style="text-align: center; margin: 25px 0;">
                                     <a href="${viewLink}" class="button" style="display: inline-block; background-color: #2563eb; color: #ffffff; padding: 14px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px; margin: 5px; box-sizing: border-box;">
-                                        ≡ƒôä View Details
+                                        View On Website
                                     </a>
                                     <a href="${documentLink}" class="button" style="display: inline-block; background-color: #059669; color: #ffffff; padding: 14px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px; margin: 5px; box-sizing: border-box;">
-                                        ≡ƒôÑ Download PDF
+                                        View On Gem
                                     </a>
                                 </div>
                                 

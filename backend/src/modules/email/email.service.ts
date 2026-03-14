@@ -287,7 +287,7 @@ export class EmailService {
         });
     }
 
-    async sendInvoiceEmail(invoiceId: string, to: string, customerId: string, pdfBuffer: Buffer, invoiceNumber: string) {
+    async sendInvoiceEmail(invoiceId: string, to: string, customerId: string, pdfBuffer: Buffer, invoiceNumber: string, filename?: string) {
         const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #2563eb;">Invoice ${invoiceNumber}</h2>
@@ -306,7 +306,7 @@ export class EmailService {
             html,
             attachments: [
                 {
-                    filename: `invoice-${invoiceNumber}.pdf`,
+                    filename: filename || `invoice-${invoiceNumber}.pdf`,
                     content: pdfBuffer,
                     contentType: 'application/pdf',
                 },

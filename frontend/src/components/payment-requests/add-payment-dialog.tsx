@@ -110,7 +110,7 @@ export function AddPaymentDialog({ open, onOpenChange, leadId, customerId }: Add
                     <div className="space-y-2">
                         <Label>Payment Screenshot/Receipt <span className="text-red-500">*</span></Label>
                         <div
-                            className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${screenshot ? 'border-primary/50 bg-primary/5' : 'border-slate-300 hover:border-primary/50 hover:bg-slate-50'
+                            className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors overflow-hidden ${screenshot ? 'border-primary/50 bg-primary/5' : 'border-slate-300 hover:border-primary/50 hover:bg-slate-50'
                                 }`}
                             onClick={() => fileInputRef.current?.click()}
                         >
@@ -123,10 +123,10 @@ export function AddPaymentDialog({ open, onOpenChange, leadId, customerId }: Add
                             />
 
                             {screenshot ? (
-                                <div className="flex items-center justify-between bg-background p-2 rounded-md shadow-sm border border-slate-200">
-                                    <div className="flex items-center gap-2 overflow-hidden">
+                                <div className="flex w-full max-w-full items-center justify-between gap-2 bg-background p-2 rounded-md shadow-sm border border-slate-200 overflow-hidden">
+                                    <div className="flex min-w-0 flex-1 items-center gap-2">
                                         <FileImage className="h-5 w-5 text-primary shrink-0" />
-                                        <span className="text-sm font-medium truncate">{screenshot.name}</span>
+                                        <span className="block max-w-56 flex-1 text-sm font-medium truncate">{screenshot.name}</span>
                                     </div>
                                     <Button
                                         type="button"

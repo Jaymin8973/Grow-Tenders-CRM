@@ -26,6 +26,7 @@ type ScreenKey =
 function pathToScreenKey(pathname: string): ScreenKey | null {
     if (pathname === '/today' || pathname.startsWith('/today/')) return 'today';
     if (pathname === '/dashboard' || pathname.startsWith('/dashboard/')) return 'dashboard';
+    if (pathname === '/leads/transfer-requests' || pathname.startsWith('/leads/transfer-requests/')) return 'transferRequests';
     if (pathname === '/leads' || pathname.startsWith('/leads/')) return 'leads';
     if (pathname === '/customers' || pathname.startsWith('/customers/')) return 'customers';
     if (pathname === '/teams' || pathname.startsWith('/teams/')) return 'teams';
@@ -35,7 +36,6 @@ function pathToScreenKey(pathname: string): ScreenKey | null {
     if (pathname === '/inquiries' || pathname.startsWith('/inquiries/')) return 'inquiries';
     if (pathname === '/payments' || pathname.startsWith('/payments/')) return 'payments';
     if (pathname === '/invoices' || pathname.startsWith('/invoices/')) return 'invoices';
-    if (pathname === '/leads/transfer-requests' || pathname.startsWith('/leads/transfer-requests/')) return 'transferRequests';
     if (pathname === '/users' || pathname.startsWith('/users/')) return 'users';
     if (pathname === '/targets' || pathname.startsWith('/targets/')) return 'targets';
     if (pathname === '/scraper-logs' || pathname.startsWith('/scraper-logs/')) return 'scraperLogs';

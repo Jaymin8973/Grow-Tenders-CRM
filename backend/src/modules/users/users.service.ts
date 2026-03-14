@@ -27,26 +27,34 @@ export class UsersService {
 
         const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
 
-        const user = await this.prisma.user.create({
-            data: {
-                ...createUserDto,
-                password: hashedPassword,
-            },
-            select: {
-                id: true,
-                email: true,
-                showEmail: true,
-                firstName: true,
-                lastName: true,
-                role: true,
-                phone: true,
-                isActive: true,
-                managerId: true,
-                createdAt: true,
-            },
-        });
+        try {
+            const user = await this.prisma.user.create({
+                data: {
+                    ...createUserDto,
+                    password: hashedPassword,
+                },
+                select: {
+                    id: true,
+                    email: true,
+                    showEmail: true,
+                    firstName: true,
+                    lastName: true,
+                    role: true,
+                    phone: true,
+                    isActive: true,
+                    managerId: true,
+                    createdAt: true,
+                },
+            });
 
-        return user;
+            return user;
+        } catch (error: any) {
+            // Handle Prisma unique constraint error (P2002)
+            if (error.code === 'P2002' && error.meta?.target?.includes('email')) {
+                throw new ConflictException('Email already exists');
+            }
+            throw error;
+        }
     }
 
     async findAll(role?: Role, requesterRole?: string) {

@@ -13,15 +13,16 @@ export class PdfService {
     // Load logo as base64
     try {
       // Try resolving relative to the compiled file location
-      let logoPath = path.join(__dirname, '../../assets/Logo-GT.png');
+      const candidates = [
+        path.join(__dirname, '../../../assets/Logo-GT.png'),
+        path.join(process.cwd(), 'dist/assets/Logo-GT.png'),
+        path.join(process.cwd(), 'src/assets/Logo-GT.png'),
+      ];
 
-      if (!fs.existsSync(logoPath)) {
-        // Fallback: Try project root (useful for dev mode if dist structure differs)
-        logoPath = path.join(process.cwd(), 'src/assets/Logo-GT.png');
-      }
+      const found = candidates.find((p) => fs.existsSync(p));
 
-      if (fs.existsSync(logoPath)) {
-        const logoBuffer = fs.readFileSync(logoPath);
+      if (found) {
+        const logoBuffer = fs.readFileSync(found);
         this.logoBase64 = `data:image/png;base64,${logoBuffer.toString('base64')}`;
       } else {
         this.logoBase64 = '';

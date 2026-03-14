@@ -79,9 +79,12 @@ export class InvoicesController {
     @Roles(Role.SUPER_ADMIN, Role.MANAGER)
     @ApiOperation({ summary: 'Generate PDF for invoice' })
     async generatePdf(@Param('id') id: string, @Res() res: Response) {
-        const pdf = await this.invoicesService.generatePdf(id);
+        const { pdf, companyName, invoiceNumber } = await this.invoicesService.generatePdf(id);
+        // Sanitize company name for filename (remove special characters)
+        const safeCompanyName = (companyName || 'Invoice').replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30);
+        const filename = `${safeCompanyName}_${invoiceNumber}.pdf`;
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', 'inline; filename="invoice.pdf"');
+        res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
         res.send(pdf);
     }
 

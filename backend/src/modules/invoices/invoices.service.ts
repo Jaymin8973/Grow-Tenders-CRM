@@ -275,9 +275,12 @@ export class InvoicesService {
         });
     }
 
-    async generatePdf(id: string): Promise<Buffer> {
+    async generatePdf(id: string): Promise<{ pdf: Buffer; companyName: string; invoiceNumber: string }> {
         const invoice = await this.findOne(id);
-        return this.pdfService.generateInvoicePdf(invoice);
+        const pdf = await this.pdfService.generateInvoicePdf(invoice);
+        // Get company name from lead or customer
+        const companyName = invoice.lead?.company || invoice.customer?.company || invoice.companyName || 'Invoice';
+        return { pdf, companyName, invoiceNumber: invoice.invoiceNumber };
     }
 
     async sendInvoiceEmail(id: string, to?: string) {
@@ -289,12 +292,18 @@ export class InvoicesService {
         }
 
         const pdfBuffer = await this.pdfService.generateInvoicePdf(invoice);
+        // Get company name for filename
+        const companyName = invoice.lead?.company || invoice.customer?.company || invoice.companyName || 'Invoice';
+        const safeCompanyName = companyName.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30);
+        const filename = `${safeCompanyName}_${invoice.invoiceNumber}.pdf`;
+        
         const sent = await this.emailService.sendInvoiceEmail(
             invoice.id,
             recipient,
             invoice.customer?.id || '',
             pdfBuffer,
             invoice.invoiceNumber,
+            filename,
         );
 
         if (sent && invoice.status === InvoiceStatus.DRAFT) {

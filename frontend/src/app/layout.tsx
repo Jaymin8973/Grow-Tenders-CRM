@@ -10,7 +10,10 @@ export const metadata: Metadata = {
     title: 'Sales CRM',
     description: 'Enterprise Sales CRM Application',
     icons: {
-        icon: '/images/Logo-GT.png',
+        icon: [
+            { url: '/images/Logo-GT.png', sizes: '32x32', type: 'image/png' },
+            { url: '/images/Logo-GT.png', sizes: '16x16', type: 'image/png' },
+        ],
         shortcut: '/images/Logo-GT.png',
         apple: '/images/Logo-GT.png',
     },
