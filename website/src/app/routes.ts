@@ -3,6 +3,7 @@ import { Layout } from './components/Layout';
 import { Home } from './pages/Home';
 import { Tenders } from './pages/Tenders';
 import { TenderDetail } from './pages/TenderDetail';
+import { TenderDownloadPdf } from './pages/TenderDownloadPdf';
 import { Pricing } from './pages/Pricing';
 import { About } from './pages/About';
 import { Services } from './pages/Services';
@@ -25,6 +26,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, Component: Home },
       { path: 'tenders', Component: Tenders },
+      { path: 'tenders/:id/download-pdf', Component: TenderDownloadPdf },
       { path: 'tender/:id', Component: TenderDetail },
       { path: 'categories', Component: Categories },
       { path: 'pricing', Component: Pricing },
