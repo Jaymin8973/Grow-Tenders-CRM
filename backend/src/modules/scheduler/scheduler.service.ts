@@ -226,27 +226,27 @@ export class SchedulerService {
                                 <!-- Tender Details -->
                                 <table class="details-table" style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 14px;">
                                     <tr>
-                                        <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; color: #64748b; width: 40%;">≡ƒôï Bid Number</td>
+                                        <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; color: #64748b; width: 40%;">Bid Number</td>
                                         <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; color: #1e293b; font-weight: 500;">${tender.referenceId || 'Not specified'}</td>
                                     </tr>
                                     <tr>
-                                        <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; color: #64748b;">≡ƒÅó Category</td>
+                                        <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; color: #64748b;">Category</td>
                                         <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; color: #1e293b;">${tender.categoryName || 'General'}</td>
                                     </tr>
                                     <tr>
-                                        <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; color: #64748b;">≡ƒôì Location</td>
+                                        <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; color: #64748b;">Location</td>
                                         <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; color: #1e293b;">${tender.state || 'India'}${tender.city ? ', ' + tender.city : ''}</td>
                                     </tr>
                                     <tr>
-                                        <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; color: #64748b;">≡ƒôà Published</td>
+                                        <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; color: #64748b;">Published</td>
                                         <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; color: #1e293b;">${formatDate(tender.publishDate)}</td>
                                     </tr>
                                     <tr>
-                                        <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; color: #64748b;">ΓÅ░ Deadline</td>
+                                        <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; color: #64748b;">Deadline</td>
                                         <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; color: #dc2626; font-weight: 600;">${formatDate(tender.closingDate)}</td>
                                     </tr>
                                     <tr>
-                                        <td style="padding: 10px 0; color: #64748b;">≡ƒÅó Department</td>
+                                        <td style="padding: 10px 0; color: #64748b;"> Department</td>
                                         <td style="padding: 10px 0; color: #1e293b;">${tender.department || 'Not specified'}</td>
                                     </tr>
                                 </table>
@@ -254,7 +254,7 @@ export class SchedulerService {
                                 ${tender.description ? `
                                 <!-- Description -->
                                 <div style="margin-bottom: 20px;">
-                                    <h3 style="margin: 0 0 8px 0; color: #1e293b; font-size: 14px; font-weight: 600;">≡ƒô¥ Description</h3>
+                                    <h3 style="margin: 0 0 8px 0; color: #1e293b; font-size: 14px; font-weight: 600;">Description</h3>
                                     <p style="margin: 0; color: #64748b; font-size: 13px; line-height: 1.5; background: #f8fafc; padding: 12px; border-radius: 8px;">
                                         ${tender.description.substring(0, 400)}${tender.description.length > 400 ? '...' : ''}
                                     </p>
