@@ -7,10 +7,9 @@ export function Contact() {
   const [searchParams] = useSearchParams();
   const planFromUrl = searchParams.get('plan');
 
-  const contactPhone = import.meta.env.VITE_CONTACT_PHONE || '+91 98765 43210';
-  const contactPhoneAlt = import.meta.env.VITE_CONTACT_PHONE_ALT || '+91 87654 32109';
+  const contactPhone = import.meta.env.VITE_CONTACT_PHONE || '+91 9106130870';
   const contactEmail = import.meta.env.VITE_CONTACT_EMAIL || 'support@growtender.in';
-  const contactSalesEmail = import.meta.env.VITE_CONTACT_SALES_EMAIL || 'sales@growtender.in';
+  
   const whatsappLink = import.meta.env.VITE_WHATSAPP_LINK || 'https://wa.me/9106130870?text=Hi%2C%20I%20need%20help%20with%20GeM%20Tender%20services.%20Please%20assist%20me.';
 
   const [form, setForm] = useState({ 
@@ -64,8 +63,8 @@ export function Contact() {
           {/* Contact Info */}
           <div className="space-y-4">
             {[
-              { icon: Phone, title: 'Call Us', lines: [contactPhone, contactPhoneAlt].filter(Boolean), color: '#f5820d' },
-              { icon: Mail, title: 'Email Us', lines: [contactEmail, contactSalesEmail].filter(Boolean), color: '#1a4f72' },
+              { icon: Phone, title: 'Call Us', lines: [contactPhone].filter(Boolean), color: '#f5820d' },
+              { icon: Mail, title: 'Email Us', lines: [contactEmail].filter(Boolean), color: '#1a4f72' },
 
               { icon: Clock, title: 'Working Hours', lines: ['Mon–Sat: 10:00 AM – 7:00 PM'], color: '#1a4f72' },
             ].map((item) => (

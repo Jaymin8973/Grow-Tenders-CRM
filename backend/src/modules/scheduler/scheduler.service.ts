@@ -54,6 +54,68 @@ export class SchedulerService {
         this.logger.log(`Marked ${result.count} tender subscriptions inactive (expired).`);
     }
 
+    @Cron(CronExpression.EVERY_HOUR)
+    async deactivateExpiredFreeTrials() {
+        this.logger.log('Running free trial expiry cron job...');
+
+        const now = new Date();
+
+        // Find customers with active free trials that have expired
+        const expiredTrials = await this.prisma.customer.findMany({
+            where: {
+                freeTrialActive: true,
+                freeTrialEndDate: { lt: now },
+            },
+            select: { id: true, firstName: true, email: true },
+        });
+
+        if (expiredTrials.length === 0) {
+            this.logger.log('No expired free trials found.');
+            return;
+        }
+
+        // Deactivate all expired trials
+        const result = await this.prisma.customer.updateMany({
+            where: {
+                id: { in: expiredTrials.map(c => c.id) },
+            },
+            data: {
+                freeTrialActive: false,
+                subscriptionActive: false,
+                planType: null,
+            },
+        });
+
+        this.logger.log(`Deactivated ${result.count} expired free trials.`);
+
+        // Send notification emails to customers whose trial expired
+        for (const customer of expiredTrials) {
+            try {
+                await this.emailService.sendEmail({
+                    to: customer.email,
+                    subject: 'Your Free Trial Has Ended - Upgrade Now',
+                    html: `
+                        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+                            <h2 style="color: #2563eb; text-align: center;">Your Free Trial Has Ended</h2>
+                            <p>Hi ${customer.firstName},</p>
+                            <p>Your 3-day free trial of Grow Tenders has ended. We hope you enjoyed exploring our tender matching services!</p>
+                            <p>To continue receiving tender alerts and accessing all features, please upgrade to one of our subscription plans.</p>
+                            <div style="text-align: center; margin-top: 30px;">
+                                <a href="https://growtenders.com/pricing" style="background-color: #f5820d; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">View Pricing Plans</a>
+                            </div>
+                            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+                            <p style="color: #94a3b8; font-size: 12px; text-align: center;">Grow Tenders - Your Gateway to Government Tenders</p>
+                        </div>
+                    `,
+                });
+            } catch (error) {
+                this.logger.error(`Failed to send trial expiry email to ${customer.email}:`, error);
+            }
+        }
+
+        this.logger.log(`Sent ${expiredTrials.length} trial expiry notification emails.`);
+    }
+
     @Cron(CronExpression.EVERY_DAY_AT_10AM)
     async handleDailyTenderAlerts() {
         this.logger.log('Running daily tender alerts cron job...');

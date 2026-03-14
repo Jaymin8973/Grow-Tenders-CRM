@@ -364,6 +364,12 @@ model Customer {
   subscriptionStartDate DateTime?
   subscriptionEndDate   DateTime?
   planType              String?     // BASIC, PRO, ENTERPRISE
+
+  // Free Trial Details
+  freeTrialUsed         Boolean     @default(false)
+  freeTrialStartDate    DateTime?
+  freeTrialEndDate      DateTime?
+  freeTrialActive       Boolean     @default(false)
   
   statePreferences      String[]
   categoryPreferences   String[]

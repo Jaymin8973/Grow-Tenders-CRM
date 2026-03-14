@@ -99,4 +99,19 @@ export class PublicAuthController {
     ) {
         return this.publicAuthService.changePassword(customerId, changePasswordDto);
     }
+
+    @Post('activate-trial')
+    @UseGuards(CustomerJwtAuthGuard)
+    @ApiBearerAuth('Customer-JWT')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Activate 3-day free trial with state preference' })
+    @ApiResponse({ status: 200, description: 'Free trial activated successfully' })
+    @ApiResponse({ status: 400, description: 'Free trial already used or invalid data' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    async activateTrial(
+        @CurrentCustomer('id') customerId: string,
+        @Body('state') state: string,
+    ) {
+        return this.publicAuthService.activateFreeTrial(customerId, state);
+    }
 }

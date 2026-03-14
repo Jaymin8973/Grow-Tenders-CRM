@@ -1,7 +1,11 @@
 import { useState } from 'react';
-import { useEffect } from 'react';
 import { Check, X, Zap, Star, Crown, Shield, Bell, Search, FileText, Phone, ChevronDown, ChevronUp, Mail, MapPin, Upload, FileCheck } from 'lucide-react';
-import { Link, useSearchParams } from 'react-router';
+import { Link, useNavigate } from 'react-router';
+import { StateSelectionModal } from '../components/StateSelectionModal';
+import { FreeTrialPopup } from '../components/FreeTrialPopup';
+import { useAuth } from '../../lib/auth-context';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 const plans = [
   {
@@ -72,7 +76,7 @@ const faqs = [
   },
   {
     q: 'Is there a free trial available?',
-    a: 'Yes! We offer a 7-day free trial with full access to all features of the Professional plan. No credit card required to start your trial.',
+    a: 'Yes! We offer a 3-day free trial with full access to all features. No credit card required to start your trial.',
   },
   {
     q: 'How quickly are tenders updated on Grow Tender?',
@@ -93,10 +97,60 @@ const faqs = [
 ];
 
 export function Pricing() {
+  const navigate = useNavigate();
+  const { isAuthenticated, customer } = useAuth();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [showStateModal, setShowStateModal] = useState(false);
+  const [showTrialPopup, setShowTrialPopup] = useState(false);
+  const [trialEndDate, setTrialEndDate] = useState<string | null>(null);
+
+  // Check if user can see free trial button
+  const canShowFreeTrial = !isAuthenticated || (!customer?.freeTrialUsed && !customer?.freeTrialActive);
 
   const handlePlanClick = (planName: string) => {
     window.location.href = `/contact?plan=${encodeURIComponent(planName)}`;
+  };
+
+  const handleFreeTrialClick = () => {
+    if (!isAuthenticated) {
+      // Redirect to register page
+      navigate('/register');
+      return;
+    }
+    // Show state selection modal
+    setShowStateModal(true);
+  };
+
+  const handleStateConfirm = async (state: string) => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+
+    const response = await fetch(`${API_URL}/public/auth/activate-trial`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ state }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to activate trial');
+    }
+
+    setShowStateModal(false);
+    setTrialEndDate(data.trialEndDate);
+    setShowTrialPopup(true);
+  };
+
+  const handleTrialPopupClose = () => {
+    setShowTrialPopup(false);
+    navigate('/tenders');
   };
 
   return (
@@ -181,19 +235,21 @@ export function Pricing() {
         </div>
 
         {/* Free Trial Banner */}
-        <div className="mt-8 rounded-2xl p-6 text-center" style={{ background: 'linear-gradient(135deg, #fff8f0, #fef3e2)', border: '1px solid #fed7aa' }}>
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <Zap size={18} style={{ color: '#f5820d' }} />
-            <h3 className="font-bold" style={{ color: '#1a4f72' }}>7-Day Free Trial — No Credit Card Required</h3>
+        {canShowFreeTrial && (
+          <div className="mt-8 rounded-2xl p-6 text-center" style={{ background: 'linear-gradient(135deg, #fff8f0, #fef3e2)', border: '1px solid #fed7aa' }}>
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Zap size={18} style={{ color: '#f5820d' }} />
+              <h3 className="font-bold" style={{ color: '#1a4f72' }}>3-Day Free Trial — No Credit Card Required</h3>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">Get full access to all features for 3 days, completely free.</p>
+            <button
+              onClick={handleFreeTrialClick}
+              className="px-8 py-3 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90"
+              style={{ background: '#f5820d' }}>
+              Start Your Free Trial Now
+            </button>
           </div>
-          <p className="text-sm text-gray-600 mb-4">Get full access to Professional plan features for 7 days, completely free.</p>
-          <button
-            onClick={() => handlePlanClick('Free Trial')}
-            className="px-8 py-3 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90"
-            style={{ background: '#f5820d' }}>
-            Start Your Free Trial Now
-          </button>
-        </div>
+        )}
 
         {/* Trust badges */}
         <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -238,6 +294,20 @@ export function Pricing() {
           </div>
         </div>
       </div>
+
+      {/* State Selection Modal */}
+      <StateSelectionModal
+        isOpen={showStateModal}
+        onClose={() => setShowStateModal(false)}
+        onConfirm={handleStateConfirm}
+      />
+
+      {/* Free Trial Popup */}
+      <FreeTrialPopup
+        isOpen={showTrialPopup}
+        onClose={handleTrialPopupClose}
+        trialEndDate={trialEndDate || undefined}
+      />
     </div>
   );
 }

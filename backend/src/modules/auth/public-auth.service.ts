@@ -32,7 +32,7 @@ export class PublicAuthService {
         // Hash password
         const passwordHash = await bcrypt.hash(password, 10);
 
-        // Create customer
+        // Create customer (no auto trial - user must activate via Start Free Trial button)
         const customer = await this.prisma.customer.create({
             data: {
                 email,
@@ -129,6 +129,8 @@ export class PublicAuthService {
                 company: customer.company,
                 subscriptionActive: customer.subscriptionActive,
                 planType: customer.planType,
+                freeTrialUsed: customer.freeTrialUsed,
+                freeTrialActive: customer.freeTrialActive,
             },
             ...tokens,
         };
@@ -287,6 +289,66 @@ export class PublicAuthService {
         });
 
         return { message: 'Password changed successfully' };
+    }
+
+    async activateFreeTrial(customerId: string, state: string) {
+        const customer = await this.prisma.customer.findUnique({
+            where: { id: customerId },
+        });
+
+        if (!customer) {
+            throw new BadRequestException('Customer not found');
+        }
+
+        if (customer.freeTrialUsed) {
+            throw new BadRequestException('Free trial has already been used');
+        }
+
+        if (customer.freeTrialActive) {
+            throw new BadRequestException('Free trial is already active');
+        }
+
+        // Set 3-day trial
+        const now = new Date();
+        const trialEndDate = new Date(now);
+        trialEndDate.setDate(trialEndDate.getDate() + 3);
+
+        // Update customer with trial activation
+        const updatedCustomer = await this.prisma.customer.update({
+            where: { id: customerId },
+            data: {
+                freeTrialUsed: true,
+                freeTrialActive: true,
+                freeTrialStartDate: now,
+                freeTrialEndDate: trialEndDate,
+                subscriptionActive: true,
+                subscriptionStartDate: now,
+                subscriptionEndDate: trialEndDate,
+                planType: 'FREE_TRIAL',
+                statePreferences: [state],
+            },
+        });
+
+        // Create tender subscription for the selected state
+        await this.prisma.tenderSubscription.create({
+            data: {
+                customerId,
+                states: [state],
+                categories: [],
+                isActive: true,
+                startDate: now,
+                endDate: trialEndDate,
+                durationMonths: 0,
+            },
+        });
+
+        this.logger.log(`Free trial activated for ${customer.email} with state: ${state}`);
+
+        return {
+            message: 'Free trial activated successfully',
+            trialEndDate,
+            state,
+        };
     }
 
     private async generateTokens(customerId: string, email: string) {

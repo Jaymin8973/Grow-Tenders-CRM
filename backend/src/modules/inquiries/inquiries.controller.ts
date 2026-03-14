@@ -8,6 +8,7 @@ import {
     UseGuards,
     Body,
     NotFoundException,
+    Delete,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
@@ -49,6 +50,34 @@ export class InquiriesController {
     @ApiOperation({ summary: 'Super Admin: Bulk assign inquiries to employee' })
     async bulkAssign(@Body() dto: BulkAssignInquiriesDto) {
         return this.inquiriesService.bulkAssignInquiries(dto.inquiryIds, dto.assigneeId);
+    }
+
+    @Post(':id/convert-to-lead')
+    @Roles(Role.SUPER_ADMIN)
+    @ApiOperation({ summary: 'Super Admin: Convert inquiry to lead (deletes inquiry after conversion)' })
+    async convertToLead(
+        @Param('id') id: string,
+        @Body() body: { assigneeId?: string },
+    ) {
+        const lead = await this.inquiriesService.convertToLead(id, body.assigneeId);
+        if (!lead) {
+            throw new NotFoundException('Inquiry not found');
+        }
+        return lead;
+    }
+
+    @Delete(':id')
+    @Roles(Role.SUPER_ADMIN, Role.EMPLOYEE)
+    @ApiOperation({ summary: 'Delete inquiry (Employee can only delete assigned to them)' })
+    async delete(
+        @Param('id') id: string,
+        @CurrentUser() user: any,
+    ) {
+        const deleted = await this.inquiriesService.deleteInquiry(id, user);
+        if (!deleted) {
+            throw new NotFoundException('Inquiry not found or not authorized');
+        }
+        return { message: 'Inquiry deleted successfully' };
     }
 
     @Patch(':id/assign')

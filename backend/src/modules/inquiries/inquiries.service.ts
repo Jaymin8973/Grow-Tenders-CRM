@@ -119,4 +119,64 @@ export class InquiriesService {
             message: `Assigned ${result?.count || 0} inquiry(s) successfully`,
         };
     }
+
+    async convertToLead(inquiryId: string, assigneeId?: string) {
+        // Get the inquiry
+        const inquiry = await (this.prisma as any).inquiry.findUnique({
+            where: { id: inquiryId },
+        });
+
+        if (!inquiry) {
+            return null;
+        }
+
+        // Split name into first and last name
+        const nameParts = (inquiry.name || '').trim().split(/\s+/);
+        const firstName = nameParts[0] || 'Unknown';
+        const lastName = nameParts.slice(1).join(' ') || '';
+
+        // Create lead with COLD status
+        const lead = await this.prisma.lead.create({
+            data: {
+                title: `Lead from Inquiry: ${inquiry.subject}`,
+                firstName,
+                lastName,
+                email: inquiry.email,
+                mobile: inquiry.phone || undefined,
+                company: inquiry.type || undefined,
+                description: `${inquiry.subject}\n\n${inquiry.message}`,
+                status: 'COLD_LEAD' as any,
+                source: 'WEBSITE' as any,
+                assigneeId: assigneeId || inquiry.assigneeId || undefined,
+            },
+        });
+
+        // Delete the inquiry after successful conversion
+        await (this.prisma as any).inquiry.delete({
+            where: { id: inquiryId },
+        });
+
+        return lead;
+    }
+
+    async deleteInquiry(inquiryId: string, user: any) {
+        const inquiry = await (this.prisma as any).inquiry.findUnique({
+            where: { id: inquiryId },
+        });
+
+        if (!inquiry) {
+            return null;
+        }
+
+        // Employee can only delete inquiry assigned to them
+        if (user.role === Role.EMPLOYEE && inquiry.assigneeId !== user.id) {
+            return null;
+        }
+
+        await (this.prisma as any).inquiry.delete({
+            where: { id: inquiryId },
+        });
+
+        return true;
+    }
 }

@@ -111,4 +111,12 @@ export class CustomersController {
     delete(@Param('id') id: string, @CurrentUser() user: any) {
         return this.customersService.delete(id, user);
     }
+
+    @Post(':id/activate-free-trial')
+    @ApiOperation({ summary: 'Activate 3-day free trial for customer' })
+    @ApiResponse({ status: 200, description: 'Free trial activated successfully' })
+    @ApiResponse({ status: 400, description: 'Free trial already used or active' })
+    activateFreeTrial(@Param('id') id: string, @CurrentUser() user: any) {
+        return this.customersService.activateFreeTrial(id, user);
+    }
 }

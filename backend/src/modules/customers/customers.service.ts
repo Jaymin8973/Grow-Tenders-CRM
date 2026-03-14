@@ -337,6 +337,54 @@ export class CustomersService {
         return { message: 'Customer deleted successfully' };
     }
 
+    async activateFreeTrial(customerId: string, user: UserContext) {
+        const customer = await this.prisma.customer.findUnique({
+            where: { id: customerId },
+        });
+
+        if (!customer) {
+            throw new NotFoundException('Customer not found');
+        }
+
+        if (customer.freeTrialUsed) {
+            throw new BadRequestException('Free trial has already been used for this customer');
+        }
+
+        if (customer.freeTrialActive) {
+            throw new BadRequestException('Free trial is already active for this customer');
+        }
+
+        // Set 3-day trial
+        const now = new Date();
+        const trialEndDate = new Date(now);
+        trialEndDate.setDate(trialEndDate.getDate() + 3);
+
+        const updated = await this.prisma.customer.update({
+            where: { id: customerId },
+            data: {
+                freeTrialUsed: true,
+                freeTrialActive: true,
+                freeTrialStartDate: now,
+                freeTrialEndDate: trialEndDate,
+                subscriptionActive: true,
+                subscriptionStartDate: now,
+                subscriptionEndDate: trialEndDate,
+                planType: 'FREE_TRIAL',
+            },
+            include: {
+                assignee: {
+                    select: { id: true, firstName: true, lastName: true, email: true },
+                },
+            },
+        });
+
+        return {
+            message: 'Free trial activated successfully',
+            trialEndDate,
+            customer: updated,
+        };
+    }
+
     async getCustomerStats(user: UserContext) {
         let where: any = {};
 

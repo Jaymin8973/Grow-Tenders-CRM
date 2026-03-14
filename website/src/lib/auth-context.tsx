@@ -15,6 +15,9 @@ export interface Customer {
   state?: string;
   subscriptionActive: boolean;
   planType?: string;
+  freeTrialUsed?: boolean;
+  freeTrialActive?: boolean;
+  freeTrialEndDate?: string;
 }
 
 interface AuthContextType {

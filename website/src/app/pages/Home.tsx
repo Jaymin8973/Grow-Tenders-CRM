@@ -7,6 +7,11 @@ import {
 import { useTenders, useStats } from '../../lib/hooks';
 import { Tender, formatCurrency, daysRemaining, formatDate } from '../../lib/api';
 import { TenderCard } from '../components/TenderCard';
+import { StateSelectionModal } from '../components/StateSelectionModal';
+import { FreeTrialPopup } from '../components/FreeTrialPopup';
+import { useAuth } from '../../lib/auth-context';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 const heroImage = 'https://images.unsplash.com/photo-1614610741015-55914090378e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxnb3Zlcm5tZW50JTIwcHJvY3VyZW1lbnQlMjB0ZW5kZXIlMjBidXNpbmVzc3xlbnwxfHx8fDE3NzI0NjEyMjV8MA&ixlib=rb-4.1.0&q=80&w=1080';
 const teamImage = 'https://images.unsplash.com/photo-1758876203342-fc14c0bba67c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxvZmZpY2UlMjB0ZWFtJTIwd29ya2luZyUyMGxhcHRvcCUyMGRvY3VtZW50c3xlbnwxfHx8fDE3NzI0NjEyMzV8MA&ixlib=rb-4.1.0&q=80&w=1080';
@@ -56,7 +61,14 @@ const features = [
 
 export function Home() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [showStateModal, setShowStateModal] = useState(false);
+  const [showTrialPopup, setShowTrialPopup] = useState(false);
+  const [trialEndDate, setTrialEndDate] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { isAuthenticated, customer } = useAuth();
+
+  // Check if user can see free trial button
+  const canShowFreeTrial = !isAuthenticated || (!customer?.freeTrialUsed && !customer?.freeTrialActive);
 
   // Fetch tenders from API
   const { data: tenders, loading: tendersLoading, error: tendersError } = useTenders({ limit: 20 });
@@ -82,6 +94,46 @@ export function Home() {
     } else {
       navigate('/tenders');
     }
+  };
+
+  const handleFreeTrialClick = () => {
+    if (!isAuthenticated) {
+      navigate('/register');
+      return;
+    }
+    setShowStateModal(true);
+  };
+
+  const handleStateConfirm = async (state: string) => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+
+    const response = await fetch(`${API_URL}/public/auth/activate-trial`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ state }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to activate trial');
+    }
+
+    setShowStateModal(false);
+    setTrialEndDate(data.trialEndDate);
+    setShowTrialPopup(true);
+  };
+
+  const handleTrialPopupClose = () => {
+    setShowTrialPopup(false);
+    navigate('/tenders');
   };
 
   return (
@@ -304,43 +356,60 @@ export function Home() {
       </section>
 
       {/* ── Pricing Teaser ── */}
-      <section className="max-w-7xl mx-auto px-4 py-14">
-        <div className="rounded-2xl overflow-hidden shadow-xl"
-          style={{ background: 'linear-gradient(135deg, #1a4f72, #0f3349)' }}>
-          <div className="p-10 text-center">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-4"
-              style={{ background: 'rgba(245,130,13,0.2)', border: '1px solid rgba(245,130,13,0.4)' }}>
-              <Zap size={13} style={{ color: '#f5820d' }} />
-              <span className="text-xs text-orange-300">Limited Time Offer</span>
-            </div>
-            <h2 className="text-2xl font-bold text-white mb-3">
-              Start with <span style={{ color: '#f5820d' }}>7-Day Free Trial</span>
-            </h2>
-            <p className="text-blue-300 mb-6 max-w-xl mx-auto">
-              Get full access to all GeM tenders, unlimited searches, email alerts, and expert support — no credit card required.
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-4 mb-6">
-              {['Unlimited Search', 'Email Alerts', 'Bid Documents', 'Expert Support', 'Mobile App'].map((feat) => (
-                <div key={feat} className="flex items-center gap-1.5 text-sm text-blue-200">
-                  <CheckCircle size={14} style={{ color: '#f5820d' }} />
-                  {feat}
-                </div>
-              ))}
-            </div>
-            <div className="flex flex-wrap items-center justify-center gap-4">
-              <Link to="/pricing"
-                className="px-8 py-3 rounded-lg font-semibold text-sm transition-all hover:scale-105"
-                style={{ background: '#f5820d', color: 'white' }}>
-                Start Free Trial Now
-              </Link>
-              <Link to="/pricing"
-                className="px-8 py-3 rounded-lg font-semibold text-sm text-white border border-white/30 hover:bg-white/10 transition-colors">
-                View Plans
-              </Link>
+      {canShowFreeTrial && (
+        <section className="max-w-7xl mx-auto px-4 py-14">
+          <div className="rounded-2xl overflow-hidden shadow-xl"
+            style={{ background: 'linear-gradient(135deg, #1a4f72, #0f3349)' }}>
+            <div className="p-10 text-center">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-4"
+                style={{ background: 'rgba(245,130,13,0.2)', border: '1px solid rgba(245,130,13,0.4)' }}>
+                <Zap size={13} style={{ color: '#f5820d' }} />
+                <span className="text-xs text-orange-300">Limited Time Offer</span>
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-3">
+                Start with <span style={{ color: '#f5820d' }}>3-Day Free Trial</span>
+              </h2>
+              <p className="text-blue-300 mb-6 max-w-xl mx-auto">
+                Get full access to all GeM tenders, unlimited searches, email alerts, and expert support — no credit card required.
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-4 mb-6">
+                {['Unlimited Search', 'Email Alerts', 'Bid Documents'].map((feat) => (
+                  <div key={feat} className="flex items-center gap-1.5 text-sm text-blue-200">
+                    <CheckCircle size={14} style={{ color: '#f5820d' }} />
+                    {feat}
+                  </div>
+                ))}
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-4">
+                <button
+                  onClick={handleFreeTrialClick}
+                  className="px-8 py-3 rounded-lg font-semibold text-sm transition-all hover:scale-105"
+                  style={{ background: '#f5820d', color: 'white' }}>
+                  Start Free Trial Now
+                </button>
+                <Link to="/pricing"
+                  className="px-8 py-3 rounded-lg font-semibold text-sm text-white border border-white/30 hover:bg-white/10 transition-colors">
+                  View Plans
+                </Link>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
+
+      {/* State Selection Modal */}
+      <StateSelectionModal
+        isOpen={showStateModal}
+        onClose={() => setShowStateModal(false)}
+        onConfirm={handleStateConfirm}
+      />
+
+      {/* Free Trial Popup */}
+      <FreeTrialPopup
+        isOpen={showTrialPopup}
+        onClose={handleTrialPopupClose}
+        trialEndDate={trialEndDate || undefined}
+      />
     </div>
   );
 }
