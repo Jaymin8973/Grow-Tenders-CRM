@@ -136,7 +136,7 @@ docker compose up -d --force-recreate
 ssh root@<your-vps-ip>
 
 # 2. Navigate to project
-cd /opt/grow-tender
+   cd /opt/grow-tender
 
 # 3. Pull latest code
 git pull origin main
@@ -224,7 +224,7 @@ docker compose exec nginx ping backend
    docker compose up -d --force-recreate backend
    ```
 
-3. Restart nginx to reconnect:
+3. Restart nginx to reconnxect:
    ```bash
    docker compose restart nginx
    ```
