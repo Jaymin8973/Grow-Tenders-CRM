@@ -459,7 +459,7 @@ export default function TargetsPage() {
                                 type="month"
                                 value={month}
                                 onChange={(e) => setMonth(e.target.value)}
-                                className="w-[150px]"
+                                className="w-[150px] [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
                             />
                             <Button
                                 type="button"

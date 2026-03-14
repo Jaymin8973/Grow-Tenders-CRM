@@ -97,14 +97,37 @@ export class ScrapedTendersService {
             where.city = { contains: filters.city, mode: 'insensitive' };
         }
         if (filters?.category) {
-            where.categoryName = { contains: filters.category, mode: 'insensitive' };
+            const escapeRegex = (input: string) => input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+            const category = filters.category.trim();
+            if (category) {
+                where.categoryName = { contains: escapeRegex(category), mode: 'insensitive' };
+            }
         }
         if (filters?.search) {
+            const escapeRegex = (input: string) => input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+            const rawSearch = filters.search.trim();
+            const escapedSearch = escapeRegex(rawSearch);
+            const relaxedSearch = rawSearch
+                .replace(/[()\[\]{}.+*?^$|\\]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+            const escapedRelaxedSearch = relaxedSearch ? escapeRegex(relaxedSearch) : '';
+
             where.OR = [
-                { referenceId: { contains: filters.search, mode: 'insensitive' } },
-                { title: { contains: filters.search, mode: 'insensitive' } },
-                { description: { contains: filters.search, mode: 'insensitive' } },
+                { referenceId: { contains: escapedSearch, mode: 'insensitive' } },
+                { title: { contains: escapedSearch, mode: 'insensitive' } },
+                { description: { contains: escapedSearch, mode: 'insensitive' } },
             ];
+
+            if (escapedRelaxedSearch && relaxedSearch !== rawSearch) {
+                where.OR.push(
+                    { referenceId: { contains: escapedRelaxedSearch, mode: 'insensitive' } },
+                    { title: { contains: escapedRelaxedSearch, mode: 'insensitive' } },
+                    { description: { contains: escapedRelaxedSearch, mode: 'insensitive' } },
+                );
+            }
         }
 
         const buildDateRange = (from?: string, to?: string) => {
