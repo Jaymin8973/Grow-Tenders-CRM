@@ -47,6 +47,8 @@ FROM deps AS build
 COPY . .
 RUN npx prisma generate
 RUN npm run build
+# Install Chrome for Puppeteer
+RUN npx puppeteer browsers install chrome --path /root/.cache/puppeteer
 
 FROM base AS runner
 ENV NODE_ENV=production
@@ -56,6 +58,8 @@ COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/package.json ./package.json
+# Copy Chrome for Puppeteer
+COPY --from=build /root/.cache/puppeteer /root/.cache/puppeteer
 
 EXPOSE 3001
 CMD ["node", "dist/main"]
