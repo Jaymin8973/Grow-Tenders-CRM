@@ -130,6 +130,11 @@ export class TargetsService {
         const firstDayOfMonth = new Date(month.getFullYear(), month.getMonth(), 1);
         const lastDayOfMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0);
 
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { id: true, role: true },
+        });
+
         // 1. Get Target
         const target = await this.prisma.target.findUnique({
             where: {
@@ -145,9 +150,18 @@ export class TargetsService {
         // 2. Calculate Achieved (Sum of Payments created by this user in this month)
         // Note: Adjust logic if payments are attributed differently (e.g. by Lead assignee)
         // Assuming 'createdById' tracks the employee who closed the deal/collected payment
+        const createdByIds = [userId];
+        if (user?.role === 'MANAGER') {
+            const teamMembers = await this.prisma.user.findMany({
+                where: { managerId: userId },
+                select: { id: true },
+            });
+            createdByIds.push(...teamMembers.map((m) => m.id));
+        }
+
         const payments = await this.prisma.payment.aggregate({
             where: {
-                createdById: userId,
+                createdById: { in: createdByIds },
                 paymentDate: {
                     gte: firstDayOfMonth,
                     lte: lastDayOfMonth,

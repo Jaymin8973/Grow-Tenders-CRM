@@ -87,10 +87,14 @@ export default function TeamsPage() {
         const managersMap = new Map<string, any>();
 
         const targetByUserId = new Map<string, number>();
+        const achievedByUserId = new Map<string, number>();
         (targets || []).forEach((t: any) => {
             if (t?.userId) {
                 const prev = targetByUserId.get(t.userId) || 0;
                 targetByUserId.set(t.userId, prev + Number(t.amount || 0));
+
+                const prevAchieved = achievedByUserId.get(t.userId) || 0;
+                achievedByUserId.set(t.userId, prevAchieved + Number(t.achieved || 0));
             }
         });
 
@@ -121,7 +125,7 @@ export default function TeamsPage() {
                 };
 
                 const assignedTarget = targetByUserId.get(u.id) || 0;
-                const achievedTarget = Number(stats.revenue || 0);
+                const achievedTarget = achievedByUserId.get(u.id) || 0;
                 const pendingTarget = Math.max(assignedTarget - achievedTarget, 0);
 
                 const employeeWithStats = {
@@ -137,7 +141,7 @@ export default function TeamsPage() {
                 if (u.managerId && managersMap.has(u.managerId)) {
                     const manager = managersMap.get(u.managerId);
                     manager.team.push(employeeWithStats);
-                    manager.totalRevenue += Number(stats.revenue || 0);
+                    manager.totalRevenue += Number(achievedTarget || 0);
                     manager.totalAssignedTarget += Number(assignedTarget || 0);
                     manager.totalPendingTarget += Number(pendingTarget || 0);
                     manager.totalLeadsConverted += Number(stats.leadsConverted || 0);
