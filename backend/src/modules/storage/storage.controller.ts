@@ -1,5 +1,6 @@
-import { Controller, Get, Post, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { Controller, Get, Post, Delete, Body, Param, Query, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { StorageService } from './storage.service';
 import { JwtAuthGuard } from '../../common/guards';
 
@@ -10,16 +11,20 @@ import { JwtAuthGuard } from '../../common/guards';
 export class StorageController {
     constructor(private readonly storageService: StorageService) { }
 
-    @Post('upload-url')
-    @ApiOperation({ summary: 'Get signed upload URL' })
-    getUploadUrl(@Body() body: { filename: string; contentType: string }) {
-        return this.storageService.getUploadUrl(body.filename, body.contentType);
-    }
-
-    @Get('download-url')
-    @ApiOperation({ summary: 'Get signed download URL' })
-    getDownloadUrl(@Query('key') key: string) {
-        return this.storageService.getDownloadUrl(key);
+    @Post('upload')
+    @ApiOperation({ summary: 'Upload a file' })
+    @ApiConsumes('multipart/form-data')
+    @ApiBody({
+        schema: {
+            type: 'object',
+            properties: {
+                file: { type: 'string', format: 'binary' },
+            },
+        },
+    })
+    @UseInterceptors(FileInterceptor('file'))
+    async uploadFile(@UploadedFile() file: Express.Multer.File) {
+        return this.storageService.uploadFile(file);
     }
 
     @Post('attachments')

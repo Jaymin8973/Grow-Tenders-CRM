@@ -1,61 +1,60 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { PrismaService } from '../../prisma/prisma.service';
 import { randomUUID } from 'crypto';
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import { createWriteStream, existsSync, mkdirSync } from 'fs';
 
 @Injectable()
 export class StorageService {
     private readonly logger = new Logger(StorageService.name);
-    private s3Client: S3Client;
-    private bucket: string;
+    private uploadDir: string;
 
     constructor(
         private configService: ConfigService,
         private prisma: PrismaService,
     ) {
-        this.bucket = this.configService.get<string>('AWS_S3_BUCKET') || 'sales-crm-uploads';
-
-        this.s3Client = new S3Client({
-            region: this.configService.get<string>('AWS_REGION') || 'us-east-1',
-            credentials: {
-                accessKeyId: this.configService.get<string>('AWS_ACCESS_KEY_ID') || '',
-                secretAccessKey: this.configService.get<string>('AWS_SECRET_ACCESS_KEY') || '',
-            },
-        });
+        this.uploadDir = this.configService.get<string>('UPLOAD_DIR') || '/app/uploads';
+        
+        // Ensure upload directory exists
+        if (!existsSync(this.uploadDir)) {
+            mkdirSync(this.uploadDir, { recursive: true });
+        }
     }
 
-    async getUploadUrl(filename: string, contentType: string): Promise<{ uploadUrl: string; key: string }> {
-        const key = `uploads/${randomUUID()}/${filename}`;
+    async uploadFile(file: Express.Multer.File): Promise<{ key: string; url: string }> {
+        const ext = path.extname(file.originalname);
+        const key = `${randomUUID()}${ext}`;
+        const filePath = path.join(this.uploadDir, key);
 
-        const command = new PutObjectCommand({
-            Bucket: this.bucket,
-            Key: key,
-            ContentType: contentType,
-        });
+        await fs.writeFile(filePath, file.buffer);
 
-        const uploadUrl = await getSignedUrl(this.s3Client, command, { expiresIn: 3600 });
+        const baseUrl = this.configService.get<string>('BASE_URL') || 'http://localhost:3001';
+        const url = `${baseUrl}/uploads/${key}`;
 
-        return { uploadUrl, key };
+        return { key, url };
     }
 
-    async getDownloadUrl(key: string): Promise<string> {
-        const command = new GetObjectCommand({
-            Bucket: this.bucket,
-            Key: key,
-        });
-
-        return getSignedUrl(this.s3Client, command, { expiresIn: 3600 });
+    async getFilePath(key: string): Promise<string> {
+        const filePath = path.join(this.uploadDir, key);
+        
+        try {
+            await fs.access(filePath);
+            return filePath;
+        } catch {
+            throw new NotFoundException(`File not found: ${key}`);
+        }
     }
 
     async deleteFile(key: string): Promise<void> {
-        const command = new DeleteObjectCommand({
-            Bucket: this.bucket,
-            Key: key,
-        });
-
-        await this.s3Client.send(command);
+        const filePath = path.join(this.uploadDir, key);
+        
+        try {
+            await fs.unlink(filePath);
+        } catch (error) {
+            this.logger.warn(`Failed to delete file ${key}: ${error.message}`);
+        }
     }
 
     async createAttachment(data: {
