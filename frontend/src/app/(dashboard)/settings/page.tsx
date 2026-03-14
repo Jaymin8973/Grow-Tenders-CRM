@@ -43,6 +43,7 @@ export default function SettingsPage() {
         | 'dailyReports'
         | 'scrapedTenders'
         | 'leaderboard'
+        | 'inquiries'
         | 'payments'
         | 'invoices'
         | 'transferRequests'
