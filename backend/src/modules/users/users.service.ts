@@ -17,8 +17,14 @@ export class UsersService {
     }
 
     async create(createUserDto: CreateUserDto) {
-        const existingUser = await this.prisma.user.findUnique({
-            where: { email: createUserDto.email },
+        const email = createUserDto.email.trim().toLowerCase();
+        const existingUser = await this.prisma.user.findFirst({
+            where: {
+                email: {
+                    equals: email,
+                    mode: 'insensitive',
+                },
+            },
         });
 
         if (existingUser) {
@@ -31,6 +37,7 @@ export class UsersService {
             const user = await this.prisma.user.create({
                 data: {
                     ...createUserDto,
+                    email,
                     password: hashedPassword,
                 },
                 select: {
@@ -208,9 +215,16 @@ export class UsersService {
             throw new NotFoundException('User not found');
         }
 
-        if (updateUserDto.email && updateUserDto.email !== user.email) {
-            const existingUser = await this.prisma.user.findUnique({
-                where: { email: updateUserDto.email },
+        const nextEmail = updateUserDto.email ? updateUserDto.email.trim().toLowerCase() : undefined;
+
+        if (nextEmail && nextEmail !== user.email) {
+            const existingUser = await this.prisma.user.findFirst({
+                where: {
+                    email: {
+                        equals: nextEmail,
+                        mode: 'insensitive',
+                    },
+                },
             });
             if (existingUser) {
                 throw new ConflictException('Email already exists');
@@ -218,6 +232,9 @@ export class UsersService {
         }
 
         const data: any = { ...updateUserDto };
+        if (nextEmail) {
+            data.email = nextEmail;
+        }
         if (updateUserDto.password) {
             data.password = await bcrypt.hash(updateUserDto.password, 10);
         }

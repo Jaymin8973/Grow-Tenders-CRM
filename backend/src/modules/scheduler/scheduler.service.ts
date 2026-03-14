@@ -205,7 +205,7 @@ export class SchedulerService {
                         <div class="email-container" style="max-width: 600px; margin: 0 auto; padding: 15px;">
                             <!-- Header -->
                             <div style="background: linear-gradient(135deg, #1a4f72 0%, #2563eb 100%); padding: 20px; border-radius: 12px 12px 0 0; text-align: center;">
-                                <h1 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 600;">≡ƒöö New Tender Alert</h1>
+                                <h1 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 600;"> New Tender Alert</h1>
                                 <p style="color: #e0e7ff; margin: 8px 0 0 0; font-size: 13px;">Grow Tender - Your Gateway to Government Contracts</p>
                             </div>
                             
@@ -326,7 +326,7 @@ export class SchedulerService {
         this.logger.log(`Sending test email to ${to}`);
         await this.emailService.sendEmail({
             to,
-            subject: '≡ƒöö Test Tender Alert - Grow Tender',
+            subject: 'Test Tender Alert - Grow Tender',
             html,
         });
         this.logger.log(`Test email sent successfully to ${to}`);
