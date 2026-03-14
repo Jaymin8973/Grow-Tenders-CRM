@@ -15,11 +15,24 @@ export class StorageService {
         private configService: ConfigService,
         private prisma: PrismaService,
     ) {
-        this.uploadDir = this.configService.get<string>('UPLOAD_DIR') || '/app/uploads';
+        // Use /tmp for cloud platforms (Render, etc.) or relative path for local
+        const defaultDir = process.env.NODE_ENV === 'production' 
+            ? '/tmp/uploads' 
+            : './uploads';
+        this.uploadDir = this.configService.get<string>('UPLOAD_DIR') || defaultDir;
         
         // Ensure upload directory exists
-        if (!existsSync(this.uploadDir)) {
-            mkdirSync(this.uploadDir, { recursive: true });
+        try {
+            if (!existsSync(this.uploadDir)) {
+                mkdirSync(this.uploadDir, { recursive: true });
+            }
+        } catch (error) {
+            this.logger.warn(`Could not create upload directory: ${error.message}`);
+            // Fallback to /tmp if primary fails
+            this.uploadDir = '/tmp/uploads';
+            if (!existsSync(this.uploadDir)) {
+                mkdirSync(this.uploadDir, { recursive: true });
+            }
         }
     }
 
