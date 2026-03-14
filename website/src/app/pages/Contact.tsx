@@ -1,15 +1,26 @@
 import { useState } from 'react';
 import { Phone, Mail, MapPin, Clock, Send, MessageCircle, CheckCircle } from 'lucide-react';
+import { useSearchParams } from 'react-router';
 import { api } from '../../lib/api';
 
 export function Contact() {
+  const [searchParams] = useSearchParams();
+  const planFromUrl = searchParams.get('plan');
+
   const contactPhone = import.meta.env.VITE_CONTACT_PHONE || '+91 98765 43210';
   const contactPhoneAlt = import.meta.env.VITE_CONTACT_PHONE_ALT || '+91 87654 32109';
   const contactEmail = import.meta.env.VITE_CONTACT_EMAIL || 'support@growtender.in';
   const contactSalesEmail = import.meta.env.VITE_CONTACT_SALES_EMAIL || 'sales@growtender.in';
   const whatsappLink = import.meta.env.VITE_WHATSAPP_LINK || 'https://wa.me/9106130870?text=Hi%2C%20I%20need%20help%20with%20GeM%20Tender%20services.%20Please%20assist%20me.';
 
-  const [form, setForm] = useState({ name: '', email: '', phone: '', subject: '', message: '', type: 'General Inquiry' });
+  const [form, setForm] = useState({ 
+    name: '', 
+    email: '', 
+    phone: '', 
+    subject: planFromUrl ? `Inquiry for ${planFromUrl} Plan` : '', 
+    message: planFromUrl ? `Hi, I am interested in the ${planFromUrl} plan. Please share more details.` : '', 
+    type: planFromUrl ? 'Sales Inquiry' : 'General Inquiry' 
+  });
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);

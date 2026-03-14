@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { useEffect } from 'react';
 import { Check, X, Zap, Star, Crown, Shield, Bell, Search, FileText, Phone, ChevronDown, ChevronUp, Mail, MapPin, Upload, FileCheck } from 'lucide-react';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 
 const plans = [
   {
@@ -94,6 +95,10 @@ const faqs = [
 export function Pricing() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
+  const handlePlanClick = (planName: string) => {
+    window.location.href = `/contact?plan=${encodeURIComponent(planName)}`;
+  };
+
   return (
     <div style={{ background: '#f8fafc' }} className="min-h-screen">
       {/* Header */}
@@ -149,6 +154,7 @@ export function Pricing() {
                   )}
                 </div>
                 <button
+                  onClick={() => handlePlanClick(plan.name)}
                   className="w-full py-3 rounded-xl text-sm font-semibold mb-5 transition-opacity hover:opacity-90"
                   style={plan.popular
                     ? { background: '#f5820d', color: 'white' }
@@ -182,6 +188,7 @@ export function Pricing() {
           </div>
           <p className="text-sm text-gray-600 mb-4">Get full access to Professional plan features for 7 days, completely free.</p>
           <button
+            onClick={() => handlePlanClick('Free Trial')}
             className="px-8 py-3 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90"
             style={{ background: '#f5820d' }}>
             Start Your Free Trial Now
