@@ -5,6 +5,8 @@ RUN npm ci
 
 FROM deps AS build
 COPY . .
+COPY .env.production .env.production
+ENV NODE_ENV=production
 RUN npm run build
 
 FROM node:20-bookworm-slim AS runner
