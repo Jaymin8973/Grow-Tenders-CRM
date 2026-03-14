@@ -52,21 +52,19 @@ type NavItem = {
 };
 
 const navigation: NavItem[] = [
-    { name: 'Today Tasks', href: '/today', icon: CalendarDays, roles: ['EMPLOYEE'], screenKey: 'today' },
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, screenKey: 'dashboard' },
+    { name: 'Leaderboard', href: '/leaderboard', icon: Trophy, screenKey: 'leaderboard' },
+    { name: 'Today Tasks', href: '/today', icon: CalendarDays, roles: ['EMPLOYEE'], screenKey: 'today' },
     { name: 'Leads', href: '/leads', icon: UserPlus, screenKey: 'leads' },
-    { name: 'Customers', href: '/customers', icon: Users, screenKey: 'customers' },
-
-    { name: 'Inquiries', href: '/inquiries', icon: MessageSquare, roles: ['EMPLOYEE'], screenKey: 'inquiries' },
+    { name: 'Customers', href: '/customers', icon: Users, roles: ['SUPER_ADMIN', 'MANAGER'], screenKey: 'customers' },
 
     { name: 'Teams', href: '/teams', icon: Users, roles: ['SUPER_ADMIN', 'MANAGER'], screenKey: 'teams' },
     { name: 'Daily Reports', href: '/daily-reports', icon: BarChart3, screenKey: 'dailyReports' },
     { name: 'GeM Tenders', href: '/scraped-tenders', icon: FileSearch, screenKey: 'scrapedTenders' },
-    { name: 'Leaderboard', href: '/leaderboard', icon: Trophy, screenKey: 'leaderboard' },
+    { name: 'Inquiries', href: '/inquiries', icon: MessageSquare, screenKey: 'inquiries' },
 ];
 
 const adminNav: NavItem[] = [
-    { name: 'Inquiries', href: '/inquiries', icon: MessageSquare, roles: ['SUPER_ADMIN'], screenKey: 'inquiries' },
     { name: 'Payments', href: '/payments', icon: Wallet, roles: ['SUPER_ADMIN', 'MANAGER'], screenKey: 'payments' },
     { name: 'Invoices', href: '/invoices', icon: FileText, roles: ['SUPER_ADMIN', 'MANAGER'], screenKey: 'invoices' },
     { name: 'Transfer Requests', href: '/leads/transfer-requests', icon: UserPlus, roles: ['SUPER_ADMIN', 'MANAGER'], screenKey: 'transferRequests' },
@@ -100,17 +98,20 @@ export function Sidebar() {
     const orderedNavigation = (() => {
         if (!user) return [] as NavItem[];
 
-        if (user.role === 'EMPLOYEE') {
-            const employeeOrder: ScreenKey[] = ['dashboard', 'today', 'inquiries', 'leaderboard', 'leads', 'dailyReports', 'scrapedTenders'];
-            const employeeAllowed = new Set(employeeOrder);
-            const rank = new Map(employeeOrder.map((k, idx) => [k, idx] as const));
+        const sidebarOrder: ScreenKey[] = [
+            'dashboard',
+            'leaderboard',
+            'today',
+            'leads',
+            'dailyReports',
+            'scrapedTenders',
+            'inquiries',
+        ];
+        const rank = new Map(sidebarOrder.map((k, idx) => [k, idx] as const));
 
-            return filteredNavigation
-                .filter((item) => item.screenKey && employeeAllowed.has(item.screenKey))
-                .sort((a, b) => (rank.get(a.screenKey as ScreenKey) ?? 999) - (rank.get(b.screenKey as ScreenKey) ?? 999));
-        }
-
-        return filteredNavigation;
+        return [...filteredNavigation].sort(
+            (a, b) => (rank.get(a.screenKey as ScreenKey) ?? 999) - (rank.get(b.screenKey as ScreenKey) ?? 999)
+        );
     })();
 
     const NavLink = ({ item }: { item: NavItem }) => {
