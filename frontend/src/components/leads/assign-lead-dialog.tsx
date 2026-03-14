@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
 import { useToast } from '@/components/ui/use-toast';
 import {
@@ -10,15 +10,8 @@ import {
     DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+import { InfiniteAutocomplete } from '@/components/ui/infinite-autocomplete';
 import { Label } from '@/components/ui/label';
-import { Loader2 } from 'lucide-react';
 
 interface AssignLeadDialogProps {
     open: boolean;
@@ -36,18 +29,39 @@ export function AssignLeadDialog({
     const { toast } = useToast();
     const queryClient = useQueryClient();
     const [selectedUserId, setSelectedUserId] = useState(currentAssigneeId || '');
+    const [employeeSearch, setEmployeeSearch] = useState('');
 
-    // Fetch employees only
-    const { data: employees, isLoading } = useQuery({
-        queryKey: ['users', 'employees'],
-        queryFn: async () => {
-            const response = await apiClient.get('/users?role=EMPLOYEE'); // Assuming backend supports role filtering or we filter clientside if needed
-            // If backend doesn't support filtering, we filter here:
-            // return response.data.filter((u: any) => u.role === 'EMPLOYEE');
+    const {
+        data: employees,
+        isLoading,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+    } = useInfiniteQuery({
+        queryKey: ['users', 'employees', { search: employeeSearch }],
+        initialPageParam: 1,
+        queryFn: async ({ pageParam }) => {
+            const params = new URLSearchParams();
+            params.set('role', 'EMPLOYEE');
+            params.set('page', String(pageParam ?? 1));
+            params.set('limit', '50');
+            if (employeeSearch) params.set('search', employeeSearch);
+            const response = await apiClient.get(`/users/options?${params.toString()}`);
             return response.data;
+        },
+        getNextPageParam: (lastPage: any) => {
+            const page = Number(lastPage?.meta?.page ?? 1);
+            const totalPages = Number(lastPage?.meta?.totalPages ?? 1);
+            if (page < totalPages) return page + 1;
+            return undefined;
         },
         enabled: open,
     });
+
+    const employeeOptions =
+        employees?.pages
+            ?.flatMap((p: any) => (Array.isArray(p?.data) ? p.data : []))
+            .map((u: any) => ({ value: u.id, label: `${u.firstName} ${u.lastName}` })) || [];
 
     const assignMutation = useMutation({
         mutationFn: async (userId: string) => {
@@ -72,25 +86,20 @@ export function AssignLeadDialog({
                 <div className="grid gap-4 py-4">
                     <div className="space-y-2">
                         <Label>Select Employee</Label>
-                        <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select an employee" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {isLoading ? (
-                                    <div className="flex items-center justify-center p-2">
-                                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                        Loading...
-                                    </div>
-                                ) : (
-                                    employees?.filter((u: any) => u.role === 'EMPLOYEE').map((user: any) => (
-                                        <SelectItem key={user.id} value={user.id}>
-                                            {user.firstName} {user.lastName}
-                                        </SelectItem>
-                                    ))
-                                )}
-                            </SelectContent>
-                        </Select>
+                        <InfiniteAutocomplete
+                            value={selectedUserId}
+                            onValueChange={setSelectedUserId}
+                            placeholder="Search employee..."
+                            emptyMessage="No employees found"
+                            options={employeeOptions}
+                            loading={isLoading}
+                            showAllOption={false}
+                            hasMore={!!hasNextPage}
+                            loadingMore={isFetchingNextPage}
+                            onLoadMore={() => fetchNextPage()}
+                            searchValue={employeeSearch}
+                            onSearchChange={setEmployeeSearch}
+                        />
                     </div>
                 </div>
                 <DialogFooter>

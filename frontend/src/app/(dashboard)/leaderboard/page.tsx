@@ -18,7 +18,6 @@ import {
     Users,
     DollarSign,
     Star,
-    Activity,
     Percent,
     Flame,
 } from 'lucide-react';
@@ -127,12 +126,10 @@ export default function LeaderboardPage() {
                         {type === 'employee' ? (
                             <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-xl">
                                 <div className="flex items-center justify-center gap-1 mb-1">
-                                    <Activity className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-                                    <p className="text-[10px] text-blue-700 dark:text-blue-400 uppercase font-bold">Activities</p>
+                                    <Users className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                                    <p className="text-[10px] text-blue-700 dark:text-blue-400 uppercase font-bold">Team</p>
                                 </div>
-                                <p className="text-sm font-bold text-blue-700 dark:text-blue-400">
-                                    {formatNumber(entry.metrics?.activitiesCompleted || 0)}
-                                </p>
+                                <p className="text-sm font-bold text-blue-700 dark:text-blue-400">-</p>
                             </div>
                         ) : (
                             <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-xl">
@@ -221,8 +218,8 @@ export default function LeaderboardPage() {
                                     </div>
                                     <div className="h-10 w-px bg-white/20" />
                                     <div className="text-center">
-                                        <p className="text-xs text-white/70 uppercase font-medium">Activities</p>
-                                        <p className="text-lg font-bold">{formatNumber(myStats.metrics?.activitiesCompleted || 0)}</p>
+                                        <p className="text-xs text-white/70 uppercase font-medium">Converted</p>
+                                        <p className="text-lg font-bold">{formatNumber(myStats.metrics?.leadsConverted || 0)}</p>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -316,15 +313,15 @@ export default function LeaderboardPage() {
                                     <Flame className="h-5 w-5 text-violet-600 dark:text-violet-400" />
                                 </div>
                                 <div>
-                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Activities</p>
+                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Revenue</p>
                                     <Tooltip>
                                         <TooltipTrigger asChild>
                                             <p className="text-lg font-bold text-slate-900 dark:text-slate-100 cursor-default">
-                                                {formatNumber(globalLeaderboard?.reduce((sum: number, e: any) => sum + (e.metrics?.activitiesCompleted || 0), 0) || 0)}
+                                                {formatCurrency(globalLeaderboard?.reduce((sum: number, e: any) => sum + (e.metrics?.revenueClosed || 0), 0) || 0)}
                                             </p>
                                         </TooltipTrigger>
                                         <TooltipContent>
-                                            <p>{(globalLeaderboard?.reduce((sum: number, e: any) => sum + (e.metrics?.activitiesCompleted || 0), 0) || 0).toLocaleString('en-IN')}</p>
+                                            <p>₹{(globalLeaderboard?.reduce((sum: number, e: any) => sum + (e.metrics?.revenueClosed || 0), 0) || 0).toLocaleString('en-IN')}</p>
                                         </TooltipContent>
                                     </Tooltip>
                                 </div>
@@ -359,7 +356,7 @@ export default function LeaderboardPage() {
                                     <div className="col-span-3 py-16 text-center">
                                         <Trophy className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
                                         <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">No rankings available</h3>
-                                        <p className="text-muted-foreground text-sm mt-1">Start completing activities to appear on the leaderboard</p>
+                                        <p className="text-muted-foreground text-sm mt-1">Start converting leads to appear on the leaderboard</p>
                                     </div>
                                 )}
                             </div>

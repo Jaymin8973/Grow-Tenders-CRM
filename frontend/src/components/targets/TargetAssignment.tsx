@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
 import { getErrorMessage } from '@/lib/error-utils';
 import { useAuth } from '@/contexts/auth-context';
@@ -16,17 +16,11 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { PlusCircle, AlertCircle } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { InfiniteAutocomplete } from '@/components/ui/infinite-autocomplete';
 
 interface TargetAssignmentProps {
     /** If provided, restricts assignment to this parent target (for managers assigning to team) */
@@ -56,6 +50,7 @@ export function TargetAssignment({
     const queryClient = useQueryClient();
     const [open, setOpen] = useState(false);
     const [userId, setUserId] = useState('');
+    const [userSearch, setUserSearch] = useState('');
     const [amount, setAmount] = useState('');
     const [month, setMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
     const [error, setError] = useState<string | null>(null);
@@ -63,28 +58,52 @@ export function TargetAssignment({
     // Determine if this is Super Admin assigning to Managers
     const isSuperAdminMode = user?.role === 'SUPER_ADMIN' && !parentTargetId;
 
-    // Fetch Users based on role
-    const { data: users, isLoading: usersLoading } = useQuery({
-        queryKey: ['users', filterRole],
-        queryFn: async () => {
-            const response = await apiClient.get('/users');
-            let usersList = response.data;
-            
-            // Filter by role if specified
-            if (filterRole) {
-                usersList = usersList.filter((u: any) => u.role === filterRole);
-            }
-            
-            // If manager assigning to team, get only team members
-            if (user?.role === 'MANAGER' && filterRole === 'EMPLOYEE') {
-                const teamResponse = await apiClient.get('/targets/team-members');
-                usersList = teamResponse.data;
-            }
-            
-            return usersList;
+    const isManagerTeamMode = user?.role === 'MANAGER' && filterRole === 'EMPLOYEE';
+
+    const {
+        data: pagedUsers,
+        isLoading: usersLoading,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+    } = useInfiniteQuery({
+        queryKey: ['user-options', { role: filterRole, search: userSearch }],
+        initialPageParam: 1,
+        queryFn: async ({ pageParam }) => {
+            const params = new URLSearchParams();
+            params.set('page', String(pageParam ?? 1));
+            params.set('limit', '50');
+            if (filterRole) params.set('role', filterRole);
+            if (userSearch) params.set('search', userSearch);
+            const response = await apiClient.get(`/users/options?${params.toString()}`);
+            return response.data;
         },
-        enabled: open,
+        getNextPageParam: (lastPage: any) => {
+            const page = Number(lastPage?.meta?.page ?? 1);
+            const totalPages = Number(lastPage?.meta?.totalPages ?? 1);
+            if (page < totalPages) return page + 1;
+            return undefined;
+        },
+        enabled: open && !isManagerTeamMode,
     });
+
+    const { data: teamUsers, isLoading: teamUsersLoading } = useQuery({
+        queryKey: ['team-members', month],
+        queryFn: async () => {
+            const teamResponse = await apiClient.get('/targets/team-members');
+            return teamResponse.data;
+        },
+        enabled: open && isManagerTeamMode,
+    });
+
+    const dropdownUsers = isManagerTeamMode
+        ? (teamUsers || [])
+        : (pagedUsers?.pages?.flatMap((p: any) => (Array.isArray(p?.data) ? p.data : [])) || []);
+
+    const userOptions = dropdownUsers.map((u: any) => ({
+        value: u.id,
+        label: `${u.firstName} ${u.lastName}${u.role ? ` (${String(u.role).replace('_', ' ')})` : ''}`,
+    }));
 
     // Get manager's allocation info if assigning to team
     const { data: allocationInfo } = useQuery({
@@ -206,24 +225,20 @@ export function TargetAssignment({
                         <Label htmlFor="user">
                             {filterRole === 'MANAGER' ? 'Manager' : filterRole === 'EMPLOYEE' ? 'Team Member' : 'User'}
                         </Label>
-                        <Select value={userId} onValueChange={setUserId} disabled={usersLoading}>
-                            <SelectTrigger>
-                                <SelectValue placeholder={usersLoading ? "Loading..." : "Select user"} />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {users?.map((u: any) => (
-                                    <SelectItem key={u.id} value={u.id}>
-                                        {u.firstName} {u.lastName} 
-                                        {u.role && ` (${u.role.replace('_', ' ')})`}
-                                    </SelectItem>
-                                ))}
-                                {users?.length === 0 && (
-                                    <div className="px-2 py-4 text-center text-muted-foreground text-sm">
-                                        No users available
-                                    </div>
-                                )}
-                            </SelectContent>
-                        </Select>
+                        <InfiniteAutocomplete
+                            value={userId}
+                            onValueChange={setUserId}
+                            placeholder={usersLoading || teamUsersLoading ? 'Loading...' : 'Search user'}
+                            emptyMessage="No users found"
+                            options={userOptions}
+                            loading={usersLoading || teamUsersLoading}
+                            showAllOption={false}
+                            hasMore={!!hasNextPage}
+                            loadingMore={isFetchingNextPage}
+                            onLoadMore={() => fetchNextPage()}
+                            searchValue={userSearch}
+                            onSearchChange={setUserSearch}
+                        />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="month">Month</Label>

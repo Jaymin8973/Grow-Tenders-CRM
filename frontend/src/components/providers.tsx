@@ -7,14 +7,25 @@ import { AuthProvider } from '@/contexts/auth-context';
 export function Providers({ children }: { children: React.ReactNode }) {
     const [queryClient] = useState(
         () =>
-            new QueryClient({
-                defaultOptions: {
-                    queries: {
-                        staleTime: 60 * 1000,
-                        refetchOnWindowFocus: false,
+            (() => {
+                const qc = new QueryClient({
+                    defaultOptions: {
+                        queries: {
+                            staleTime: 0,
+                            refetchOnWindowFocus: true,
+                            refetchOnReconnect: true,
+                            refetchOnMount: 'always',
+                        },
+                        mutations: {
+                            onSuccess: async () => {
+                                await qc.invalidateQueries();
+                            },
+                        },
                     },
-                },
-            })
+                });
+
+                return qc;
+            })()
     );
 
     return (

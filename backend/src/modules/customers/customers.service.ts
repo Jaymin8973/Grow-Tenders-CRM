@@ -82,6 +82,63 @@ export class CustomersService {
         return customer;
     }
 
+    async getCustomerOptions(user: UserContext, params: { search?: string; page?: number; limit?: number }) {
+        let where: any = {};
+
+        if (user.role === Role.EMPLOYEE) {
+            where.assigneeId = user.id;
+        } else if (user.role === Role.MANAGER) {
+            const teamMembers = await this.prisma.user.findMany({
+                where: { managerId: user.id },
+                select: { id: true },
+            });
+            const teamIds = teamMembers.map(m => m.id);
+            where.assigneeId = { in: [user.id, ...teamIds] };
+        }
+
+        const page = Math.max(params.page ?? 1, 1);
+        const limit = Math.min(Math.max(params.limit ?? 50, 1), 200);
+        const skip = (page - 1) * limit;
+
+        if (params.search) {
+            where.OR = [
+                { firstName: { contains: params.search, mode: 'insensitive' } },
+                { lastName: { contains: params.search, mode: 'insensitive' } },
+                { email: { contains: params.search, mode: 'insensitive' } },
+                { company: { contains: params.search, mode: 'insensitive' } },
+                { phone: { contains: params.search, mode: 'insensitive' } },
+            ];
+        }
+
+        const [items, total] = await Promise.all([
+            this.prisma.customer.findMany({
+                where,
+                select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                    phone: true,
+                    company: true,
+                },
+                orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
+                skip,
+                take: limit,
+            }),
+            this.prisma.customer.count({ where }),
+        ]);
+
+        return {
+            data: items,
+            meta: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
+            },
+        };
+    }
+
     async findAll(user: UserContext, filters?: {
         assigneeId?: string;
         search?: string;

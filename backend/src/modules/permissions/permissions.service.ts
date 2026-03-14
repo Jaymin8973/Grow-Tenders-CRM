@@ -18,7 +18,6 @@ export type ScreenKey =
     | 'users'
     | 'targets'
     | 'scraperLogs'
-    | 'activities'
     | 'settings';
 
 export type ScreenAccessMap = Record<ScreenKey, boolean>;
@@ -40,7 +39,6 @@ function buildDefaultManagerScreens(): ScreenAccessMap {
         users: true,
         targets: true,
         scraperLogs: true,
-        activities: true,
         settings: true,
     };
 }
@@ -62,7 +60,6 @@ function buildDefaultEmployeeScreens(): ScreenAccessMap {
         users: false,
         targets: false,
         scraperLogs: false,
-        activities: false,
         settings: true,
     };
 }

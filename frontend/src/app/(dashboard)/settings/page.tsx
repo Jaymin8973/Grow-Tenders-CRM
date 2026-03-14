@@ -49,7 +49,6 @@ export default function SettingsPage() {
         | 'users'
         | 'targets'
         | 'scraperLogs'
-        | 'activities'
         | 'settings';
 
     type ScreenAccessMap = Record<ScreenKey, boolean>;
@@ -76,7 +75,6 @@ export default function SettingsPage() {
             { key: 'users', label: 'Users' },
             { key: 'targets', label: 'Targets' },
             { key: 'scraperLogs', label: 'Scraper Logs' },
-            { key: 'activities', label: 'Activities' },
             { key: 'settings', label: 'Settings' },
         ],
         [],
@@ -406,7 +404,7 @@ export default function SettingsPage() {
                                     <div>
                                         <p className="font-medium">Email Notifications</p>
                                         <p className="text-sm text-muted-foreground">
-                                            Receive email updates about your leads and activities
+                                            Receive email updates about your leads
                                         </p>
                                     </div>
                                     <Button variant="outline" disabled>

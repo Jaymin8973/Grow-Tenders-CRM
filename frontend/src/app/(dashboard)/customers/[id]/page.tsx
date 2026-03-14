@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
 import { useToast } from '@/components/ui/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -120,14 +120,36 @@ export default function CustomerDetailPage() {
         },
     });
 
-    // Fetch available categories
-    const { data: availableCategories } = useQuery({
-        queryKey: ['scraped-tenders-categories'],
-        queryFn: async () => {
-            const response = await apiClient.get('/scraped-tenders/categories');
+    const {
+        data: availableCategories,
+        isLoading: isLoadingCategories,
+        fetchNextPage: fetchNextCategoriesPage,
+        hasNextPage: hasMoreCategories,
+        isFetchingNextPage: isLoadingMoreCategories,
+    } = useInfiniteQuery({
+        queryKey: ['scraped-tenders-categories', { search: categorySearch }],
+        initialPageParam: 1,
+        queryFn: async ({ pageParam }) => {
+            const params = new URLSearchParams();
+            params.set('page', String(pageParam ?? 1));
+            params.set('limit', '100');
+            if (categorySearch) params.set('search', categorySearch);
+            const response = await apiClient.get(`/scraped-tenders/categories?${params.toString()}`);
             return response.data;
         },
+        getNextPageParam: (lastPage: any) => {
+            const page = Number(lastPage?.meta?.page ?? 1);
+            const totalPages = Number(lastPage?.meta?.totalPages ?? 1);
+            if (page < totalPages) return page + 1;
+            return undefined;
+        },
     });
+
+    const flattenedCategories: string[] =
+        availableCategories?.pages
+            ?.flatMap((p: any) => (Array.isArray(p?.data) ? p.data : []))
+            .map((c: any) => (typeof c === 'string' ? c : c?.name))
+            .filter(Boolean) || [];
 
     // Fetch available cities based on selected states
     const { data: availableCities, isLoading: isLoadingCities } = useQuery<string[]>({
@@ -632,12 +654,17 @@ export default function CustomerDetailPage() {
                                                     className="w-full pl-9 pr-4 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                                                 />
                                             </div>
-                                            <div className="border rounded-lg p-4 h-56 overflow-y-auto space-y-2">
-                                                {availableCategories
-                                                    ?.filter((category: string) => 
-                                                        category.toLowerCase().includes(categorySearch.toLowerCase())
-                                                    )
-                                                    .map((category: string) => (
+                                            <div
+                                                className="border rounded-lg p-4 h-56 overflow-y-auto space-y-2"
+                                                onScroll={(e) => {
+                                                    const el = e.currentTarget;
+                                                    const nearBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 40;
+                                                    if (nearBottom && hasMoreCategories && !isLoadingMoreCategories) {
+                                                        fetchNextCategoriesPage();
+                                                    }
+                                                }}
+                                            >
+                                                {flattenedCategories.map((category: string) => (
                                                     <div key={category} className="flex items-center space-x-2">
                                                         <input
                                                             type="checkbox"
@@ -657,16 +684,24 @@ export default function CustomerDetailPage() {
                                                         </label>
                                                     </div>
                                                 ))}
-                                                {(!availableCategories || availableCategories.length === 0) && (
+                                                {isLoadingCategories && (
+                                                    <p className="text-sm text-muted-foreground text-center py-8">
+                                                        Loading categories...
+                                                    </p>
+                                                )}
+                                                {!isLoadingCategories && flattenedCategories.length === 0 && !categorySearch && (
                                                     <p className="text-sm text-muted-foreground text-center py-8">
                                                         No categories available yet
                                                     </p>
                                                 )}
-                                                {availableCategories && availableCategories.filter((category: string) => 
-                                                    category.toLowerCase().includes(categorySearch.toLowerCase())
-                                                ).length === 0 && categorySearch && (
+                                                {!isLoadingCategories && flattenedCategories.length === 0 && categorySearch && (
                                                     <p className="text-sm text-muted-foreground text-center py-8">
                                                         No categories matching "{categorySearch}"
+                                                    </p>
+                                                )}
+                                                {isLoadingMoreCategories && (
+                                                    <p className="text-sm text-muted-foreground text-center py-2">
+                                                        Loading more...
                                                     </p>
                                                 )}
                                             </div>

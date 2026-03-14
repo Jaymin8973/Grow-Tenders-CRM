@@ -403,7 +403,7 @@ export default function LeadDetailPage() {
                                 </Button>
                             </ComposeEmailDialog>
 
-                            {(user?.role === 'SUPER_ADMIN' || user?.role === 'MANAGER') && (
+                            {(user?.role === 'SUPER_ADMIN' || user?.role === 'MANAGER') && !lead.convertedToCustomerId && (
                                 <Button
                                     variant="secondary"
                                     className="gap-2 bg-white dark:bg-slate-800"
@@ -807,7 +807,7 @@ export default function LeadDetailPage() {
                             <Card>
                                 <CardHeader>
                                     <div className="flex items-center justify-between">
-                                        <CardTitle className="text-lg">Activity Timeline</CardTitle>
+                                        <CardTitle className="text-lg">Timeline</CardTitle>
                                         <Dialog open={followUpOpen} onOpenChange={setFollowUpOpen}>
                                             <DialogTrigger asChild>
                                                 <Button className="gap-2">
@@ -980,7 +980,7 @@ export default function LeadDetailPage() {
                                                     {allItems.length === 0 && (
                                                         <div className="text-center py-8 text-muted-foreground">
                                                             <CalendarIcon className="h-10 w-10 mx-auto mb-2 opacity-30" />
-                                                            <p>No activity yet</p>
+                                                            <p>No timeline yet</p>
                                                         </div>
                                                     )}
                                                     {hasMore && (
@@ -996,7 +996,7 @@ export default function LeadDetailPage() {
                                                     )}
                                                     {allItems.length > 0 && (
                                                         <p className="text-xs text-center text-muted-foreground pt-2">
-                                                            Showing {visibleItems.length} of {allItems.length} activities
+                                                            Showing {visibleItems.length} of {allItems.length} items
                                                         </p>
                                                     )}
                                                 </>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { InfiniteAutocomplete } from '@/components/ui/infinite-autocomplete';
 import {
     Select,
     SelectContent,
@@ -101,14 +102,38 @@ export default function EditLeadPage() {
         },
     });
 
-    const { data: teamMembers } = useQuery({
-        queryKey: ['team-members'],
-        queryFn: async () => {
-            const response = await apiClient.get('/users');
+    const [assigneeSearch, setAssigneeSearch] = useState('');
+
+    const {
+        data: teamMembers,
+        isLoading: isLoadingTeamMembers,
+        fetchNextPage: fetchNextTeamMembersPage,
+        hasNextPage: hasMoreTeamMembers,
+        isFetchingNextPage: isLoadingMoreTeamMembers,
+    } = useInfiniteQuery({
+        queryKey: ['user-options', { search: assigneeSearch }],
+        initialPageParam: 1,
+        queryFn: async ({ pageParam }) => {
+            const params = new URLSearchParams();
+            params.set('page', String(pageParam ?? 1));
+            params.set('limit', '50');
+            if (assigneeSearch) params.set('search', assigneeSearch);
+            const response = await apiClient.get(`/users/options?${params.toString()}`);
             return response.data;
+        },
+        getNextPageParam: (lastPage: any) => {
+            const page = Number(lastPage?.meta?.page ?? 1);
+            const totalPages = Number(lastPage?.meta?.totalPages ?? 1);
+            if (page < totalPages) return page + 1;
+            return undefined;
         },
         enabled: !!user && (user.role === 'SUPER_ADMIN' || user.role === 'MANAGER'),
     });
+
+    const assigneeOptions =
+        teamMembers?.pages
+            ?.flatMap((p: any) => (Array.isArray(p?.data) ? p.data : []))
+            .map((u: any) => ({ value: u.id, label: `${u.firstName} ${u.lastName}` })) || [];
 
     useEffect(() => {
         if (leadData) {
@@ -385,25 +410,20 @@ export default function EditLeadPage() {
                                 {(user?.role === 'SUPER_ADMIN' || user?.role === 'MANAGER') && (
                                     <div>
                                         <Label className="text-xs text-muted-foreground">Assignee</Label>
-                                        {teamMembers ? (
-                                            <Select onValueChange={(value) => setValue('assigneeId', value)} defaultValue={leadData?.assigneeId}>
-                                                <SelectTrigger className="h-9">
-                                                    <SelectValue placeholder="Select user" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {teamMembers.map((member: any) => (
-                                                        <SelectItem key={member.id} value={member.id}>
-                                                            {member.firstName} {member.lastName}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        ) : (
-                                            <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/20 p-2 rounded border border-dashed">
-                                                <Loader2 className="h-3 w-3 animate-spin" />
-                                                Loading...
-                                            </div>
-                                        )}
+                                        <InfiniteAutocomplete
+                                            value={watch('assigneeId') || leadData?.assigneeId || ''}
+                                            onValueChange={(value: string) => setValue('assigneeId', value)}
+                                            placeholder="Search user"
+                                            emptyMessage="No users found"
+                                            options={assigneeOptions}
+                                            loading={isLoadingTeamMembers}
+                                            showAllOption={false}
+                                            hasMore={!!hasMoreTeamMembers}
+                                            loadingMore={isLoadingMoreTeamMembers}
+                                            onLoadMore={() => fetchNextTeamMembersPage()}
+                                            searchValue={assigneeSearch}
+                                            onSearchChange={setAssigneeSearch}
+                                        />
                                     </div>
                                 )}
                             </CardContent>

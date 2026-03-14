@@ -66,6 +66,24 @@ export class CustomersController {
         });
     }
 
+    @Get('options')
+    @ApiOperation({ summary: 'Get customers for dropdowns (paginated)' })
+    @ApiQuery({ name: 'search', required: false })
+    @ApiQuery({ name: 'page', required: false, type: Number, description: '1-based page number (default: 1)' })
+    @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Page size (default: 50, max: 200)' })
+    getOptions(
+        @CurrentUser() user: any,
+        @Query('search') search?: string,
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
+    ) {
+        return this.customersService.getCustomerOptions(user, {
+            search,
+            page: page ? Number(page) : 1,
+            limit: limit ? Number(limit) : 50,
+        });
+    }
+
     @Get('stats')
     @ApiOperation({ summary: 'Get customer statistics' })
     getStats(@CurrentUser() user: any) {

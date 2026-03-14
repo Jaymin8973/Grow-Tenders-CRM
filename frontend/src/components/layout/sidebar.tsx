@@ -41,7 +41,6 @@ type ScreenKey =
     | 'users'
     | 'targets'
     | 'scraperLogs'
-    | 'activities'
     | 'settings';
 
 type NavItem = {

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
 import { getErrorMessage } from '@/lib/error-utils';
 import { useToast } from '@/hooks/use-toast';
@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Autocomplete } from '@/components/ui/autocomplete';
+import { InfiniteAutocomplete } from '@/components/ui/infinite-autocomplete';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 
@@ -32,16 +32,39 @@ export function BulkAssignDialog({
     const { toast } = useToast();
     const queryClient = useQueryClient();
     const [selectedUserId, setSelectedUserId] = useState('');
+    const [employeeSearch, setEmployeeSearch] = useState('');
 
-    // Fetch employees
-    const { data: employees, isLoading } = useQuery({
-        queryKey: ['users', 'employees'],
-        queryFn: async () => {
-            const response = await apiClient.get('/users?role=EMPLOYEE');
+    const {
+        data: employees,
+        isLoading,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+    } = useInfiniteQuery({
+        queryKey: ['users', 'employees', { search: employeeSearch }],
+        initialPageParam: 1,
+        queryFn: async ({ pageParam }) => {
+            const params = new URLSearchParams();
+            params.set('role', 'EMPLOYEE');
+            params.set('page', String(pageParam ?? 1));
+            params.set('limit', '50');
+            if (employeeSearch) params.set('search', employeeSearch);
+            const response = await apiClient.get(`/users/options?${params.toString()}`);
             return response.data;
+        },
+        getNextPageParam: (lastPage: any) => {
+            const page = Number(lastPage?.meta?.page ?? 1);
+            const totalPages = Number(lastPage?.meta?.totalPages ?? 1);
+            if (page < totalPages) return page + 1;
+            return undefined;
         },
         enabled: open,
     });
+
+    const employeeOptions =
+        employees?.pages
+            ?.flatMap((p: any) => (Array.isArray(p?.data) ? p.data : []))
+            .map((u: any) => ({ value: u.id, label: `${u.firstName} ${u.lastName}` })) || [];
 
     const assignMutation = useMutation({
         mutationFn: async (userId: string) => {
@@ -91,15 +114,19 @@ export function BulkAssignDialog({
                                 <span className="text-sm text-muted-foreground">Loading...</span>
                             </div>
                         ) : (
-                            <Autocomplete
+                            <InfiniteAutocomplete
                                 value={selectedUserId}
                                 onValueChange={setSelectedUserId}
                                 placeholder="Search employee..."
                                 emptyMessage="No employees found"
-                                options={employees?.filter((u: any) => u.role === 'EMPLOYEE').map((user: any) => ({
-                                    value: user.id,
-                                    label: `${user.firstName} ${user.lastName}`,
-                                })) || []}
+                                options={employeeOptions}
+                                loading={isLoading}
+                                showAllOption={false}
+                                hasMore={!!hasNextPage}
+                                loadingMore={isFetchingNextPage}
+                                onLoadMore={() => fetchNextPage()}
+                                searchValue={employeeSearch}
+                                onSearchChange={setEmployeeSearch}
                             />
                         )}
                     </div>

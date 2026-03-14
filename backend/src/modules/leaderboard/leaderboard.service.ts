@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Role, ActivityStatus, LeadStatus } from '@prisma/client';
+import { Role, LeadStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
 export interface LeaderboardEntry {
@@ -50,24 +50,7 @@ export class LeaderboardService {
             ? { paymentDate: { gte: period.startDate, lte: period.endDate } }
             : undefined;
 
-        const [activitiesCompletedAgg, totalActivitiesAgg, leadsAssignedAgg, leadsConvertedAgg, revenueAgg] = await Promise.all([
-            this.prisma.activity.groupBy({
-                by: ['assigneeId'],
-                where: {
-                    assigneeId: { in: userIds },
-                    status: ActivityStatus.COMPLETED,
-                    ...(dateFilter ? dateFilter : {}),
-                },
-                _count: { _all: true },
-            }),
-            this.prisma.activity.groupBy({
-                by: ['assigneeId'],
-                where: {
-                    assigneeId: { in: userIds },
-                    ...(dateFilter ? dateFilter : {}),
-                },
-                _count: { _all: true },
-            }),
+        const [leadsAssignedAgg, leadsConvertedAgg, revenueAgg] = await Promise.all([
             this.prisma.lead.groupBy({
                 by: ['assigneeId'],
                 where: {
@@ -111,24 +94,19 @@ export class LeaderboardService {
             return map;
         };
 
-        const activitiesCompletedMap = toCountMap(activitiesCompletedAgg as any);
-        const totalActivitiesMap = toCountMap(totalActivitiesAgg as any);
         const leadsAssignedMap = toCountMap(leadsAssignedAgg as any);
         const leadsConvertedMap = toCountMap(leadsConvertedAgg as any);
         const revenueMap = toRevenueMap(revenueAgg as any);
 
         const leaderboard = users.map((user) => {
-            const activitiesCompleted = activitiesCompletedMap.get(user.id) ?? 0;
-            const totalActivities = totalActivitiesMap.get(user.id) ?? 0;
             const leadsAssigned = leadsAssignedMap.get(user.id) ?? 0;
             const leadsConverted = leadsConvertedMap.get(user.id) ?? 0;
             const revenueClosed = revenueMap.get(user.id) ?? 0;
 
             const metrics = {
                 revenueClosed,
-                activitiesCompleted,
-                followUpCompletionRate:
-                    totalActivities > 0 ? Math.round((activitiesCompleted / totalActivities) * 100) : 0,
+                activitiesCompleted: 0,
+                followUpCompletionRate: 0,
                 leadConversionRate:
                     leadsAssigned > 0 ? Math.round((leadsConverted / leadsAssigned) * 100) : 0,
                 leadsConverted,
@@ -152,7 +130,7 @@ export class LeaderboardService {
             if (b.metrics.revenueClosed !== a.metrics.revenueClosed) {
                 return b.metrics.revenueClosed - a.metrics.revenueClosed;
             }
-            return b.metrics.activitiesCompleted - a.metrics.activitiesCompleted;
+            return 0;
         });
 
         // Assign ranks
@@ -188,24 +166,7 @@ export class LeaderboardService {
             ? { paymentDate: { gte: period.startDate, lte: period.endDate } }
             : undefined;
 
-        const [activitiesCompletedAgg, totalActivitiesAgg, leadsAssignedAgg, leadsConvertedAgg, revenueAgg] = await Promise.all([
-            this.prisma.activity.groupBy({
-                by: ['assigneeId'],
-                where: {
-                    assigneeId: { in: userIds },
-                    status: ActivityStatus.COMPLETED,
-                    ...(dateFilter ? dateFilter : {}),
-                },
-                _count: { _all: true },
-            }),
-            this.prisma.activity.groupBy({
-                by: ['assigneeId'],
-                where: {
-                    assigneeId: { in: userIds },
-                    ...(dateFilter ? dateFilter : {}),
-                },
-                _count: { _all: true },
-            }),
+        const [leadsAssignedAgg, leadsConvertedAgg, revenueAgg] = await Promise.all([
             this.prisma.lead.groupBy({
                 by: ['assigneeId'],
                 where: {
@@ -249,24 +210,19 @@ export class LeaderboardService {
             return map;
         };
 
-        const activitiesCompletedMap = toCountMap(activitiesCompletedAgg as any);
-        const totalActivitiesMap = toCountMap(totalActivitiesAgg as any);
         const leadsAssignedMap = toCountMap(leadsAssignedAgg as any);
         const leadsConvertedMap = toCountMap(leadsConvertedAgg as any);
         const revenueMap = toRevenueMap(revenueAgg as any);
 
         const leaderboard = teamMembers.map((user) => {
-            const activitiesCompleted = activitiesCompletedMap.get(user.id) ?? 0;
-            const totalActivities = totalActivitiesMap.get(user.id) ?? 0;
             const leadsAssigned = leadsAssignedMap.get(user.id) ?? 0;
             const leadsConverted = leadsConvertedMap.get(user.id) ?? 0;
             const revenueClosed = revenueMap.get(user.id) ?? 0;
 
             const metrics = {
                 revenueClosed,
-                activitiesCompleted,
-                followUpCompletionRate:
-                    totalActivities > 0 ? Math.round((activitiesCompleted / totalActivities) * 100) : 0,
+                activitiesCompleted: 0,
+                followUpCompletionRate: 0,
                 leadConversionRate:
                     leadsAssigned > 0 ? Math.round((leadsConverted / leadsAssigned) * 100) : 0,
                 leadsConverted,
@@ -289,7 +245,7 @@ export class LeaderboardService {
             if (b.metrics.revenueClosed !== a.metrics.revenueClosed) {
                 return b.metrics.revenueClosed - a.metrics.revenueClosed;
             }
-            return b.metrics.activitiesCompleted - a.metrics.activitiesCompleted;
+            return 0;
         });
         leaderboard.forEach((entry, index) => {
             entry.rank = index + 1;
@@ -337,23 +293,6 @@ export class LeaderboardService {
             paymentDate: { gte: period.startDate, lte: period.endDate },
         } : {};
 
-        // Activities completed
-        const activitiesCompleted = await this.prisma.activity.count({
-            where: {
-                assigneeId: userId,
-                status: ActivityStatus.COMPLETED,
-                ...dateFilter,
-            },
-        });
-
-        // Total scheduled activities
-        const totalActivities = await this.prisma.activity.count({
-            where: {
-                assigneeId: userId,
-                ...dateFilter,
-            },
-        });
-
         // Leads assigned
         const leadsAssigned = await this.prisma.lead.count({
             where: { assigneeId: userId, ...dateFilter },
@@ -379,10 +318,8 @@ export class LeaderboardService {
 
         return {
             revenueClosed: revenueResult._sum.totalAmount || 0,
-            activitiesCompleted,
-            followUpCompletionRate: totalActivities > 0
-                ? Math.round((activitiesCompleted / totalActivities) * 100)
-                : 0,
+            activitiesCompleted: 0,
+            followUpCompletionRate: 0,
             leadConversionRate: leadsAssigned > 0
                 ? Math.round((leadsConverted / leadsAssigned) * 100)
                 : 0,

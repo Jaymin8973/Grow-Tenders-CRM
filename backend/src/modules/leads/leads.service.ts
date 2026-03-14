@@ -51,6 +51,67 @@ export class LeadsService {
         });
     }
 
+    async getLeadOptions(user: UserContext, params: { search?: string; page?: number; limit?: number }) {
+        let assigneeWhere: any = {};
+
+        if (user.role === Role.EMPLOYEE) {
+            assigneeWhere.assigneeId = user.id;
+        } else if (user.role === Role.MANAGER) {
+            const teamMembers = await this.prisma.user.findMany({
+                where: { managerId: user.id },
+                select: { id: true },
+            });
+            const teamIds = teamMembers.map(m => m.id);
+            assigneeWhere.assigneeId = { in: [user.id, ...teamIds] };
+        }
+
+        const page = Math.max(params.page ?? 1, 1);
+        const limit = Math.min(Math.max(params.limit ?? 50, 1), 200);
+        const skip = (page - 1) * limit;
+
+        const where: any = {
+            ...assigneeWhere,
+        };
+
+        if (params.search) {
+            where.OR = [
+                { firstName: { contains: params.search, mode: 'insensitive' } },
+                { lastName: { contains: params.search, mode: 'insensitive' } },
+                { email: { contains: params.search, mode: 'insensitive' } },
+                { company: { contains: params.search, mode: 'insensitive' } },
+                { mobile: { contains: params.search, mode: 'insensitive' } },
+            ];
+        }
+
+        const [items, total] = await Promise.all([
+            this.prisma.lead.findMany({
+                where,
+                select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                    mobile: true,
+                    company: true,
+                },
+                orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
+                skip,
+                take: limit,
+            }),
+            this.prisma.lead.count({ where }),
+        ]);
+
+        return {
+            data: items,
+            meta: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
+            },
+        };
+    }
+
     async bulkImportFromFile(file: Express.Multer.File, user: UserContext) {
         if (!file) {
             throw new NotFoundException('No file uploaded');

@@ -31,6 +31,18 @@ export class GemScraperService {
     // Base URL for all bids page (sort applied via UI dropdown click)
     private readonly baseUrl = 'https://bidplus.gem.gov.in/all-bids';
 
+    private async withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+        let timeoutId: NodeJS.Timeout | undefined;
+        const timeoutPromise = new Promise<never>((_, reject) => {
+            timeoutId = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+        });
+        try {
+            return await Promise.race([promise, timeoutPromise]);
+        } finally {
+            if (timeoutId) clearTimeout(timeoutId);
+        }
+    }
+
     private normalizeCityKey(input: string): string {
         return String(input || '')
             .toUpperCase()
@@ -87,18 +99,26 @@ export class GemScraperService {
 
         const maxRetries = 3;
 
-        try {
-            browser = await this.launchBrowser();
+        const browserLaunchTimeoutMs = Number(process.env.PUPPETEER_LAUNCH_TIMEOUT_MS || 60 * 1000);
+        const gemNavTimeoutMs = Number(process.env.GEM_NAV_TIMEOUT_MS || 60 * 1000);
 
+        try {
+            this.logger.log('Launching browser...');
+            browser = await this.withTimeout(this.launchBrowser(), browserLaunchTimeoutMs, 'Browser launch');
+            this.logger.log('Browser launched');
+
+            this.logger.log('Creating pages...');
             page = await browser.newPage();
             await this.setupPage(page);
 
             detailPage = await browser.newPage();
             await this.setupPage(detailPage);
+            this.logger.log('Pages created and configured');
 
             // 1. Visit Home Page
             try {
-                await page.goto('https://gem.gov.in/', { waitUntil: 'domcontentloaded', timeout: 30000 });
+                this.logger.log('Visiting https://gem.gov.in/ ...');
+                await page.goto('https://gem.gov.in/', { waitUntil: 'domcontentloaded', timeout: gemNavTimeoutMs });
                 await this.delay(2000);
             } catch { }
 
@@ -107,8 +127,9 @@ export class GemScraperService {
             let pageLoaded = false;
             while (retries < maxRetries && !pageLoaded) {
                 try {
-                    await page.goto(this.baseUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
-                    await page.waitForSelector('.card', { timeout: 30000 });
+                    this.logger.log(`Opening bids page (attempt ${retries + 1}/${maxRetries})...`);
+                    await page.goto(this.baseUrl, { waitUntil: 'domcontentloaded', timeout: gemNavTimeoutMs });
+                    await page.waitForSelector('.card', { timeout: gemNavTimeoutMs });
                     pageLoaded = true;
                 } catch {
                     retries++;
@@ -118,7 +139,7 @@ export class GemScraperService {
 
             if (!pageLoaded) throw new Error('GeM bid list page not loaded.');
 
-            page.url();
+            this.logger.log(`Bids page loaded: ${page.url()}`);
 
             // We extract the CSRF token injected in the page scripts
             const csrfToken = await page.evaluate(() => {
@@ -394,25 +415,22 @@ export class GemScraperService {
                 data: {
                     status: 'FAILED',
                     endTime: new Date(),
-                    errors: [...errors, error.message],
+                    errors: [...errors, error?.stack || error?.message || String(error)],
                 }
             });
             throw error;
         } finally {
-            if (browser) await browser.close();
+            try {
+                if (detailPage) await detailPage.close();
+            } catch { }
+            try {
+                if (page) await page.close();
+            } catch { }
+            try {
+                if (browser) await browser.close();
+            } catch { }
         }
     }
-
-
-
-    private formatDate(date: Date): string {
-        return `${date.getDate().toString().padStart(2, '0')}-${(date.getMonth() + 1)
-            .toString()
-            .padStart(2, '0')}-${date.getFullYear()}`;
-    }
-
-
-
     /**
      * Extract state from department text (best-effort)
      */

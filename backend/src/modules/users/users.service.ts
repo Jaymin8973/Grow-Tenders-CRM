@@ -88,6 +88,57 @@ export class UsersService {
         });
     }
 
+    async getUserOptions(
+        params: { role?: Role; search?: string; page?: number; limit?: number },
+        requesterRole?: string,
+    ) {
+        const page = Math.max(params.page ?? 1, 1);
+        const limit = Math.min(Math.max(params.limit ?? 50, 1), 200);
+        const skip = (page - 1) * limit;
+
+        const where: any = {
+            ...(params.role ? { role: params.role } : {}),
+            ...(params.search
+                ? {
+                    OR: [
+                        { firstName: { contains: params.search, mode: 'insensitive' } },
+                        { lastName: { contains: params.search, mode: 'insensitive' } },
+                        { email: { contains: params.search, mode: 'insensitive' } },
+                    ],
+                }
+                : {}),
+        };
+
+        const [items, total] = await Promise.all([
+            this.prisma.user.findMany({
+                where,
+                select: {
+                    id: true,
+                    email: true,
+                    showEmail: true,
+                    firstName: true,
+                    lastName: true,
+                    role: true,
+                    isActive: true,
+                },
+                orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
+                skip,
+                take: limit,
+            }),
+            this.prisma.user.count({ where }),
+        ]);
+
+        return {
+            data: items.map((u: any) => this.maskEmail(u, requesterRole)),
+            meta: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
+            },
+        };
+    }
+
     async findOne(id: string, requesterRole?: string) {
         const user = await this.prisma.user.findUnique({
             where: { id },

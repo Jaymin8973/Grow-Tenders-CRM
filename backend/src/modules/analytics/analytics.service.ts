@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ActivityStatus, InvoiceStatus, Role } from '@prisma/client';
+import { InvoiceStatus, Role } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
 interface UserContext {
@@ -36,13 +36,11 @@ export class AnalyticsService {
         const [
             leadStats,
             customerStats,
-            activityStats,
             invoiceStats,
             paymentStats,
         ] = await Promise.all([
             this.getLeadStats(assigneeFilter, startOfMonth),
             this.getCustomerStats(assigneeFilter),
-            this.getActivityStats(assigneeFilter, startOfToday, endOfToday),
             this.getInvoiceStats(),
             this.getPaymentStats(startOfToday, endOfToday),
         ]);
@@ -50,7 +48,11 @@ export class AnalyticsService {
         return {
             leads: leadStats,
             customers: customerStats,
-            activities: activityStats,
+            activities: {
+                dueToday: 0,
+                overdue: 0,
+                completedThisMonth: 0,
+            },
             invoices: invoiceStats,
             payments: paymentStats,
         };
@@ -88,39 +90,6 @@ export class AnalyticsService {
         return {
             total: customers.length,
             companies,
-        };
-    }
-
-    private async getActivityStats(assigneeFilter: any, startOfToday: Date, endOfToday: Date) {
-        const startOfMonth = new Date(startOfToday.getFullYear(), startOfToday.getMonth(), 1);
-
-        const [dueToday, overdue, completedThisMonth] = await Promise.all([
-            this.prisma.activity.count({
-                where: {
-                    ...(assigneeFilter || {}),
-                    scheduledAt: { gte: startOfToday, lte: endOfToday },
-                },
-            }),
-            this.prisma.activity.count({
-                where: {
-                    ...(assigneeFilter || {}),
-                    scheduledAt: { lt: startOfToday },
-                    status: { in: [ActivityStatus.SCHEDULED, ActivityStatus.OVERDUE] },
-                },
-            }),
-            this.prisma.activity.count({
-                where: {
-                    ...(assigneeFilter || {}),
-                    status: ActivityStatus.COMPLETED,
-                    completedAt: { gte: startOfMonth },
-                },
-            }),
-        ]);
-
-        return {
-            dueToday,
-            overdue,
-            completedThisMonth,
         };
     }
 

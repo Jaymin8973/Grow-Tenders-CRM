@@ -4,21 +4,35 @@ import { GemScraperService } from './gem-scraper.service';
 import { GeMCategoriesService } from './gem-categories.service';
 import { TenderNotificationService } from './tender-notification.service';
 import { TenderAlertService } from '../../alerts/services/tender-alert.service';
+import { PrismaService } from '../../../prisma/prisma.service';
 
 @Injectable()
 export class TenderSchedulerService {
     private readonly logger = new Logger(TenderSchedulerService.name);
     private isRunning = false;
 
+    private async withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+        let timeoutId: NodeJS.Timeout | undefined;
+        const timeoutPromise = new Promise<never>((_, reject) => {
+            timeoutId = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+        });
+        try {
+            return await Promise.race([promise, timeoutPromise]);
+        } finally {
+            if (timeoutId) clearTimeout(timeoutId);
+        }
+    }
+
     constructor(
         private gemScraperService: GemScraperService,
         private gemCategoriesService: GeMCategoriesService,
         private notificationService: TenderNotificationService,
         private tenderAlertService: TenderAlertService,
+        private prisma: PrismaService,
     ) { }
 
     // Run every 4 hours
-    @Cron(CronExpression.EVERY_MINUTE)
+    @Cron(CronExpression.EVERY_4_HOURS)
     async handleCron() {
         if (this.isRunning) {
             this.logger.warn('Scraper already running, skipping...');
@@ -38,8 +52,29 @@ export class TenderSchedulerService {
             const deleted = await this.gemScraperService.deleteExpiredTenders();
             this.logger.log(`Deleted ${deleted} expired tenders`);
 
-            // Scrape ALL active tenders from GeM (no date filter)
-            const result = await this.gemScraperService.scrapeTenders(0, null);
+            const lastCompletedJob = await this.prisma.tenderScrapeJob.findFirst({
+                where: {
+                    status: 'COMPLETED',
+                    endTime: { not: null },
+                },
+                orderBy: { endTime: 'desc' },
+                select: { endTime: true },
+            });
+
+            const fromDate = lastCompletedJob?.endTime ?? null;
+            if (fromDate) {
+                this.logger.log(`Incremental scrape enabled (fromDate=${fromDate.toISOString()})`);
+            } else {
+                this.logger.log('No previous completed scrape job found. Running full scrape (ALL active tenders).');
+            }
+
+            // Scrape tenders from GeM
+            const timeoutMs = Number(process.env.TENDER_SCRAPE_TIMEOUT_MS || 30 * 60 * 1000);
+            const result = await this.withTimeout(
+                this.gemScraperService.scrapeTenders(0, fromDate),
+                timeoutMs,
+                'Tender scraping',
+            );
             this.logger.log(`Scraping complete: ${result.added} added, ${result.skipped} duplicates, ${result.pagesScraped} pages scraped`);
 
             // Send notifications for new tenders

@@ -31,7 +31,6 @@ type ScreenKey =
     | 'users'
     | 'targets'
     | 'scraperLogs'
-    | 'activities'
     | 'settings';
 
 type ScreenAccessMap = Record<ScreenKey, boolean>;

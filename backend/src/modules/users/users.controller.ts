@@ -41,6 +41,28 @@ export class UsersController {
         return this.usersService.findAll(role, req.user?.role);
     }
 
+    @Get('options')
+    @Roles(Role.SUPER_ADMIN, Role.MANAGER)
+    @ApiOperation({ summary: 'Get users for dropdowns (paginated)' })
+    @ApiQuery({ name: 'role', required: false, enum: Role })
+    @ApiQuery({ name: 'search', required: false })
+    @ApiQuery({ name: 'page', required: false, type: Number, description: '1-based page number (default: 1)' })
+    @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Page size (default: 50, max: 200)' })
+    getOptions(
+        @Req() req: any,
+        @Query('role') role?: Role,
+        @Query('search') search?: string,
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
+    ) {
+        return this.usersService.getUserOptions({
+            role,
+            search,
+            page: page ? Number(page) : 1,
+            limit: limit ? Number(limit) : 50,
+        }, req.user?.role);
+    }
+
     @Get('managers')
     @ApiOperation({ summary: 'Get all managers' })
     getManagers(@Req() req: any) {

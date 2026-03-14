@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
 import { getErrorMessage } from '@/lib/error-utils';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Autocomplete } from '@/components/ui/autocomplete';
+import { InfiniteAutocomplete } from '@/components/ui/infinite-autocomplete';
 import { useToast } from '@/hooks/use-toast';
 import { Upload, Loader2, CheckCircle } from 'lucide-react';
 
@@ -20,24 +20,72 @@ export function PaymentRequestForm() {
     const [leadId, setLeadId] = useState('');
     const [customerId, setCustomerId] = useState('');
     const [file, setFile] = useState<File | null>(null);
+    const [leadSearch, setLeadSearch] = useState('');
+    const [customerSearch, setCustomerSearch] = useState('');
 
-    // Fetch Leads (assigned to me)
-    const { data: leads } = useQuery({
-        queryKey: ['my-leads'],
-        queryFn: async () => {
-            const response = await apiClient.get('/leads?page=1&pageSize=100');
-            return response.data?.items ?? [];
+    const {
+        data: leads,
+        isLoading: isLoadingLeads,
+        fetchNextPage: fetchNextLeadsPage,
+        hasNextPage: hasMoreLeads,
+        isFetchingNextPage: isLoadingMoreLeads,
+    } = useInfiniteQuery({
+        queryKey: ['leads', 'options', { search: leadSearch }],
+        initialPageParam: 1,
+        queryFn: async ({ pageParam }) => {
+            const params = new URLSearchParams();
+            params.set('page', String(pageParam ?? 1));
+            params.set('limit', '50');
+            if (leadSearch) params.set('search', leadSearch);
+            const response = await apiClient.get(`/leads/options?${params.toString()}`);
+            return response.data;
+        },
+        getNextPageParam: (lastPage: any) => {
+            const page = Number(lastPage?.meta?.page ?? 1);
+            const totalPages = Number(lastPage?.meta?.totalPages ?? 1);
+            if (page < totalPages) return page + 1;
+            return undefined;
         },
     });
 
-    // Fetch Customers (assigned to me)
-    const { data: customers } = useQuery({
-        queryKey: ['my-customers'],
-        queryFn: async () => {
-            const response = await apiClient.get('/customers?page=1&pageSize=100');
-            return response.data?.items ?? [];
+    const leadOptions = leads?.pages
+        ?.flatMap((p: any) => (Array.isArray(p?.data) ? p.data : []))
+        .map((lead: any) => ({
+            value: lead.id,
+            label: `${lead.firstName} ${lead.lastName}`,
+        })) || [];
+
+    const {
+        data: customers,
+        isLoading: isLoadingCustomers,
+        fetchNextPage: fetchNextCustomersPage,
+        hasNextPage: hasMoreCustomers,
+        isFetchingNextPage: isLoadingMoreCustomers,
+    } = useInfiniteQuery({
+        queryKey: ['customers', 'options', { search: customerSearch }],
+        initialPageParam: 1,
+        queryFn: async ({ pageParam }) => {
+            const params = new URLSearchParams();
+            params.set('page', String(pageParam ?? 1));
+            params.set('limit', '50');
+            if (customerSearch) params.set('search', customerSearch);
+            const response = await apiClient.get(`/customers/options?${params.toString()}`);
+            return response.data;
+        },
+        getNextPageParam: (lastPage: any) => {
+            const page = Number(lastPage?.meta?.page ?? 1);
+            const totalPages = Number(lastPage?.meta?.totalPages ?? 1);
+            if (page < totalPages) return page + 1;
+            return undefined;
         },
     });
+
+    const customerOptions = customers?.pages
+        ?.flatMap((p: any) => (Array.isArray(p?.data) ? p.data : []))
+        .map((customer: any) => ({
+            value: customer.id,
+            label: `${customer.firstName} ${customer.lastName}`,
+        })) || [];
 
     const mutation = useMutation({
         mutationFn: async (formData: FormData) => {
@@ -101,39 +149,37 @@ export function PaymentRequestForm() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="lead">Related Lead (Optional)</Label>
-                            <Autocomplete
-                                value={leadId || ''}
+                            <InfiniteAutocomplete
+                                value={leadId || 'none'}
                                 onValueChange={setLeadId}
-                                placeholder="Search lead by name or company..."
+                                placeholder="Search lead (name/company/phone/email)..."
                                 emptyMessage="No leads found"
-                                options={[
-                                    { value: 'none', label: 'None' },
-                                    ...(leads?.map((lead: any) => ({
-                                        value: lead.id,
-                                        label: `${lead.firstName} ${lead.lastName}`,
-                                        subtitle: lead.company || 'No Company',
-                                        searchTerms: `${lead.company || ''} ${lead.firstName} ${lead.lastName}`,
-                                    })) || [])
-                                ]}
+                                options={[{ value: 'none', label: 'None' }, ...leadOptions]}
+                                loading={isLoadingLeads}
+                                showAllOption={false}
+                                hasMore={!!hasMoreLeads}
+                                loadingMore={isLoadingMoreLeads}
+                                onLoadMore={() => fetchNextLeadsPage()}
+                                searchValue={leadSearch}
+                                onSearchChange={setLeadSearch}
                             />
                         </div>
 
                         <div className="space-y-2">
                             <Label htmlFor="customer">Related Customer (Optional)</Label>
-                            <Autocomplete
-                                value={customerId || ''}
+                            <InfiniteAutocomplete
+                                value={customerId || 'none'}
                                 onValueChange={setCustomerId}
-                                placeholder="Search customer by name or company..."
+                                placeholder="Search customer (name/company/phone/email)..."
                                 emptyMessage="No customers found"
-                                options={[
-                                    { value: 'none', label: 'None' },
-                                    ...(customers?.map((customer: any) => ({
-                                        value: customer.id,
-                                        label: `${customer.firstName} ${customer.lastName}`,
-                                        subtitle: customer.company || 'No Company',
-                                        searchTerms: `${customer.company || ''} ${customer.firstName} ${customer.lastName}`,
-                                    })) || [])
-                                ]}
+                                options={[{ value: 'none', label: 'None' }, ...customerOptions]}
+                                loading={isLoadingCustomers}
+                                showAllOption={false}
+                                hasMore={!!hasMoreCustomers}
+                                loadingMore={isLoadingMoreCustomers}
+                                onLoadMore={() => fetchNextCustomersPage()}
+                                searchValue={customerSearch}
+                                onSearchChange={setCustomerSearch}
                             />
                         </div>
                     </div>

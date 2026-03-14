@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/auth-context';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
 import { format } from 'date-fns';
 import {
@@ -14,13 +15,7 @@ import {
 import { CreateReportDialog } from '@/components/daily-reports/create-report-dialog';
 import { ReportsTable } from '@/components/daily-reports/reports-table';
 import { EditReportDialog } from '@/components/daily-reports/edit-report-dialog';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+import { InfiniteAutocomplete } from '@/components/ui/infinite-autocomplete';
 import { Button } from '@/components/ui/button';
 import { CalendarIcon, ChevronLeft, ChevronRight, FileText, Users, Clock, TrendingUp } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -86,7 +81,7 @@ export default function DailyReportsPage() {
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
     const [datePopoverOpen, setDatePopoverOpen] = useState(false);
     const [selectedEmployee, setSelectedEmployee] = useState<string>('all');
-    const [employees, setEmployees] = useState<User[]>([]);
+    const [employeeSearch, setEmployeeSearch] = useState('');
 
     const fetchReports = async () => {
         try {
@@ -116,15 +111,37 @@ export default function DailyReportsPage() {
             setLoading(false);
         }
     };
+    const {
+        data: employees,
+        isLoading: isLoadingEmployees,
+        fetchNextPage: fetchNextEmployeesPage,
+        hasNextPage: hasMoreEmployees,
+        isFetchingNextPage: isLoadingMoreEmployees,
+    } = useInfiniteQuery({
+        queryKey: ['users', 'employees', { search: employeeSearch }],
+        initialPageParam: 1,
+        queryFn: async ({ pageParam }) => {
+            const params = new URLSearchParams();
+            params.set('role', 'EMPLOYEE');
+            params.set('page', String(pageParam ?? 1));
+            params.set('limit', '50');
+            if (employeeSearch) params.set('search', employeeSearch);
+            const response = await apiClient.get(`/users/options?${params.toString()}`);
+            return response.data;
+        },
+        getNextPageParam: (lastPage: any) => {
+            const page = Number(lastPage?.meta?.page ?? 1);
+            const totalPages = Number(lastPage?.meta?.totalPages ?? 1);
+            if (page < totalPages) return page + 1;
+            return undefined;
+        },
+        enabled: !!user && (user.role === 'MANAGER' || user.role === 'SUPER_ADMIN'),
+    });
 
-    const fetchEmployees = async () => {
-        try {
-            const response = await apiClient.get('/users');
-            setEmployees(response.data);
-        } catch (error) {
-            console.error("Failed to fetch employees", error);
-        }
-    }
+    const employeeOptions =
+        employees?.pages
+            ?.flatMap((p: any) => (Array.isArray(p?.data) ? p.data : []))
+            .map((u: any) => ({ value: u.id, label: `${u.firstName} ${u.lastName}` })) || [];
 
     useEffect(() => {
         if (activeTab === 'today') {
@@ -142,9 +159,6 @@ export default function DailyReportsPage() {
 
     useEffect(() => {
         fetchReports();
-        if (user && (user.role === 'MANAGER' || user.role === 'SUPER_ADMIN')) {
-            fetchEmployees();
-        }
     }, [user, selectedDate, selectedEmployee, activeTab, page]);
 
     const canCreateReport = user?.role === 'EMPLOYEE';
@@ -175,7 +189,7 @@ export default function DailyReportsPage() {
                                     Daily Reports
                                 </h1>
                                 <p className="text-muted-foreground text-sm mt-1">
-                                    Track daily activities and performance metrics
+                                    Track daily performance metrics
                                 </p>
                             </div>
                         </div>
@@ -237,10 +251,10 @@ export default function DailyReportsPage() {
                                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Employees</p>
                                         <Tooltip>
                                             <TooltipTrigger asChild>
-                                                <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 cursor-default">{formatNumber(employees.length)}</p>
+                                                <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 cursor-default">{formatNumber(employeeOptions.length)}</p>
                                             </TooltipTrigger>
                                             <TooltipContent>
-                                                <p>{employees.length.toLocaleString('en-IN')}</p>
+                                                <p>{employeeOptions.length.toLocaleString('en-IN')}</p>
                                             </TooltipContent>
                                         </Tooltip>
                                     </div>
@@ -285,20 +299,23 @@ export default function DailyReportsPage() {
                                 </Tabs>
 
                                 <div className="flex flex-wrap items-center gap-4">
-                                    <div className="w-[220px]">
-                                        <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
-                                            <SelectTrigger className="bg-white dark:bg-slate-800">
-                                                <SelectValue placeholder="Select Employee" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="all">All Employees</SelectItem>
-                                                {employees.map(emp => (
-                                                    <SelectItem key={emp.id} value={emp.id}>
-                                                        {emp.firstName} {emp.lastName}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                    <div className="w-[260px]">
+                                        <InfiniteAutocomplete
+                                            value={selectedEmployee}
+                                            onValueChange={setSelectedEmployee}
+                                            placeholder="Filter employee"
+                                            emptyMessage="No employees found"
+                                            options={employeeOptions}
+                                            loading={isLoadingEmployees}
+                                            showAllOption={true}
+                                            allOptionLabel="All Employees"
+                                            allValue="all"
+                                            hasMore={!!hasMoreEmployees}
+                                            loadingMore={isLoadingMoreEmployees}
+                                            onLoadMore={() => fetchNextEmployeesPage()}
+                                            searchValue={employeeSearch}
+                                            onSearchChange={setEmployeeSearch}
+                                        />
                                     </div>
 
                                     {activeTab === 'all' && (

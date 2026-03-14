@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { InfiniteAutocomplete } from '@/components/ui/infinite-autocomplete';
 import {
     Select,
     SelectContent,
@@ -100,15 +101,38 @@ export default function NewLeadPage() {
         }
     }, [setValue]);
 
-    // Fetch team members for assignment
-    const { data: teamMembers } = useQuery({
-        queryKey: ['team-members'],
-        queryFn: async () => {
-            const response = await apiClient.get('/users');
+    const [assigneeSearch, setAssigneeSearch] = useState('');
+
+    const {
+        data: teamMembers,
+        isLoading: isLoadingTeamMembers,
+        fetchNextPage: fetchNextTeamMembersPage,
+        hasNextPage: hasMoreTeamMembers,
+        isFetchingNextPage: isLoadingMoreTeamMembers,
+    } = useInfiniteQuery({
+        queryKey: ['user-options', { search: assigneeSearch }],
+        initialPageParam: 1,
+        queryFn: async ({ pageParam }) => {
+            const params = new URLSearchParams();
+            params.set('page', String(pageParam ?? 1));
+            params.set('limit', '50');
+            if (assigneeSearch) params.set('search', assigneeSearch);
+            const response = await apiClient.get(`/users/options?${params.toString()}`);
             return response.data;
+        },
+        getNextPageParam: (lastPage: any) => {
+            const page = Number(lastPage?.meta?.page ?? 1);
+            const totalPages = Number(lastPage?.meta?.totalPages ?? 1);
+            if (page < totalPages) return page + 1;
+            return undefined;
         },
         enabled: !!user && (user.role === 'SUPER_ADMIN' || user.role === 'MANAGER'),
     });
+
+    const assigneeOptions =
+        teamMembers?.pages
+            ?.flatMap((p: any) => (Array.isArray(p?.data) ? p.data : []))
+            .map((u: any) => ({ value: u.id, label: `${u.firstName} ${u.lastName}` })) || [];
 
     const createLeadMutation = useMutation({
         mutationFn: async (data: LeadFormData) => {
@@ -335,18 +359,20 @@ export default function NewLeadPage() {
                                 {(user?.role === 'SUPER_ADMIN' || user?.role === 'MANAGER') && (
                                     <div>
                                         <Label className="text-xs text-muted-foreground">Assignee</Label>
-                                        <Select onValueChange={(val) => setValue('assigneeId', val)}>
-                                            <SelectTrigger className="h-9">
-                                                <SelectValue placeholder="Select user" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {teamMembers?.map((m: any) => (
-                                                    <SelectItem key={m.id} value={m.id}>
-                                                        {m.firstName} {m.lastName}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                        <InfiniteAutocomplete
+                                            value={watch('assigneeId') || ''}
+                                            onValueChange={(val: string) => setValue('assigneeId', val)}
+                                            placeholder="Search user"
+                                            emptyMessage="No users found"
+                                            options={assigneeOptions}
+                                            loading={isLoadingTeamMembers}
+                                            showAllOption={false}
+                                            hasMore={!!hasMoreTeamMembers}
+                                            loadingMore={isLoadingMoreTeamMembers}
+                                            onLoadMore={() => fetchNextTeamMembersPage()}
+                                            searchValue={assigneeSearch}
+                                            onSearchChange={setAssigneeSearch}
+                                        />
                                     </div>
                                 )}
                             </CardContent>

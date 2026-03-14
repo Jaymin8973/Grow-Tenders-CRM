@@ -14,10 +14,14 @@ interface InfiniteAutocompleteProps {
     className?: string
     loading?: boolean
     // Infinite scroll props
-    options: string[]
+    options: Array<string | { value: string; label: string }>
     onLoadMore?: () => void
     hasMore?: boolean
     loadingMore?: boolean
+    // Optional "All" option
+    showAllOption?: boolean
+    allOptionLabel?: string
+    allValue?: string
     // Search
     searchValue?: string
     onSearchChange?: (value: string) => void
@@ -35,6 +39,9 @@ export function InfiniteAutocomplete({
     onLoadMore,
     hasMore = false,
     loadingMore = false,
+    showAllOption = true,
+    allOptionLabel = "All Categories",
+    allValue = "all",
     searchValue = "",
     onSearchChange,
 }: InfiniteAutocompleteProps) {
@@ -46,7 +53,17 @@ export function InfiniteAutocomplete({
     const listRef = React.useRef<HTMLUListElement>(null)
     const ignoreNextFocusRef = React.useRef(false)
 
-    const displayValue = value && value !== "all" ? value : ""
+    const selectedLabel = React.useMemo(() => {
+        if (!value || (showAllOption && value === allValue)) return ''
+        for (const opt of options) {
+            if (typeof opt === 'string') {
+                if (opt === value) return opt
+            } else {
+                if (opt.value === value) return opt.label
+            }
+        }
+        return value
+    }, [options, value])
 
     // Sync internal search with external
     React.useEffect(() => {
@@ -81,7 +98,7 @@ export function InfiniteAutocomplete({
 
     const handleClear = (e: React.MouseEvent) => {
         e.stopPropagation()
-        onValueChange("all")
+        onValueChange(showAllOption ? allValue : "")
         setInternalSearch("")
         onSearchChange?.("")
         ignoreNextFocusRef.current = true
@@ -110,7 +127,9 @@ export function InfiniteAutocomplete({
             case "Enter":
                 e.preventDefault()
                 if (highlightedIndex >= 0 && options[highlightedIndex]) {
-                    handleSelect(options[highlightedIndex])
+                    const option = options[highlightedIndex]
+                    const optValue = typeof option === 'string' ? option : option.value
+                    handleSelect(optValue)
                 }
                 break
             case "Escape":
@@ -142,7 +161,7 @@ export function InfiniteAutocomplete({
                 <Input
                     ref={inputRef}
                     type="text"
-                    value={open ? internalSearch : (displayValue || internalSearch)}
+                    value={open ? internalSearch : (selectedLabel || internalSearch)}
                     onChange={handleInputChange}
                     onFocus={() => {
                         if (ignoreNextFocusRef.current) {
@@ -158,7 +177,7 @@ export function InfiniteAutocomplete({
                 />
                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                     {loading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-                    {displayValue && !loading && (
+                    {selectedLabel && !loading && (
                         <button
                             type="button"
                             onClick={handleClear}
@@ -177,48 +196,53 @@ export function InfiniteAutocomplete({
                     className="absolute z-50 mt-1 w-full rounded-lg border bg-popover shadow-lg overflow-hidden animate-in fade-in-0 zoom-in-95"
                     style={{ maxHeight: "280px", overflowY: "auto" }}
                 >
-                    {/* All Categories option */}
-                    <li
-                        onClick={() => handleSelect("all")}
-                        onMouseEnter={() => setHighlightedIndex(-1)}
-                        className={cn(
-                            "px-3 py-2 cursor-pointer transition-colors hover:bg-accent",
-                            (!value || value === "all") && "bg-primary/10"
-                        )}
-                    >
-                        <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium">All Categories</span>
-                            {(!value || value === "all") && (
-                                <Check className="h-4 w-4 text-primary shrink-0" />
+                    {showAllOption && (
+                        <li
+                            onClick={() => handleSelect(allValue)}
+                            onMouseEnter={() => setHighlightedIndex(-1)}
+                            className={cn(
+                                "px-3 py-2 cursor-pointer transition-colors hover:bg-accent",
+                                (!value || value === allValue) && "bg-primary/10"
                             )}
-                        </div>
-                    </li>
+                        >
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium">{allOptionLabel}</span>
+                                {(!value || value === allValue) && (
+                                    <Check className="h-4 w-4 text-primary shrink-0" />
+                                )}
+                            </div>
+                        </li>
+                    )}
 
                     {options.length === 0 && !loading ? (
                         <li className="px-3 py-2 text-sm text-muted-foreground">
                             {emptyMessage}
                         </li>
                     ) : (
-                        options.map((option, index) => (
+                        options.map((option, index) => {
+                            const optValue = typeof option === 'string' ? option : option.value
+                            const optLabel = typeof option === 'string' ? option : option.label
+                            return (
                             <li
-                                key={option}
-                                onClick={() => handleSelect(option)}
+                                key={optValue}
+                                onClick={() => handleSelect(optValue)}
                                 onMouseEnter={() => setHighlightedIndex(index)}
                                 className={cn(
                                     "px-3 py-2 cursor-pointer transition-colors",
                                     "hover:bg-accent",
                                     highlightedIndex === index && "bg-accent",
-                                    value === option && "bg-primary/10"
+                                    value === optValue && "bg-primary/10"
                                 )}
                             >
                                 <div className="flex items-center justify-between">
-                                    <span className="text-sm">{option}</span>
-                                    {value === option && (
+                                    <span className="text-sm">{optLabel}</span>
+                                    {value === optValue && (
                                         <Check className="h-4 w-4 text-primary shrink-0" />
                                     )}
                                 </div>
                             </li>
-                        ))
+                            )
+                        })
                     )}
 
                     {/* Loading more indicator */}

@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import * as dns from 'node:dns';
 import * as nodemailer from 'nodemailer';
+import * as SMTPTransport from 'nodemailer/lib/smtp-transport';
 import { PrismaService } from '../../prisma/prisma.service';
 
 interface SendEmailOptions {
@@ -35,28 +37,43 @@ export class EmailService {
 
     private initTransporter() {
         const useSendGrid = this.configService.get<string>('USE_SENDGRID') === 'true';
+        const preferIpv4 =
+            this.configService.get<string>('SMTP_PREFER_IPV4') === 'true' ||
+            Boolean(process.env.RENDER) ||
+            Boolean(process.env.RENDER_SERVICE_ID);
+
+        if (preferIpv4) {
+            try {
+                dns.setDefaultResultOrder('ipv4first');
+            } catch {
+                // ignore
+            }
+        }
 
         if (useSendGrid) {
             // SendGrid SMTP relay (still SMTP; recommended for Render)
-            this.transporter = nodemailer.createTransport({
+            const transportOptions: SMTPTransport.Options = {
                 host: 'smtp.sendgrid.net',
                 port: 587,
                 auth: {
                     user: 'apikey',
                     pass: this.configService.get<string>('SENDGRID_API_KEY'),
                 },
-            });
+            };
+            this.transporter = nodemailer.createTransport(transportOptions);
         } else {
             // Generic SMTP configuration
-            this.transporter = nodemailer.createTransport({
-                host: this.configService.get<string>('SMTP_HOST', 'smtp.gmail.com'),
+            const host = this.configService.get<string>('SMTP_HOST', 'smtp.gmail.com');
+            const transportOptions: SMTPTransport.Options = {
+                host,
                 port: parseInt(this.configService.get<string>('SMTP_PORT') || '587'),
                 secure: this.configService.get<string>('SMTP_SECURE') === 'true',
                 auth: {
                     user: this.configService.get<string>('SMTP_USER'),
                     pass: this.configService.get<string>('SMTP_PASS'),
                 },
-            });
+            };
+            this.transporter = nodemailer.createTransport(transportOptions);
         }
 
         // Verify transporter at startup so config issues show up immediately in logs
