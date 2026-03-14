@@ -85,8 +85,13 @@ export function InfiniteAutocomplete({
         const newValue = e.target.value
         setInternalSearch(newValue)
         onSearchChange?.(newValue)
-        setOpen(true)
-        setHighlightedIndex(0)
+        if (newValue.trim().length > 0) {
+            setOpen(true)
+            setHighlightedIndex(0)
+        } else {
+            setOpen(false)
+            setHighlightedIndex(-1)
+        }
     }
 
     const handleSelect = (option: string) => {
@@ -108,7 +113,9 @@ export function InfiniteAutocomplete({
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (!open) {
             if (e.key === "ArrowDown" || e.key === "Enter" || e.key === " ") {
-                setOpen(true)
+                if (internalSearch.trim().length > 0) {
+                    setOpen(true)
+                }
             }
             return
         }
@@ -168,7 +175,7 @@ export function InfiniteAutocomplete({
                             ignoreNextFocusRef.current = false
                             return
                         }
-                        setOpen(true)
+                        // Don't open dropdown on focus - only open when user types
                     }}
                     onKeyDown={handleKeyDown}
                     placeholder={placeholder}
@@ -176,8 +183,7 @@ export function InfiniteAutocomplete({
                     className="pr-8"
                 />
                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                    {loading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-                    {selectedLabel && !loading && (
+                    {selectedLabel && (
                         <button
                             type="button"
                             onClick={handleClear}
@@ -189,7 +195,7 @@ export function InfiniteAutocomplete({
                 </div>
             </div>
 
-            {open && (
+            {open && internalSearch.trim().length > 0 && (
                 <ul
                     ref={listRef}
                     onScroll={handleScroll}
@@ -202,13 +208,13 @@ export function InfiniteAutocomplete({
                             onMouseEnter={() => setHighlightedIndex(-1)}
                             className={cn(
                                 "px-3 py-2 cursor-pointer transition-colors hover:bg-accent",
-                                (!value || value === allValue) && "bg-primary/10"
+                                (!value || value === allValue) && "bg-primary text-white"
                             )}
                         >
                             <div className="flex items-center justify-between">
                                 <span className="text-sm font-medium">{allOptionLabel}</span>
                                 {(!value || value === allValue) && (
-                                    <Check className="h-4 w-4 text-primary shrink-0" />
+                                    <Check className="h-4 w-4 text-white shrink-0" />
                                 )}
                             </div>
                         </li>
@@ -231,13 +237,13 @@ export function InfiniteAutocomplete({
                                     "px-3 py-2 cursor-pointer transition-colors",
                                     "hover:bg-accent",
                                     highlightedIndex === index && "bg-accent",
-                                    value === optValue && "bg-primary/10"
+                                    value === optValue && "bg-primary text-white"
                                 )}
                             >
                                 <div className="flex items-center justify-between">
                                     <span className="text-sm">{optLabel}</span>
                                     {value === optValue && (
-                                        <Check className="h-4 w-4 text-primary shrink-0" />
+                                        <Check className="h-4 w-4 text-white shrink-0" />
                                     )}
                                 </div>
                             </li>

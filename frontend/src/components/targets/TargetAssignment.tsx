@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
 import { getErrorMessage } from '@/lib/error-utils';
@@ -17,7 +17,7 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, AlertCircle } from 'lucide-react';
+import { PlusCircle, AlertCircle, Calendar as CalendarIcon } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { InfiniteAutocomplete } from '@/components/ui/infinite-autocomplete';
@@ -54,6 +54,7 @@ export function TargetAssignment({
     const [amount, setAmount] = useState('');
     const [month, setMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
     const [error, setError] = useState<string | null>(null);
+    const monthInputRef = useRef<HTMLInputElement>(null);
 
     // Determine if this is Super Admin assigning to Managers
     const isSuperAdminMode = user?.role === 'SUPER_ADMIN' && !parentTargetId;
@@ -242,13 +243,34 @@ export function TargetAssignment({
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="month">Month</Label>
-                        <Input
-                            id="month"
-                            type="month"
-                            value={month}
-                            onChange={(e) => setMonth(e.target.value)}
-                            required
-                        />
+                        <div className="flex items-center gap-2">
+                            <Input
+                                ref={monthInputRef}
+                                id="month"
+                                type="month"
+                                value={month}
+                                onChange={(e) => setMonth(e.target.value)}
+                                required
+                                className="flex-1"
+                            />
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                onClick={() => {
+                                    const el = monthInputRef.current as any;
+                                    if (!el) return;
+                                    if (typeof el.showPicker === 'function') {
+                                        el.showPicker();
+                                        return;
+                                    }
+                                    monthInputRef.current?.focus();
+                                    monthInputRef.current?.click();
+                                }}
+                            >
+                                <CalendarIcon className="h-4 w-4" />
+                            </Button>
+                        </div>
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="amount">

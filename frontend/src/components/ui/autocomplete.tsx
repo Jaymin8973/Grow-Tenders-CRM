@@ -154,7 +154,7 @@ export function Autocomplete({
                             ignoreNextFocusRef.current = false
                             return
                         }
-                        setOpen(true)
+                        // Don't open dropdown on focus - only open when user types
                     }}
                     onKeyDown={handleKeyDown}
                     placeholder={placeholder}
@@ -190,7 +190,7 @@ export function Autocomplete({
                                 "px-3 py-2 cursor-pointer transition-colors",
                                 "hover:bg-accent",
                                 highlightedIndex === index && "bg-accent",
-                                selectedOption?.value === option.value && "bg-primary/10"
+                                selectedOption?.value === option.value && "bg-primary text-white"
                             )}
                         >
                             <div className="flex items-center justify-between">
@@ -205,7 +205,7 @@ export function Autocomplete({
                                     )}
                                 </div>
                                 {selectedOption?.value === option.value && (
-                                    <Check className="h-4 w-4 text-primary shrink-0" />
+                                    <Check className="h-4 w-4 text-white shrink-0" />
                                 )}
                             </div>
                         </li>

@@ -108,19 +108,18 @@ export function BulkAssignDialog({
                 <div className="grid gap-4 py-4">
                     <div className="space-y-2">
                         <Label>Select Employee</Label>
-                        {isLoading ? (
+                        {/* {isLoading ? (
                             <div className="flex items-center gap-2 p-2 border rounded-md">
                                 <Loader2 className="h-4 w-4 animate-spin" />
                                 <span className="text-sm text-muted-foreground">Loading...</span>
                             </div>
-                        ) : (
+                        ) : ( */}
                             <InfiniteAutocomplete
                                 value={selectedUserId}
                                 onValueChange={setSelectedUserId}
                                 placeholder="Search employee..."
                                 emptyMessage="No employees found"
                                 options={employeeOptions}
-                                loading={isLoading}
                                 showAllOption={false}
                                 hasMore={!!hasNextPage}
                                 loadingMore={isFetchingNextPage}
@@ -128,7 +127,7 @@ export function BulkAssignDialog({
                                 searchValue={employeeSearch}
                                 onSearchChange={setEmployeeSearch}
                             />
-                        )}
+                        {/* )} */}
                     </div>
                 </div>
                 <DialogFooter>

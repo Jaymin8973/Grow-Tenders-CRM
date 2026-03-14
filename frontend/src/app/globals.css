@@ -221,3 +221,9 @@ select,
 textarea {
   @apply transition-colors duration-200;
 }
+
+input[type='month']::-webkit-calendar-picker-indicator {
+  opacity: 1;
+  display: block;
+  cursor: pointer;
+}

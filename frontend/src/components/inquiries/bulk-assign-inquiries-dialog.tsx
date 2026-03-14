@@ -118,7 +118,6 @@ export function BulkAssignInquiriesDialog({
                                 placeholder="Search employee..."
                                 emptyMessage="No employees found"
                                 options={employeeOptions}
-                                loading={isLoading}
                                 showAllOption={false}
                                 hasMore={!!hasNextPage}
                                 loadingMore={isFetchingNextPage}

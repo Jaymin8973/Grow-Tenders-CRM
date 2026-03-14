@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
 import { getErrorMessage } from '@/lib/error-utils';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { InfiniteAutocomplete } from '@/components/ui/infinite-autocomplete';
+import { Autocomplete } from '@/components/ui/autocomplete';
 import { useToast } from '@/hooks/use-toast';
 import { Upload, Loader2, CheckCircle } from 'lucide-react';
 
@@ -17,75 +17,51 @@ export function PaymentRequestForm() {
     const queryClient = useQueryClient();
     const [amount, setAmount] = useState('');
     const [notes, setNotes] = useState('');
-    const [leadId, setLeadId] = useState('');
-    const [customerId, setCustomerId] = useState('');
+    const [relatedEntity, setRelatedEntity] = useState('');
     const [file, setFile] = useState<File | null>(null);
-    const [leadSearch, setLeadSearch] = useState('');
-    const [customerSearch, setCustomerSearch] = useState('');
+    const [relatedSearch, setRelatedSearch] = useState('');
 
-    const {
-        data: leads,
-        isLoading: isLoadingLeads,
-        fetchNextPage: fetchNextLeadsPage,
-        hasNextPage: hasMoreLeads,
-        isFetchingNextPage: isLoadingMoreLeads,
-    } = useInfiniteQuery({
-        queryKey: ['leads', 'options', { search: leadSearch }],
-        initialPageParam: 1,
-        queryFn: async ({ pageParam }) => {
+    const { data: leadsData } = useQuery({
+        queryKey: ['leads', 'options', { search: relatedSearch }],
+        queryFn: async () => {
             const params = new URLSearchParams();
-            params.set('page', String(pageParam ?? 1));
+            params.set('page', '1');
             params.set('limit', '50');
-            if (leadSearch) params.set('search', leadSearch);
+            if (relatedSearch) params.set('search', relatedSearch);
             const response = await apiClient.get(`/leads/options?${params.toString()}`);
             return response.data;
         },
-        getNextPageParam: (lastPage: any) => {
-            const page = Number(lastPage?.meta?.page ?? 1);
-            const totalPages = Number(lastPage?.meta?.totalPages ?? 1);
-            if (page < totalPages) return page + 1;
-            return undefined;
-        },
     });
 
-    const leadOptions = leads?.pages
-        ?.flatMap((p: any) => (Array.isArray(p?.data) ? p.data : []))
-        .map((lead: any) => ({
-            value: lead.id,
-            label: `${lead.firstName} ${lead.lastName}`,
-        })) || [];
-
-    const {
-        data: customers,
-        isLoading: isLoadingCustomers,
-        fetchNextPage: fetchNextCustomersPage,
-        hasNextPage: hasMoreCustomers,
-        isFetchingNextPage: isLoadingMoreCustomers,
-    } = useInfiniteQuery({
-        queryKey: ['customers', 'options', { search: customerSearch }],
-        initialPageParam: 1,
-        queryFn: async ({ pageParam }) => {
+    const { data: customersData } = useQuery({
+        queryKey: ['customers', 'options', { search: relatedSearch }],
+        queryFn: async () => {
             const params = new URLSearchParams();
-            params.set('page', String(pageParam ?? 1));
+            params.set('page', '1');
             params.set('limit', '50');
-            if (customerSearch) params.set('search', customerSearch);
+            if (relatedSearch) params.set('search', relatedSearch);
             const response = await apiClient.get(`/customers/options?${params.toString()}`);
             return response.data;
         },
-        getNextPageParam: (lastPage: any) => {
-            const page = Number(lastPage?.meta?.page ?? 1);
-            const totalPages = Number(lastPage?.meta?.totalPages ?? 1);
-            if (page < totalPages) return page + 1;
-            return undefined;
-        },
     });
 
-    const customerOptions = customers?.pages
-        ?.flatMap((p: any) => (Array.isArray(p?.data) ? p.data : []))
+    const leadOptions = (Array.isArray(leadsData?.data) ? leadsData.data : leadsData?.items || [])
+        .map((lead: any) => ({
+            value: `lead:${lead.id}`,
+            label: `${lead.firstName} ${lead.lastName}`,
+            subtitle: 'Lead',
+            searchTerms: `${lead.firstName || ''} ${lead.lastName || ''} ${lead.company || ''} ${lead.phone || ''} ${lead.email || ''}`,
+        }));
+
+    const customerOptions = (Array.isArray(customersData?.data) ? customersData.data : customersData?.items || [])
         .map((customer: any) => ({
-            value: customer.id,
+            value: `customer:${customer.id}`,
             label: `${customer.firstName} ${customer.lastName}`,
-        })) || [];
+            subtitle: 'Customer',
+            searchTerms: `${customer.firstName || ''} ${customer.lastName || ''} ${customer.company || ''} ${customer.phone || ''} ${customer.email || ''}`,
+        }));
+
+    const relatedOptions = [...leadOptions, ...customerOptions];
 
     const mutation = useMutation({
         mutationFn: async (formData: FormData) => {
@@ -97,8 +73,8 @@ export function PaymentRequestForm() {
             toast({ title: 'Payment request submitted successfully' });
             setAmount('');
             setNotes('');
-            setLeadId('');
-            setCustomerId('');
+            setRelatedEntity('');
+            setRelatedSearch('');
             setFile(null);
             queryClient.invalidateQueries({ queryKey: ['target-stats'] });
             // If we listed requests somewhere, invalidate that too
@@ -119,8 +95,11 @@ export function PaymentRequestForm() {
         const formData = new FormData();
         formData.append('amount', amount);
         if (notes) formData.append('notes', notes);
-        if (leadId && leadId !== 'none') formData.append('leadId', leadId);
-        if (customerId && customerId !== 'none') formData.append('customerId', customerId);
+        if (relatedEntity) {
+            const [type, id] = relatedEntity.split(':');
+            if (type === 'lead' && id) formData.append('leadId', id);
+            if (type === 'customer' && id) formData.append('customerId', id);
+        }
         if (file) formData.append('screenshot', file);
 
         mutation.mutate(formData);
@@ -146,42 +125,15 @@ export function PaymentRequestForm() {
                         />
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="lead">Related Lead (Optional)</Label>
-                            <InfiniteAutocomplete
-                                value={leadId || 'none'}
-                                onValueChange={setLeadId}
-                                placeholder="Search lead (name/company/phone/email)..."
-                                emptyMessage="No leads found"
-                                options={[{ value: 'none', label: 'None' }, ...leadOptions]}
-                                loading={isLoadingLeads}
-                                showAllOption={false}
-                                hasMore={!!hasMoreLeads}
-                                loadingMore={isLoadingMoreLeads}
-                                onLoadMore={() => fetchNextLeadsPage()}
-                                searchValue={leadSearch}
-                                onSearchChange={setLeadSearch}
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="customer">Related Customer (Optional)</Label>
-                            <InfiniteAutocomplete
-                                value={customerId || 'none'}
-                                onValueChange={setCustomerId}
-                                placeholder="Search customer (name/company/phone/email)..."
-                                emptyMessage="No customers found"
-                                options={[{ value: 'none', label: 'None' }, ...customerOptions]}
-                                loading={isLoadingCustomers}
-                                showAllOption={false}
-                                hasMore={!!hasMoreCustomers}
-                                loadingMore={isLoadingMoreCustomers}
-                                onLoadMore={() => fetchNextCustomersPage()}
-                                searchValue={customerSearch}
-                                onSearchChange={setCustomerSearch}
-                            />
-                        </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="related">Related Lead/Customer (Optional)</Label>
+                        <Autocomplete
+                            value={relatedEntity}
+                            onValueChange={setRelatedEntity}
+                            placeholder="Search lead/customer (name/company/phone/email)..."
+                            emptyMessage="No results found"
+                            options={relatedOptions}
+                        />
                     </div>
 
                     <div className="space-y-2">

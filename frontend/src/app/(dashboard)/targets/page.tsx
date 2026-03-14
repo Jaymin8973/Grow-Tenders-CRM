@@ -1,7 +1,8 @@
 
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
 import { getErrorMessage } from '@/lib/error-utils';
@@ -42,6 +43,7 @@ import {
     Trash2,
     MoreHorizontal,
     UserCircle,
+    CalendarIcon,
 } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -72,6 +74,7 @@ export default function TargetsPage() {
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
     const [editTarget, setEditTarget] = useState<any>(null);
     const [deleteConfirm, setDeleteConfirm] = useState<any>(null);
+    const monthInputRef = useRef<HTMLInputElement>(null);
 
     const isSuperAdmin = user?.role === 'SUPER_ADMIN';
     const isManager = user?.role === 'MANAGER';
@@ -452,11 +455,29 @@ export default function TargetsPage() {
                                 />
                             </div>
                             <Input
+                                ref={monthInputRef}
                                 type="month"
                                 value={month}
                                 onChange={(e) => setMonth(e.target.value)}
                                 className="w-[150px]"
                             />
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                onClick={() => {
+                                    const el = monthInputRef.current as any;
+                                    if (!el) return;
+                                    if (typeof el.showPicker === 'function') {
+                                        el.showPicker();
+                                        return;
+                                    }
+                                    monthInputRef.current?.focus();
+                                    monthInputRef.current?.click();
+                                }}
+                            >
+                                <CalendarIcon className="h-4 w-4" />
+                            </Button>
                         </div>
                     </div>
                 </CardHeader>
