@@ -16,6 +16,7 @@ services:
       NODE_ENV: production
       PORT: "3001"
       DATABASE_URL: mongodb+srv://officialgrowtender_db_user:nkWB79kSeuptF1tA@growtender-prod-cluster.rvzdut.mongodb.net/growtender?appName=growtender-prod-cluster
+      SMTP_ENCRYPTION_KEY: J8v9pQ2kL4xZ7mN1sT3yU5iO6aS0dF9g
       REDIS_HOST: redis
       REDIS_PORT: "6379"
     env_file:
