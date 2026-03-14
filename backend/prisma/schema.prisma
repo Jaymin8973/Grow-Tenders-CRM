@@ -7,7 +7,7 @@ generator client {
 
 datasource db {
   provider = "mongodb"
-  url      = "mongodb+srv://growtendersdevops_db_user:w4BKvxnZkazfoQPi@grow-tenders.qnbysvt.mongodb.net/salescrm?appName=grow-tenders"
+  url      = env("DATABASE_URL")
 }
 
 // Enums

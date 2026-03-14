@@ -15,6 +15,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: "3001"
+      DATABASE_URL: ${DATABASE_URL}
       REDIS_HOST: redis
       REDIS_PORT: "6379"
     env_file:
