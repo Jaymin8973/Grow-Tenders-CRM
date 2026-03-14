@@ -214,7 +214,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout,
         refreshProfile,
         isAuthenticated: !!customer,
-        hasSubscription: customer?.subscriptionActive || false,
+        hasSubscription: customer?.subscriptionActive || 
+          (customer?.freeTrialActive && (!customer?.freeTrialEndDate || new Date(customer.freeTrialEndDate) > new Date())) || false,
       }}
     >
       {children}

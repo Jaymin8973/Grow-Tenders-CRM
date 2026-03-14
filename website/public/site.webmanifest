@@ -1,8 +1,9 @@
 {
-  "name": "Grow Tender - GeM Tender Portal",
+  "name": "Grow Tender - India's #1 GeM Tender Portal",
   "short_name": "Grow Tender",
-  "description": "India's #1 GeM Tender Portal - Track government tenders in real-time",
+  "description": "Track 2,45,000+ Government e-Marketplace tenders in real-time. Get instant alerts and win more government contracts.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#f8fafc",
   "theme_color": "#1a4f72",
@@ -19,6 +20,8 @@
       "type": "image/png"
     }
   ],
-  "categories": ["business", "government"],
-  "lang": "en-IN"
+  "categories": ["business", "government", "productivity"],
+  "lang": "en-IN",
+  "dir": "ltr",
+  "prefer_related_applications": false
 }

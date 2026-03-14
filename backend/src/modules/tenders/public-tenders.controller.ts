@@ -10,8 +10,13 @@ import {
     Headers,
     UnauthorizedException,
     Body,
+    Res,
+    ForbiddenException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery, ApiBearerAuth, ApiHeader } from '@nestjs/swagger';
+import { Response } from 'express';
+import * as fs from 'fs';
+import * as path from 'path';
 import { TendersService } from './tenders.service';
 import { CustomerJwtAuthGuard } from '../../common/guards/customer-jwt.guard';
 import { Public } from '../../common/decorators/public.decorator';
@@ -21,6 +26,7 @@ import { CurrentCustomer } from '../../common/decorators/current-customer.decora
 @Controller('public/tenders')
 export class PublicTendersController {
     constructor(private readonly tendersService: TendersService) { }
+    private uploadDir = path.join(process.cwd(), 'uploads');
 
     @Get()
     @Public()
@@ -238,6 +244,89 @@ export class PublicTendersController {
             accessLevel: 'limited',
             subscriptionRequired: true,
         };
+    }
+
+    // Download GeM document PDF directly from GeM URL (like CRM)
+    @Get(':tenderId/gem-document')
+    @UseGuards(CustomerJwtAuthGuard)
+    @ApiBearerAuth('Customer-JWT')
+    @ApiOperation({ summary: 'Download original GeM bid document PDF (requires subscription or free trial)' })
+    async downloadGemDocument(
+        @CurrentCustomer() customer: any,
+        @Param('tenderId') tenderId: string,
+        @Res() res: Response,
+    ) {
+        // Check if user has subscription or valid free trial
+        const hasAccess = customer?.subscriptionActive || customer?.freeTrialActive;
+        
+        if (!hasAccess) {
+            throw new ForbiddenException('Subscription required to download documents');
+        }
+
+        // Check if free trial is still valid
+        if (customer?.freeTrialActive && customer?.freeTrialEndDate) {
+            if (new Date(customer.freeTrialEndDate) < new Date()) {
+                throw new ForbiddenException('Free trial has expired. Please subscribe to download documents.');
+            }
+        }
+
+        // Get tender and download PDF from GeM
+        const { buffer, bidNo } = await this.tendersService.downloadGemDocument(tenderId);
+        const safeName = (bidNo || 'unknown').replace(/[/\\:*?"<>|]+/g, '-');
+
+        // Record download in history
+        await this.tendersService.addTenderHistory(tenderId, 'downloaded', customer.id);
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="GeM-Bidding-${safeName}.pdf"`);
+        res.setHeader('Content-Length', buffer.length);
+        res.send(buffer);
+    }
+
+    // Download attachment endpoint
+    @Get(':tenderId/attachments/:attachmentId/download')
+    @UseGuards(CustomerJwtAuthGuard)
+    @ApiBearerAuth('Customer-JWT')
+    @ApiOperation({ summary: 'Download a tender attachment (requires subscription or free trial)' })
+    async downloadAttachment(
+        @CurrentCustomer() customer: any,
+        @Param('tenderId') tenderId: string,
+        @Param('attachmentId') attachmentId: string,
+        @Res() res: Response,
+    ) {
+        // Check if user has subscription or valid free trial
+        const hasAccess = customer?.subscriptionActive || customer?.freeTrialActive;
+        
+        if (!hasAccess) {
+            throw new ForbiddenException('Subscription required to download documents');
+        }
+
+        // Check if free trial is still valid
+        if (customer?.freeTrialActive && customer?.freeTrialEndDate) {
+            if (new Date(customer.freeTrialEndDate) < new Date()) {
+                throw new ForbiddenException('Free trial has expired. Please subscribe to download documents.');
+            }
+        }
+
+        // Get attachment and verify it belongs to the tender
+        const attachment = await this.tendersService.getTenderAttachment(tenderId, attachmentId);
+        
+        if (!attachment) {
+            throw new ForbiddenException('Attachment not found');
+        }
+
+        const filePath = path.join(this.uploadDir, attachment.filename);
+        
+        if (!fs.existsSync(filePath)) {
+            throw new ForbiddenException('File not found');
+        }
+
+        // Record download in history
+        await this.tendersService.addTenderHistory(tenderId, 'downloaded', customer.id);
+
+        res.setHeader('Content-Disposition', `attachment; filename="${attachment.originalName}"`);
+        res.setHeader('Content-Type', attachment.mimeType || 'application/octet-stream');
+        fs.createReadStream(filePath).pipe(res);
     }
 
     // Tender History Endpoints

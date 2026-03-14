@@ -1,0 +1,30 @@
+# Robots.txt for Grow Tender
+# https://grow-tender.com
+
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://grow-tender.com/sitemap.xml
+
+# Disallow admin and auth pages
+Disallow: /login
+Disallow: /register
+Disallow: /dashboard
+Disallow: /profile
+Disallow: /settings
+Disallow: /admin
+
+# Allow all public pages
+Allow: /tenders
+Allow: /pricing
+Allow: /contact
+Allow: /about
+Allow: /faq
+Allow: /privacy-policy
+Allow: /terms-of-use
+Allow: /refund-policy
+Allow: /disclaimer
+
+# Crawl delay (optional - be nice to servers)
+Crawl-delay: 1

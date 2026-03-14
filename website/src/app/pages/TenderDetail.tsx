@@ -16,8 +16,11 @@ export function TenderDetail() {
   const [isSaved, setIsSaved] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
 
-  // Check if user has limited access
-  const isLimited = tender?.accessLevel === 'limited' || (!hasSubscription && tender?.subscriptionRequired);
+  // Check if user has limited access (free trial users have full access)
+  const isFreeTrialValid = customer?.freeTrialActive && 
+    (!customer?.freeTrialEndDate || new Date(customer.freeTrialEndDate) > new Date());
+  const hasFullAccess = hasSubscription || isFreeTrialValid || tender?.accessLevel === 'full';
+  const isLimited = !hasFullAccess && tender?.subscriptionRequired;
 
   // Check if tender is saved
   useEffect(() => {
@@ -125,9 +128,44 @@ export function TenderDetail() {
   const closingDate = tender.closingDate;
   const openingDate = tenderAny.openingDate;
   const description = tender.description || tender.requirements || '-';
-  const documents: Array<{ name: string; url?: string }> = Array.isArray(tender.attachments)
-    ? tender.attachments.map((a) => ({ name: a.filename, url: a.url }))
+  const documents: Array<{ id: string; name: string; url?: string }> = Array.isArray(tender.attachments)
+    ? tender.attachments.map((a) => ({ id: a.id, name: a.filename, url: a.url }))
     : [];
+
+  const handleDownload = async () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      alert('Please login to download documents');
+      return;
+    }
+    
+    if (!tender?.id) return;
+    
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/public/tenders/${tender.id}/gem-document`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        alert(error.message || 'Download failed');
+        return;
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `GeM-Tender-${bidNumber || 'document'}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error('Download error:', err);
+      alert('Failed to download document');
+    }
+  };
 
   const statusColor = {
     Active: { bg: '#dcfce7', text: '#15803d' },
@@ -296,36 +334,23 @@ export function TenderDetail() {
                   </Link>
                 </div>
               ) : (
-                <>
-                  <div className="space-y-2">
-                    {documents.map((doc, idx) => (
-                      <div key={idx}
-                        className="flex items-center justify-between p-3 rounded-lg border hover:shadow-sm transition-shadow"
-                        style={{ borderColor: '#e5e7eb' }}>
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded flex items-center justify-center"
-                            style={{ background: '#fee0c0' }}>
-                            <FileText size={15} style={{ color: '#f5820d' }} />
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium" style={{ color: '#1a4f72' }}>{doc.name}</p>
-                            <p className="text-xs text-gray-400">PDF Document</p>
-                          </div>
-                        </div>
-                        <a
-                          href={doc.url || '#'}
-                          target={doc.url ? '_blank' : undefined}
-                          rel={doc.url ? 'noopener noreferrer' : undefined}
-                          aria-disabled={!doc.url}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-opacity hover:opacity-80"
-                          style={{ background: '#1a4f72', pointerEvents: doc.url ? 'auto' : 'none', opacity: doc.url ? 1 : 0.5 }}>
-                          <Download size={12} /> Download
-                        </a>
-                      </div>
-                    ))}
+                <div className="flex items-center justify-between p-4 rounded-lg border" style={{ borderColor: '#e5e7eb' }}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded flex items-center justify-center" style={{ background: '#fee0c0' }}>
+                      <FileText size={20} style={{ color: '#f5820d' }} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium" style={{ color: '#1a4f72' }}>GeM Bid Document</p>
+                      <p className="text-xs text-gray-400">Official tender document from GeM Portal</p>
+                    </div>
                   </div>
-                  <p className="mt-3 text-xs text-gray-400">* Document download requires active subscription.</p>
-                </>
+                  <button
+                    onClick={handleDownload}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-80 cursor-pointer"
+                    style={{ background: '#1a4f72' }}>
+                    <Download size={16} /> Download PDF
+                  </button>
+                </div>
               )}
             </div>
 

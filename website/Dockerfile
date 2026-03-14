@@ -4,7 +4,11 @@ COPY package*.json ./
 RUN npm ci
 
 FROM deps AS build
+WORKDIR /app
 COPY . .
+# Copy production env file for Vite
+COPY .env.production .env.production
+ENV NODE_ENV=production
 RUN npm run build
 
 FROM nginx:1.27-alpine AS runner

@@ -7,6 +7,8 @@ import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import * as jwt from 'jsonwebtoken';
+import * as https from 'https';
+import * as http from 'http';
 import { INDIAN_CITY_STATE_MAP } from './data/indian-locations';
 
 @Injectable()
@@ -509,13 +511,108 @@ export class TendersService {
                     lastName: true,
                     subscriptionActive: true,
                     planType: true,
+                    freeTrialActive: true,
+                    freeTrialEndDate: true,
                 },
             });
 
-            return customer;
+            // Check if free trial is still valid
+            let isTrialActive = customer?.freeTrialActive;
+            if (isTrialActive && customer?.freeTrialEndDate) {
+                isTrialActive = new Date(customer.freeTrialEndDate) > new Date();
+            }
+
+            // Return customer with computed subscription status (includes free trial)
+            return customer ? {
+                ...customer,
+                subscriptionActive: customer.subscriptionActive || isTrialActive,
+            } : null;
         } catch (error) {
             return null;
         }
+    }
+
+    // Get tender attachment by ID
+    async getTenderAttachment(tenderId: string, attachmentId: string) {
+        return this.prisma.attachment.findFirst({
+            where: {
+                id: attachmentId,
+                tenderId: tenderId,
+            },
+        });
+    }
+
+    // Download GeM document PDF directly from GeM URL
+    async downloadGemDocument(id: string): Promise<{ buffer: Buffer; bidNo: string }> {
+        const tender = await this.prisma.tender.findUnique({
+            where: { id },
+            select: { id: true, referenceId: true, tenderUrl: true },
+        });
+
+        if (!tender) {
+            throw new NotFoundException('Tender not found');
+        }
+
+        // Use tenderUrl as the source URL for GeM document
+        const sourceUrl = tender.tenderUrl;
+        if (!sourceUrl) {
+            throw new NotFoundException('No GeM document URL available for this tender');
+        }
+
+        const buffer = await this.fetchPdfFromGem(sourceUrl);
+
+        if (!buffer || buffer.length < 100) {
+            throw new NotFoundException(
+                'This tender document is no longer available on GeM portal. The bid may have expired or been removed.',
+            );
+        }
+
+        // Validate it's actually a PDF
+        if (buffer.slice(0, 5).toString() !== '%PDF-') {
+            throw new NotFoundException(
+                'GeM returned an invalid response. The document may no longer be available.',
+            );
+        }
+
+        return { buffer, bidNo: tender.referenceId || 'unknown' };
+    }
+
+    // Fetch PDF from GeM URL with proper headers
+    private fetchPdfFromGem(url: string): Promise<Buffer> {
+        return new Promise((resolve, reject) => {
+            const makeRequest = (targetUrl: string, redirectCount = 0) => {
+                if (redirectCount > 5) return reject(new Error('Too many redirects'));
+
+                const protocol = targetUrl.startsWith('https') ? https : http;
+                protocol.get(targetUrl, {
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        'Accept': 'application/pdf,*/*',
+                        'Referer': 'https://bidplus.gem.gov.in/',
+                        'Accept-Language': 'en-US,en;q=0.9',
+                        'Connection': 'keep-alive',
+                    },
+                    timeout: 15000,
+                }, (res) => {
+                    if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+                        const loc = res.headers.location;
+                        const nextUrl = loc.startsWith('http')
+                            ? loc
+                            : new URL(loc, targetUrl).toString();
+                        makeRequest(nextUrl, redirectCount + 1);
+                        return;
+                    }
+                    if (res.statusCode && res.statusCode !== 200) {
+                        return reject(new Error(`HTTP ${res.statusCode}`));
+                    }
+                    const chunks: Buffer[] = [];
+                    res.on('data', (chunk: Buffer) => chunks.push(chunk));
+                    res.on('end', () => resolve(Buffer.concat(chunks)));
+                    res.on('error', reject);
+                }).on('error', reject);
+            };
+            makeRequest(url);
+        });
     }
 
     // Saved Tenders Methods
