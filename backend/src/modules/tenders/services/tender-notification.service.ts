@@ -180,6 +180,13 @@ export class TenderNotificationService {
     ): Promise<void> {
         const subject = `🔔 ${tenders.length} New Tender${tenders.length > 1 ? 's' : ''} Matching Your Preferences`;
 
+        const distinctStates = new Set(
+            (tenders || [])
+                .map((t) => (t?.state ? String(t.state).trim() : ''))
+                .filter(Boolean),
+        );
+        const stateForRouting = distinctStates.size === 1 ? Array.from(distinctStates)[0] : undefined;
+
         const tenderList = tenders.slice(0, 10).map(t => `
             <tr>
                 <td style="padding: 10px; border-bottom: 1px solid #eee;">
@@ -245,6 +252,8 @@ export class TenderNotificationService {
             to: email,
             subject,
             html,
+            purpose: 'AUTO',
+            state: stateForRouting,
         });
     }
 }

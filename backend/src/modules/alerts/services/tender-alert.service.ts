@@ -232,6 +232,8 @@ export class TenderAlertService {
                     html,
                     customerId: match.customerId,
                     tenderId: match.tenderId,
+                    purpose: 'AUTO',
+                    state: match.tenderState || undefined,
                 });
             }
 

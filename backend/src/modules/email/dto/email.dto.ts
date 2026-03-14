@@ -1,4 +1,4 @@
-import { IsEmail, IsOptional, IsString, IsMongoId, IsArray } from 'class-validator';
+import { IsEmail, IsOptional, IsString, IsMongoId, IsArray, IsBoolean, IsInt, Min } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class SendEmailDto {
@@ -97,4 +97,118 @@ export class UpdateEmailTemplateDto {
     @IsString({ each: true })
     @IsOptional()
     variables?: string[];
+}
+
+export class CreateSmtpConfigDto {
+    @ApiProperty({ description: 'Friendly name for this SMTP config' })
+    @IsString()
+    name: string;
+
+    @ApiProperty({ description: 'SMTP host (e.g. smtp.gmail.com)' })
+    @IsString()
+    host: string;
+
+    @ApiProperty({ description: 'SMTP port (e.g. 587)' })
+    @IsInt()
+    @Min(1)
+    port: number;
+
+    @ApiPropertyOptional({ description: 'Use TLS/SSL (secure=true usually means port 465)' })
+    @IsBoolean()
+    @IsOptional()
+    secure?: boolean;
+
+    @ApiProperty({ description: 'SMTP username' })
+    @IsString()
+    username: string;
+
+    @ApiProperty({ description: 'SMTP password or app password' })
+    @IsString()
+    password: string;
+
+    @ApiProperty({ description: 'From email address used for sending' })
+    @IsEmail()
+    fromEmail: string;
+
+    @ApiPropertyOptional({ description: 'Purpose of this SMTP config: OTP or AUTO' })
+    @IsString()
+    @IsOptional()
+    purpose?: string;
+
+    @ApiPropertyOptional({ description: 'States served by this SMTP config (for AUTO routing). Values should match tender/customer state.' })
+    @IsArray()
+    @IsString({ each: true })
+    @IsOptional()
+    states?: string[];
+
+    @ApiPropertyOptional({ description: 'Whether config is enabled (can be disabled without deleting)' })
+    @IsBoolean()
+    @IsOptional()
+    isEnabled?: boolean;
+
+    @ApiPropertyOptional({ description: 'Whether to activate this config immediately' })
+    @IsBoolean()
+    @IsOptional()
+    activate?: boolean;
+}
+
+export class UpdateSmtpConfigDto {
+    @ApiPropertyOptional({ description: 'Friendly name for this SMTP config' })
+    @IsString()
+    @IsOptional()
+    name?: string;
+
+    @ApiPropertyOptional({ description: 'SMTP host' })
+    @IsString()
+    @IsOptional()
+    host?: string;
+
+    @ApiPropertyOptional({ description: 'SMTP port' })
+    @IsInt()
+    @Min(1)
+    @IsOptional()
+    port?: number;
+
+    @ApiPropertyOptional({ description: 'Use TLS/SSL' })
+    @IsBoolean()
+    @IsOptional()
+    secure?: boolean;
+
+    @ApiPropertyOptional({ description: 'SMTP username' })
+    @IsString()
+    @IsOptional()
+    username?: string;
+
+    @ApiPropertyOptional({ description: 'SMTP password (if you want to update it)' })
+    @IsString()
+    @IsOptional()
+    password?: string;
+
+    @ApiPropertyOptional({ description: 'From email address used for sending' })
+    @IsEmail()
+    @IsOptional()
+    fromEmail?: string;
+
+    @ApiPropertyOptional({ description: 'Purpose of this SMTP config: OTP or AUTO' })
+    @IsString()
+    @IsOptional()
+    purpose?: string;
+
+    @ApiPropertyOptional({ description: 'States served by this SMTP config (for AUTO routing)' })
+    @IsArray()
+    @IsString({ each: true })
+    @IsOptional()
+    states?: string[];
+
+    @ApiPropertyOptional({ description: 'Whether config is enabled' })
+    @IsBoolean()
+    @IsOptional()
+    isEnabled?: boolean;
+}
+
+export class TestSmtpConfigDto {
+    @ApiPropertyOptional({ description: 'Send a verification email to this address instead of only SMTP verify()' })
+    @IsEmail()
+    @IsOptional()
+    to?: string;
 }

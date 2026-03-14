@@ -89,6 +89,7 @@ export class AuthService {
                     to: user.email,
                     subject: 'Your Super Admin Login OTP',
                     html: `<p>Your OTP is <b>${otpCode}</b>.</p><p>This OTP will expire in ${ttlMinutes} minutes.</p>`,
+                    purpose: 'OTP',
                 });
 
                 if (!sent) {

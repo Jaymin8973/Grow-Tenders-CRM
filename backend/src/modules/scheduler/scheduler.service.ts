@@ -299,6 +299,8 @@ export class SchedulerService {
                         subject: `New Tender: ${tender.title.substring(0, 50)}${tender.title.length > 50 ? '...' : ''}`,
                         html: html,
                         customerId: sub.customerId,
+                        purpose: 'AUTO',
+                        state: tender.state || undefined,
                     });
                     emailsSent++;
                     this.logger.log(`Sent tender alert to ${sub.customer.email} for tender ${tender.referenceId}`);

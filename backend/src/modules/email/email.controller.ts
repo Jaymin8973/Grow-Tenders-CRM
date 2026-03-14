@@ -13,7 +13,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { EmailService } from './email.service';
 import { JwtAuthGuard, RolesGuard } from '@/common/guards';
 import { Roles } from '@/common/decorators';
-import { SendEmailDto, CreateEmailTemplateDto, UpdateEmailTemplateDto } from './dto/email.dto';
+import { SendEmailDto, CreateEmailTemplateDto, UpdateEmailTemplateDto, CreateSmtpConfigDto, UpdateSmtpConfigDto, TestSmtpConfigDto } from './dto/email.dto';
 
 @ApiTags('Email')
 @ApiBearerAuth()
@@ -100,6 +100,55 @@ export class EmailController {
     @ApiOperation({ summary: 'Delete email template' })
     deleteTemplate(@Param('id') id: string) {
         return this.emailService.deleteTemplate(id);
+    }
+
+    // SMTP Configs (Super Admin only)
+    @Get('smtp-configs')
+    @Roles('SUPER_ADMIN')
+    @UseGuards(RolesGuard)
+    @ApiOperation({ summary: 'List SMTP configurations' })
+    listSmtpConfigs() {
+        return this.emailService.listSmtpConfigs();
+    }
+
+    @Post('smtp-configs')
+    @Roles('SUPER_ADMIN')
+    @UseGuards(RolesGuard)
+    @ApiOperation({ summary: 'Create SMTP configuration' })
+    createSmtpConfig(@Body() dto: CreateSmtpConfigDto) {
+        return this.emailService.createSmtpConfig(dto);
+    }
+
+    @Put('smtp-configs/:id')
+    @Roles('SUPER_ADMIN')
+    @UseGuards(RolesGuard)
+    @ApiOperation({ summary: 'Update SMTP configuration' })
+    updateSmtpConfig(@Param('id') id: string, @Body() dto: UpdateSmtpConfigDto) {
+        return this.emailService.updateSmtpConfig(id, dto);
+    }
+
+    @Delete('smtp-configs/:id')
+    @Roles('SUPER_ADMIN')
+    @UseGuards(RolesGuard)
+    @ApiOperation({ summary: 'Delete SMTP configuration' })
+    deleteSmtpConfig(@Param('id') id: string) {
+        return this.emailService.deleteSmtpConfig(id);
+    }
+
+    @Post('smtp-configs/:id/activate')
+    @Roles('SUPER_ADMIN')
+    @UseGuards(RolesGuard)
+    @ApiOperation({ summary: 'Activate SMTP configuration (only one active at a time)' })
+    activateSmtpConfig(@Param('id') id: string) {
+        return this.emailService.activateSmtpConfig(id);
+    }
+
+    @Post('smtp-configs/:id/test')
+    @Roles('SUPER_ADMIN')
+    @UseGuards(RolesGuard)
+    @ApiOperation({ summary: 'Test SMTP configuration (verify and optional test email)' })
+    testSmtpConfig(@Param('id') id: string, @Body() dto: TestSmtpConfigDto) {
+        return this.emailService.testSmtpConfig(id, { to: dto?.to });
     }
 
     // Email Logs
