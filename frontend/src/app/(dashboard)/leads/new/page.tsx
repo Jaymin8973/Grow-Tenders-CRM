@@ -69,6 +69,7 @@ export default function NewLeadPage() {
     const { user } = useAuth();
     const { toast } = useToast();
     const queryClient = useQueryClient();
+    const [inquiryId, setInquiryId] = useState<string | null>(null);
 
     const {
         register,
@@ -85,6 +86,34 @@ export default function NewLeadPage() {
         },
     });
 
+    // Fetch inquiry data if inquiryId is in URL
+    const { data: inquiryData } = useQuery({
+        queryKey: ['inquiry', inquiryId],
+        queryFn: async () => {
+            const res = await apiClient.get(`/inquiries?pageSize=1000`);
+            const inquiry = res.data.items?.find((i: any) => i.id === inquiryId);
+            return inquiry || null;
+        },
+        enabled: !!inquiryId,
+    });
+
+    // Prefill form with inquiry data
+    useEffect(() => {
+        if (inquiryData) {
+            const nameParts = (inquiryData.name || '').trim().split(/\s+/);
+            const firstName = nameParts[0] || '';
+            const lastName = nameParts.slice(1).join(' ') || '';
+            setValue('firstName', firstName);
+            setValue('lastName', lastName);
+            setValue('email', inquiryData.email || '');
+            setValue('mobile', inquiryData.phone || '');
+            setValue('company', inquiryData.type || '');
+            setValue('description', `${inquiryData.subject || ''}\n\n${inquiryData.message || ''}`);
+            setValue('status', 'COLD_LEAD');
+            setValue('source', 'WEBSITE');
+        }
+    }, [inquiryData, setValue]);
+
 
 
 
@@ -95,8 +124,12 @@ export default function NewLeadPage() {
         if (typeof window !== 'undefined') {
             const params = new URLSearchParams(window.location.search);
             const phone = params.get('phone');
+            const inqId = params.get('inquiryId');
             if (phone) {
                 setValue('mobile', phone);
+            }
+            if (inqId) {
+                setInquiryId(inqId);
             }
         }
     }, [setValue]);
@@ -139,6 +172,15 @@ export default function NewLeadPage() {
             return apiClient.post('/leads', data);
         },
         onSuccess: async (response) => {
+            // If lead was created from inquiry, delete the inquiry
+            if (inquiryId) {
+                try {
+                    await apiClient.delete(`/inquiries/${inquiryId}`);
+                    queryClient.invalidateQueries({ queryKey: ['inquiries'] });
+                } catch (error) {
+                    console.error('Failed to delete inquiry:', error);
+                }
+            }
             queryClient.invalidateQueries({ queryKey: ['leads'] });
             queryClient.invalidateQueries({ queryKey: ['lead-stats'] });
             toast({

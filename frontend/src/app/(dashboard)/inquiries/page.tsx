@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { apiClient } from '@/lib/api-client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,7 +18,6 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
-import { AssignInquiryDialog } from '@/components/inquiries/assign-inquiry-dialog';
 import { BulkAssignInquiriesDialog } from '@/components/inquiries/bulk-assign-inquiries-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 
@@ -50,8 +50,7 @@ export default function InquiriesPage() {
     const [page, setPage] = useState(1);
     const [pageSize] = useState(25);
     const [search, setSearch] = useState('');
-    const [assignOpen, setAssignOpen] = useState(false);
-    const [selectedInquiry, setSelectedInquiry] = useState<Inquiry | null>(null);
+    const router = useRouter();
     const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
@@ -159,7 +158,7 @@ export default function InquiriesPage() {
                                 <TableHead>Assignee</TableHead>
                                 <TableHead>Subject</TableHead>
                                 <TableHead className="max-w-[450px]">Message</TableHead>
-                                {isSuperAdmin && <TableHead className="text-right">Action</TableHead>}
+                                {(isSuperAdmin || isEmployee) && <TableHead className="text-right">Action</TableHead>}
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -226,17 +225,16 @@ export default function InquiriesPage() {
                                         <TableCell className="max-w-[450px] truncate" title={inq.message}>
                                             {inq.message}
                                         </TableCell>
-                                        {isSuperAdmin && (
+                                        {(isSuperAdmin || (isEmployee && inq.assignee?.id === user?.id)) && (
                                             <TableCell className="text-right">
                                                 <Button
-                                                    variant="outline"
+                                                    variant="default"
                                                     size="sm"
                                                     onClick={() => {
-                                                        setSelectedInquiry(inq);
-                                                        setAssignOpen(true);
+                                                        router.push(`/leads/new?inquiryId=${inq.id}`);
                                                     }}
                                                 >
-                                                    Assign
+                                                    Convert to Lead
                                                 </Button>
                                             </TableCell>
                                         )}
@@ -245,18 +243,6 @@ export default function InquiriesPage() {
                             )}
                         </TableBody>
                     </Table>
-
-                    {selectedInquiry && (
-                        <AssignInquiryDialog
-                            open={assignOpen}
-                            onOpenChange={(open) => {
-                                setAssignOpen(open);
-                                if (!open) setSelectedInquiry(null);
-                            }}
-                            inquiryId={selectedInquiry.id}
-                            currentAssigneeId={selectedInquiry.assignee?.id || null}
-                        />
-                    )}
 
                     {isSuperAdmin && (
                         <BulkAssignInquiriesDialog
