@@ -32,7 +32,7 @@ export class TenderSchedulerService {
     ) { }
 
     // Run every 4 hours
-    @Cron(CronExpression.EVERY_4_HOURS)
+    @Cron(CronExpression.EVERY_HOUR)
     async handleCron() {
         if (this.isRunning) {
             this.logger.warn('Scraper already running, skipping...');
