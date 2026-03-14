@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+﻿import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
@@ -179,12 +179,12 @@ export class SchedulerService {
                     });
                 };
 
-                // Build document download link
+                // Build document download link - use direct GEM URL if available
                 const baseUrl = (process.env.WEBSITE_BASE_URL || 'https://grow-tender.com').replace(/\/$/, '');
-                const documentLink = `${baseUrl}/tenders/${tender.id}/download-pdf`;
+                const documentLink = tender.tenderUrl || `${baseUrl}/tenders/${tender.id}`;
                 const viewLink = `${baseUrl}/tender/${tender.id}`;
 
-                // Build tender details HTML - Same design as test email
+                // Build tender details HTML - Mobile First, Professional Design
                 const html = `
                     <!DOCTYPE html>
                     <html>
@@ -194,79 +194,99 @@ export class SchedulerService {
                         <meta http-equiv="X-UA-Compatible" content="IE=edge">
                         <style>
                             @media only screen and (max-width: 600px) {
-                                .container { width: 100% !important; padding: 12px !important; }
-                                .btn { display: block !important; width: 100% !important; box-sizing: border-box !important; }
-                                .btn + .btn { margin-top: 10px !important; }
-                                .row { padding: 10px 12px !important; }
-                                .h1 { font-size: 18px !important; }
-                                .title { font-size: 16px !important; }
+                                .email-container { width: 100% !important; padding: 10px !important; }
+                                .button-container { display: block !important; text-align: center !important; }
+                                .button { display: block !important; width: 100% !important; margin: 10px 0 !important; box-sizing: border-box !important; }
+                                .details-table td { display: block !important; width: 100% !important; padding: 8px 0 !important; border-bottom: 1px solid #e2e8f0 !important; }
                             }
                         </style>
                     </head>
-                    <body style="margin:0; padding:0; background:#f2f4f7; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
-                        <div class="container" style="max-width:600px; margin:0 auto; padding:16px;">
-                            <div style="background:#ffffff; border:1px solid #e5e7eb; border-radius:14px; overflow:hidden;">
-                                <div style="padding:16px 16px 12px 16px; background:#ffffff; border-bottom:1px solid #eef2f7;">
-                                    <div class="h1" style="font-size:20px; font-weight:700; color:#0f172a; line-height:1.2;">New Tender Alert</div>
-                                    <div style="margin-top:6px; font-size:12px; color:#64748b;">Grow Tender — Government Tender Updates</div>
+                    <body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+                        <div class="email-container" style="max-width: 600px; margin: 0 auto; padding: 15px;">
+                            <!-- Header -->
+                            <div style="background: linear-gradient(135deg, #1a4f72 0%, #2563eb 100%); padding: 20px; border-radius: 12px 12px 0 0; text-align: center;">
+                                <h1 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 600;">≡ƒöö New Tender Alert</h1>
+                                <p style="color: #e0e7ff; margin: 8px 0 0 0; font-size: 13px;">Grow Tender - Your Gateway to Government Contracts</p>
+                            </div>
+                            
+                            <!-- Main Content -->
+                            <div style="background: #ffffff; padding: 20px; border: 1px solid #e2e8f0; border-top: none;">
+                                <p style="margin: 0 0 15px 0; color: #64748b; font-size: 14px;">
+                                    Hi ${sub.customer.firstName},
+                                </p>
+                                <p style="margin: 0 0 20px 0; color: #334155; font-size: 15px;">
+                                    A new tender matching your preferences has been published:
+                                </p>
+                                
+                                <!-- Tender Title -->
+                                <div style="background: #f1f5f9; border-left: 4px solid #2563eb; padding: 12px 15px; margin-bottom: 20px; border-radius: 0 8px 8px 0;">
+                                    <h2 style="margin: 0; color: #1e293b; font-size: 16px; line-height: 1.4; font-weight: 600;">${tender.title}</h2>
                                 </div>
-
-                                <div style="padding:16px;">
-                                    <div style="font-size:14px; color:#334155; line-height:1.5;">Hi <strong style="color:#0f172a;">${sub.customer.firstName}</strong>,</div>
-                                    <div style="margin-top:6px; font-size:13px; color:#64748b; line-height:1.5;">A new tender matching your preferences has been published.</div>
-
-                                    <div style="margin-top:14px; padding:14px; background:#f8fafc; border:1px solid #e5e7eb; border-radius:12px;">
-                                        <div class="title" style="font-size:16px; font-weight:700; color:#0f172a; line-height:1.35;">${tender.title}</div>
-                                        <div style="margin-top:8px; font-size:12px; color:#64748b;">Bid No: <strong style="color:#0f172a;">${tender.referenceId || 'Not specified'}</strong></div>
-                                    </div>
-
-                                    <div style="margin-top:14px; border:1px solid #e5e7eb; border-radius:12px; overflow:hidden;">
-                                        <div class="row" style="padding:12px 14px; background:#ffffff; border-bottom:1px solid #eef2f7;">
-                                            <div style="font-size:12px; color:#64748b;">Category</div>
-                                            <div style="margin-top:3px; font-size:14px; color:#0f172a; font-weight:600;">${tender.categoryName || 'General'}</div>
-                                        </div>
-                                        <div class="row" style="padding:12px 14px; background:#ffffff; border-bottom:1px solid #eef2f7;">
-                                            <div style="font-size:12px; color:#64748b;">Location</div>
-                                            <div style="margin-top:3px; font-size:14px; color:#0f172a; font-weight:600;">${tender.state || 'India'}${tender.city ? ', ' + tender.city : ''}</div>
-                                        </div>
-                                        <div class="row" style="padding:12px 14px; background:#ffffff; border-bottom:1px solid #eef2f7;">
-                                            <div style="font-size:12px; color:#64748b;">Published</div>
-                                            <div style="margin-top:3px; font-size:14px; color:#0f172a; font-weight:600;">${formatDate(tender.publishDate)}</div>
-                                        </div>
-                                        <div class="row" style="padding:12px 14px; background:#ffffff; border-bottom:1px solid #eef2f7;">
-                                            <div style="font-size:12px; color:#64748b;">Deadline</div>
-                                            <div style="margin-top:3px; font-size:14px; color:#b91c1c; font-weight:700;">${formatDate(tender.closingDate)}</div>
-                                        </div>
-                                        <div class="row" style="padding:12px 14px; background:#ffffff;">
-                                            <div style="font-size:12px; color:#64748b;">Department</div>
-                                            <div style="margin-top:3px; font-size:14px; color:#0f172a; font-weight:600;">${tender.department || 'Not specified'}</div>
-                                        </div>
-                                    </div>
-
-                                    ${tender.description ? `
-                                    <div style="margin-top:14px; padding:14px; background:#ffffff; border:1px solid #e5e7eb; border-radius:12px;">
-                                        <div style="font-size:12px; color:#64748b;">Description</div>
-                                        <div style="margin-top:6px; font-size:13px; color:#0f172a; line-height:1.55;">
-                                            ${tender.description.substring(0, 350)}${tender.description.length > 350 ? '...' : ''}
-                                        </div>
-                                    </div>
-                                    ` : ''}
-
-                                    <div style="margin-top:16px;">
-                                        <div style="text-align:center;">
-                                            <a class="btn" href="${viewLink}" style="display:block; width:100%; max-width:520px; margin:0 auto; text-align:center; background:#2563eb; color:#ffffff; padding:13px 14px; text-decoration:none; border-radius:12px; font-size:14px; font-weight:700;">View Details</a>
-                                            <a class="btn" href="${documentLink}" style="display:block; width:100%; max-width:520px; margin:10px auto 0 auto; text-align:center; background:#059669; color:#ffffff; padding:13px 14px; text-decoration:none; border-radius:12px; font-size:14px; font-weight:700;">Download PDF</a>
-                                        </div>
-                                    </div>
-
-                                    <div style="margin-top:14px; font-size:11px; color:#64748b; line-height:1.5;">
-                                        Tip: Download the PDF to review complete requirements and submit your bid before the deadline.
-                                    </div>
+                                
+                                <!-- Tender Details -->
+                                <table class="details-table" style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 14px;">
+                                    <tr>
+                                        <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; color: #64748b; width: 40%;">≡ƒôï Bid Number</td>
+                                        <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; color: #1e293b; font-weight: 500;">${tender.referenceId || 'Not specified'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; color: #64748b;">≡ƒÅó Category</td>
+                                        <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; color: #1e293b;">${tender.categoryName || 'General'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; color: #64748b;">≡ƒôì Location</td>
+                                        <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; color: #1e293b;">${tender.state || 'India'}${tender.city ? ', ' + tender.city : ''}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; color: #64748b;">≡ƒôà Published</td>
+                                        <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; color: #1e293b;">${formatDate(tender.publishDate)}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; color: #64748b;">ΓÅ░ Deadline</td>
+                                        <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; color: #dc2626; font-weight: 600;">${formatDate(tender.closingDate)}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 10px 0; color: #64748b;">≡ƒÅó Department</td>
+                                        <td style="padding: 10px 0; color: #1e293b;">${tender.department || 'Not specified'}</td>
+                                    </tr>
+                                </table>
+                                
+                                ${tender.description ? `
+                                <!-- Description -->
+                                <div style="margin-bottom: 20px;">
+                                    <h3 style="margin: 0 0 8px 0; color: #1e293b; font-size: 14px; font-weight: 600;">≡ƒô¥ Description</h3>
+                                    <p style="margin: 0; color: #64748b; font-size: 13px; line-height: 1.5; background: #f8fafc; padding: 12px; border-radius: 8px;">
+                                        ${tender.description.substring(0, 400)}${tender.description.length > 400 ? '...' : ''}
+                                    </p>
                                 </div>
-
-                                <div style="padding:12px 16px; background:#ffffff; border-top:1px solid #eef2f7; text-align:center;">
-                                    <div style="font-size:11px; color:#94a3b8;">© 2026 Grow Tender • <a href="${baseUrl}" style="color:#2563eb; text-decoration:none;">grow-tender.com</a></div>
+                                ` : ''}
+                                
+                                <!-- Action Buttons -->
+                                <div class="button-container" style="text-align: center; margin: 25px 0;">
+                                    <a href="${viewLink}" class="button" style="display: inline-block; background-color: #2563eb; color: #ffffff; padding: 14px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px; margin: 5px; box-sizing: border-box;">
+                                        ≡ƒôä View Details
+                                    </a>
+                                    <a href="${documentLink}" class="button" style="display: inline-block; background-color: #059669; color: #ffffff; padding: 14px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px; margin: 5px; box-sizing: border-box;">
+                                        ≡ƒôÑ Download PDF
+                                    </a>
                                 </div>
+                                
+                                <!-- Quick Tip -->
+                                <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 12px; margin-top: 20px;">
+                                    <p style="margin: 0; color: #1e40af; font-size: 12px;">
+                                        <strong>Tip:</strong> Download the PDF document to review complete tender requirements and submit your bid before the deadline.
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <!-- Footer -->
+                            <div style="background: #f8fafc; padding: 15px; border-radius: 0 0 12px 12px; border: 1px solid #e2e8f0; border-top: none; text-align: center;">
+                                <p style="margin: 0 0 8px 0; color: #64748b; font-size: 11px;">
+                                    You're receiving this because you have an active subscription.
+                                </p>
+                                <p style="margin: 0; color: #94a3b8; font-size: 10px;">
+                                    ┬⌐ 2026 Grow Tender | <a href="https://grow-tender.com" style="color: #2563eb; text-decoration: none;">grow-tender.com</a>
+                                </p>
                             </div>
                         </div>
                     </body>
@@ -306,7 +326,7 @@ export class SchedulerService {
         this.logger.log(`Sending test email to ${to}`);
         await this.emailService.sendEmail({
             to,
-            subject: '🔔 Test Tender Alert - Grow Tender',
+            subject: '≡ƒöö Test Tender Alert - Grow Tender',
             html,
         });
         this.logger.log(`Test email sent successfully to ${to}`);
