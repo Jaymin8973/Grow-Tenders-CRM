@@ -15,7 +15,6 @@ import { Register } from './pages/Register';
 import { Dashboard } from './pages/Dashboard';
 import { SavedTenders } from './pages/SavedTenders';
 import { EditProfile } from './pages/EditProfile';
-import { AlertSettings } from './pages/AlertSettings';
 import { ChangePassword } from './pages/ChangePassword';
 import { TenderHistory } from './pages/TenderHistory';
 
@@ -38,7 +37,6 @@ export const router = createBrowserRouter([
       { path: 'dashboard', Component: Dashboard },
       { path: 'saved-tenders', Component: SavedTenders },
       { path: 'edit-profile', Component: EditProfile },
-      { path: 'alert-settings', Component: AlertSettings },
       { path: 'change-password', Component: ChangePassword },
       { path: 'tender-history', Component: TenderHistory },
       { path: '*', Component: NotFound },

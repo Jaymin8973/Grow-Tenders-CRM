@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router';
-import { Calendar, MapPin, Building2, Clock, Eye, ChevronRight, Tag, Bell, FileText } from 'lucide-react';
+import { Calendar, MapPin, Building2, Clock, Eye, ChevronRight, Tag, FileText } from 'lucide-react';
 import { Tender, formatCurrency, daysRemaining, formatDate } from '../../lib/api';
 import { useAuth } from '../../lib/auth-context';
 
@@ -46,11 +46,14 @@ export function TenderCard({ tender, viewMode = 'list' }: TenderCardProps) {
     Draft: { bg: 'bg-gray-50', text: 'text-gray-700', border: 'border-gray-200' },
   }[displayStatus] || { bg: 'bg-gray-50', text: 'text-gray-700', border: 'border-gray-200' };
 
-  const typeColor = {
+  const typeColorMap = {
     Bid: { bg: 'bg-[#eff6ff]', text: 'text-[#1d4ed8]', border: 'border-[#bfdbfe]' },
     RA: { bg: 'bg-[#fef3c7]', text: 'text-[#92400e]', border: 'border-[#fde68a]' },
     Direct: { bg: 'bg-[#f0fdf4]', text: 'text-[#15803d]', border: 'border-[#bbf7d0]' },
-  }[(tender as any).gemType] || { bg: 'bg-[#eff6ff]', text: 'text-[#1d4ed8]', border: 'border-[#bfdbfe]' };
+  };
+
+  const gemTypeKey = (tender as any).gemType as keyof typeof typeColorMap | undefined;
+  const typeColor = (gemTypeKey && typeColorMap[gemTypeKey]) || typeColorMap.Bid;
 
   // Get category name from tender
   const categoryName = tender.category?.name || tender.categoryName || 'General';
@@ -214,9 +217,6 @@ export function TenderCard({ tender, viewMode = 'list' }: TenderCardProps) {
         <div className="flex flex-row lg:flex-col items-center lg:items-end justify-between lg:justify-center border-t lg:border-t-0 lg:border-l border-gray-100 pt-4 lg:pt-0 lg:pl-6 shrink-0 md:min-w-[180px]">
 
           <div className="flex items-center gap-2.5">
-            <button className="p-2.5 rounded-xl border border-gray-200 text-gray-400 hover:text-[#f5820d] hover:border-[#f5820d] hover:bg-orange-50 transition-all bg-white shadow-sm tooltip group" title="Set Alert">
-              <Bell size={18} className="group-hover:animate-wiggle" />
-            </button>
             <Link to={`/tender/${tender.id}`}
               onClick={handleTenderClick}
               className="px-6 py-2.5 rounded-xl text-sm font-bold text-white transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 whitespace-nowrap"

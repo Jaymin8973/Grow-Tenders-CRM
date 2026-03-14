@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { useAuth } from '../../lib/auth-context';
+import { api } from '../../lib/api';
 
 const API_URL = ((import.meta as any).env?.VITE_API_URL as string | undefined) || 'http://localhost:3001/api';
 
@@ -24,6 +25,14 @@ export function TenderDownloadPdf() {
       }
 
       try {
+        if (!id) throw new Error('Tender id missing');
+
+        const tender = await api.getTenderById(id);
+        const tenderUrl = (tender as any)?.tenderUrl as string | undefined;
+        if (!tenderUrl) throw new Error('Document link not available');
+
+        // Keep the existing access/subscription enforcement by hitting the protected endpoint.
+        // We don't need the PDF blob; a successful response is enough.
         const response = await fetch(`${API_URL}/public/tenders/${id}/gem-document`, {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -40,20 +49,7 @@ export function TenderDownloadPdf() {
           throw new Error(data.message || 'Download failed');
         }
 
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        const disposition = response.headers.get('content-disposition') || '';
-        const match = disposition.match(/filename="?([^";]+)"?/i);
-        a.download = match?.[1] || `tender-${id}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-        
-        // Redirect to tender details after download
-        setTimeout(() => navigate(`/tender/${id}`), 1000);
+        window.location.href = tenderUrl;
       } catch (err) {
         console.error('Download error:', err);
         setError(err instanceof Error ? err.message : 'Failed to download document');

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { User, Mail, Phone, Building, Crown, Settings, Bell, FileText, Heart, Clock, ChevronRight, LogOut, Lock, History as HistoryIcon } from 'lucide-react';
+import { User, Mail, Phone, Building, Crown, Settings, FileText, Heart, Clock, ChevronRight, LogOut, Lock, History as HistoryIcon } from 'lucide-react';
 import { useAuth } from '../../lib/auth-context';
 import { api } from '../../lib/api';
 
@@ -170,7 +170,6 @@ export function Dashboard() {
               {[
                 { icon: FileText, label: 'Tenders Viewed', value: 0, color: '#1a4f72' },
                 { icon: Heart, label: 'Saved Tenders', value: savedCount, color: '#ef4444' },
-                { icon: Bell, label: 'Active Alerts', value: 0, color: '#f5820d' },
                 { icon: Clock, label: 'Days Active', value: 0, color: '#10b981' },
               ].map((stat) => (
                 <div key={stat.label} className="bg-white rounded-xl shadow-sm border p-4" style={{ borderColor: '#e5e7eb' }}>
@@ -222,19 +221,6 @@ export function Dashboard() {
                       <div className="text-left">
                         <p className="font-medium text-sm" style={{ color: '#1a4f72' }}>Saved Tenders</p>
                         <p className="text-xs text-gray-500">{savedCount} saved</p>
-                    </div>
-                  </div>
-                  <ChevronRight size={18} className="text-gray-400" />
-                </Link>
-
-                <Link to="/alert-settings" className="flex items-center justify-between p-4 rounded-lg border hover:shadow-sm transition-shadow" style={{ borderColor: '#e5e7eb' }}>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: '#fef3c7' }}>
-                      <Bell size={18} style={{ color: '#f5820d' }} />
-                    </div>
-                    <div className="text-left">
-                      <p className="font-medium text-sm" style={{ color: '#1a4f72' }}>Alert Settings</p>
-                      <p className="text-xs text-gray-500">Manage notifications</p>
                     </div>
                   </div>
                   <ChevronRight size={18} className="text-gray-400" />

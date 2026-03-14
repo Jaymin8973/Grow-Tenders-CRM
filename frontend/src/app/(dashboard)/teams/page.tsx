@@ -40,6 +40,13 @@ export default function TeamsPage() {
 
     const canView = user?.role === 'SUPER_ADMIN' || user?.role === 'MANAGER';
 
+    const month = useMemo(() => {
+        const d = new Date();
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        return `${y}-${m}-01`;
+    }, []);
+
     // Fetch all users to get hierarchy
     const { data: users, isLoading: usersLoading } = useQuery({
         queryKey: ['users'],
@@ -62,6 +69,16 @@ export default function TeamsPage() {
         placeholderData: (prev) => prev,
     });
 
+    const { data: targets, isLoading: targetsLoading } = useQuery({
+        queryKey: ['all-targets-teams', month],
+        queryFn: async () => {
+            const response = await apiClient.get(`/targets?month=${month}`);
+            return response.data;
+        },
+        enabled: !!canView,
+        placeholderData: (prev) => prev,
+    });
+
     const toggleTeam = (managerId: string) => {
         setExpandedTeams(prev => ({ ...prev, [managerId]: !prev[managerId] }));
     };
@@ -69,12 +86,22 @@ export default function TeamsPage() {
     const managers = useMemo(() => {
         const managersMap = new Map<string, any>();
 
+        const targetByUserId = new Map<string, number>();
+        (targets || []).forEach((t: any) => {
+            if (t?.userId) {
+                const prev = targetByUserId.get(t.userId) || 0;
+                targetByUserId.set(t.userId, prev + Number(t.amount || 0));
+            }
+        });
+
         (users || []).forEach((u: any) => {
             if (u.role === 'MANAGER') {
                 managersMap.set(u.id, { 
                     ...u, 
                     team: [], 
                     totalRevenue: 0, 
+                    totalAssignedTarget: 0,
+                    totalPendingTarget: 0,
                     totalLeadsConverted: 0,
                     totalLeadsAssigned: 0,
                     avgConversionRate: 0,
@@ -93,14 +120,28 @@ export default function TeamsPage() {
                     revenue: 0,
                 };
 
-                const employeeWithStats = { ...u, stats };
+                const assignedTarget = targetByUserId.get(u.id) || 0;
+                const achievedTarget = Number(stats.revenue || 0);
+                const pendingTarget = Math.max(assignedTarget - achievedTarget, 0);
+
+                const employeeWithStats = {
+                    ...u,
+                    stats: {
+                        ...stats,
+                        assignedTarget,
+                        achievedTarget,
+                        pendingTarget,
+                    },
+                };
 
                 if (u.managerId && managersMap.has(u.managerId)) {
                     const manager = managersMap.get(u.managerId);
                     manager.team.push(employeeWithStats);
-                    manager.totalRevenue += stats.revenue || 0;
-                    manager.totalLeadsConverted += stats.leadsConverted || 0;
-                    manager.totalLeadsAssigned += stats.leadsAssigned || 0;
+                    manager.totalRevenue += Number(stats.revenue || 0);
+                    manager.totalAssignedTarget += Number(assignedTarget || 0);
+                    manager.totalPendingTarget += Number(pendingTarget || 0);
+                    manager.totalLeadsConverted += Number(stats.leadsConverted || 0);
+                    manager.totalLeadsAssigned += Number(stats.leadsAssigned || 0);
                 }
             }
         });
@@ -116,7 +157,7 @@ export default function TeamsPage() {
         return Array.from(managersMap.values())
             .filter(m => m.team.length > 0 || m.role === 'MANAGER')
             .sort((a, b) => (b.totalRevenue || 0) - (a.totalRevenue || 0));
-    }, [users, productivity]);
+    }, [productivity, targets, users]);
 
     if (!canView) {
         return (
@@ -126,7 +167,7 @@ export default function TeamsPage() {
         );
     }
 
-    if (usersLoading || statsLoading) {
+    if (usersLoading || statsLoading || targetsLoading) {
         return (
             <div className="flex h-full items-center justify-center">
                 <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -265,7 +306,7 @@ export default function TeamsPage() {
                                     <IndianRupee className="h-5 w-5 text-rose-600 dark:text-rose-400" />
                                 </div>
                                 <div>
-                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Revenue</p>
+                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Achieved</p>
                                     <Tooltip>
                                         <TooltipTrigger asChild>
                                             <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 cursor-default">{formatCurrency(totals.revenue)}</p>
@@ -323,7 +364,7 @@ export default function TeamsPage() {
                                         {/* Stats */}
                                         <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4">
                                             <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-900/20">
-                                                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Revenue</p>
+                                                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Achieved</p>
                                                 <p className="text-xl font-bold text-rose-600 dark:text-rose-400">
                                                     {formatCurrency(manager.totalRevenue)}
                                                 </p>
@@ -373,9 +414,9 @@ export default function TeamsPage() {
                                                 <TableHeader>
                                                     <TableRow className="hover:bg-transparent">
                                                         <TableHead className="w-[30%] pl-6 font-semibold">Team Member</TableHead>
-                                                        <TableHead className="font-semibold">Performance</TableHead>
-                                                        <TableHead className="font-semibold">Activity</TableHead>
-                                                        <TableHead className="text-right pr-6 font-semibold">Revenue</TableHead>
+                                                        <TableHead className="font-semibold">Assigned Target</TableHead>
+                                                        <TableHead className="font-semibold">Achieved Target</TableHead>
+                                                        <TableHead className="text-right pr-6 font-semibold">Pending Target</TableHead>
                                                     </TableRow>
                                                 </TableHeader>
                                                 <TableBody>
@@ -399,43 +440,18 @@ export default function TeamsPage() {
                                                                 </div>
                                                             </TableCell>
                                                             <TableCell>
-                                                                <div className="flex items-center gap-4">
-                                                                    <div className="flex flex-col gap-1.5 w-32">
-                                                                        <div className="flex justify-between text-xs font-medium">
-                                                                            <span className="text-muted-foreground">Win Rate</span>
-                                                                            <span className={cn(
-                                                                                "font-bold",
-                                                                                employee.stats.leadConversionRate > 40 ? "text-emerald-600 dark:text-emerald-400" :
-                                                                                employee.stats.leadConversionRate > 20 ? "text-amber-600 dark:text-amber-400" : "text-blue-600 dark:text-blue-400"
-                                                                            )}>
-                                                                                {employee.stats.leadConversionRate}%
-                                                                            </span>
-                                                                        </div>
-                                                                        <div className="h-2 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                                                                            <div
-                                                                                className={cn("h-full rounded-full transition-all",
-                                                                                    employee.stats.leadConversionRate > 40 ? "bg-gradient-to-r from-emerald-400 to-green-500" :
-                                                                                    employee.stats.leadConversionRate > 20 ? "bg-gradient-to-r from-amber-400 to-orange-500" : "bg-gradient-to-r from-blue-400 to-cyan-500"
-                                                                                )}
-                                                                                style={{ width: `${Math.min(employee.stats.leadConversionRate, 100)}%` }}
-                                                                            />
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
+                                                                <span className="text-lg font-bold text-amber-600 dark:text-amber-400">
+                                                                    {formatCurrency(employee.stats.assignedTarget || 0)}
+                                                                </span>
                                                             </TableCell>
                                                             <TableCell>
-                                                                <div className="flex items-center gap-2">
-                                                                    <Badge variant="outline" className="font-medium bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800">
-                                                                        {employee.stats.leadsAssigned} Leads
-                                                                    </Badge>
-                                                                    <Badge variant="outline" className="font-medium bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800">
-                                                                        {employee.stats.leadsConverted} Won
-                                                                    </Badge>
-                                                                </div>
+                                                                <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                                                                    {formatCurrency(employee.stats.achievedTarget || 0)}
+                                                                </span>
                                                             </TableCell>
                                                             <TableCell className="text-right pr-6">
                                                                 <span className="text-lg font-bold text-rose-600 dark:text-rose-400">
-                                                                    {formatCurrency(employee.stats.revenue)}
+                                                                    {formatCurrency(employee.stats.pendingTarget || 0)}
                                                                 </span>
                                                             </TableCell>
                                                         </TableRow>

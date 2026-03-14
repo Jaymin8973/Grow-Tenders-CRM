@@ -2,14 +2,14 @@ import { useParams, Link } from 'react-router';
 import { useState, useEffect } from 'react';
 import {
   ArrowLeft, Calendar, MapPin, Building2, Clock, FileText, Download,
-  Bell, Share2, Eye, Tag, IndianRupee, Package, Truck, Shield, ChevronRight, Lock, Crown, Heart, Loader2
+  Share2, Eye, Tag, IndianRupee, Package, Truck, Shield, ChevronRight, Lock, Crown, Heart, Loader2
 } from 'lucide-react';
 import { useTender } from '../../lib/hooks';
 import { Tender, formatCurrency, daysRemaining, formatDate, api } from '../../lib/api';
 import { useAuth } from '../../lib/auth-context';
 
 export function TenderDetail() {
-  const gemPortalUrl = import.meta.env.VITE_GEM_PORTAL_URL || 'https://gem.gov.in';
+  const gemPortalUrl = ((import.meta as any).env?.VITE_GEM_PORTAL_URL as string | undefined) || 'https://gem.gov.in';
   const { id } = useParams();
   const { tender, loading, error } = useTender(id);
   const { isAuthenticated, hasSubscription, customer } = useAuth();
@@ -133,38 +133,13 @@ export function TenderDetail() {
     : [];
 
   const handleDownload = async () => {
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      alert('Please login to download documents');
+    const url = (tender as any)?.tenderUrl as string | undefined;
+    if (!url) {
+      alert('Document link not available');
       return;
     }
-    
-    if (!tender?.id) return;
-    
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/public/tenders/${tender.id}/gem-document`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        alert(error.message || 'Download failed');
-        return;
-      }
-      
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `GeM-Tender-${bidNumber || 'document'}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (err) {
-      console.error('Download error:', err);
-      alert('Failed to download document');
-    }
+
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   const statusColor = {
@@ -348,7 +323,7 @@ export function TenderDetail() {
                     onClick={handleDownload}
                     className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-80 cursor-pointer"
                     style={{ background: '#1a4f72' }}>
-                    <Download size={16} /> Download PDF
+                    <Download size={16} /> Download Document
                   </button>
                 </div>
               )}
@@ -411,10 +386,6 @@ export function TenderDetail() {
                   style={{ background: '#f5820d' }}>
                   Apply on GeM Portal →
                 </a>
-                <button className="w-full py-3 rounded-xl text-sm font-semibold border flex items-center justify-center gap-2 transition-colors hover:bg-blue-50"
-                  style={{ borderColor: '#1a4f72', color: '#1a4f72' }}>
-                  <Bell size={15} /> Set Alert
-                </button>
                 <button className="w-full py-3 rounded-xl text-sm font-semibold border flex items-center justify-center gap-2 transition-colors hover:bg-gray-50"
                   style={{ borderColor: '#d1d5db', color: '#6b7280' }}>
                   <Share2 size={15} /> Share Tender

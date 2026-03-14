@@ -71,6 +71,21 @@ export function PaymentApprovalList() {
         }
     };
 
+    const getScreenshotHref = (screenshotUrl: string) => {
+        if (!screenshotUrl) return '';
+        if (/^https?:\/\//i.test(screenshotUrl)) return screenshotUrl;
+
+        const apiBaseRaw = (apiClient.defaults.baseURL as string | undefined) ?? '';
+        const withoutApi = apiBaseRaw.replace(/\/?api\/?$/, '');
+        const normalizedBase = withoutApi && !/^https?:\/\//i.test(withoutApi) ? `https://${withoutApi.replace(/^\/+/, '')}` : withoutApi;
+
+        try {
+            return new URL(screenshotUrl, normalizedBase || window.location.origin).toString();
+        } catch {
+            return screenshotUrl;
+        }
+    };
+
     if (isLoading) return <div>Loading requests...</div>;
 
     return (
@@ -113,8 +128,7 @@ export function PaymentApprovalList() {
                                 <TableCell>
                                     {req.screenshotUrl ? (
                                         <a
-                                            // Assuming the API URL base for uploads, might need adjustment based on serve-static
-                                            href={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}${req.screenshotUrl}`}
+                                            href={getScreenshotHref(req.screenshotUrl)}
                                             target="_blank"
                                             rel="noreferrer"
                                             className="flex items-center gap-1 text-blue-600 hover:underline"
