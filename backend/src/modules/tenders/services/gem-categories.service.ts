@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
+import { ProxyAgent } from 'undici';
+import { Dispatcher } from 'undici';
 
 interface GeMCategoryAPI {
     id: string;
@@ -37,6 +39,18 @@ export class GeMCategoriesService {
      * Sync all categories from GeM portal using CSV download API
      * Only syncs once per day - skips if already synced today
      */
+    /**
+     * Get proxy agent if HTTP_PROXY is configured
+     */
+    private getProxyAgent(): Dispatcher | undefined {
+        const proxyUrl = process.env.HTTP_PROXY || process.env.HTTPS_PROXY;
+        if (proxyUrl) {
+            this.logger.log(`Using proxy: ${proxyUrl.replace(/:[^:@]+@/, ':****@')}`);
+            return new ProxyAgent(proxyUrl);
+        }
+        return undefined;
+    }
+
     async syncCategories(): Promise<{ added: number; updated: number; total: number; skipped?: boolean }> {
         this.logger.log('Starting GeM categories sync from CSV API...');
 
@@ -62,12 +76,21 @@ export class GeMCategoriesService {
 
             // Fetch all categories in one CSV request
             const url = `${this.GEM_CATEGORIES_API}?_ln=en&rows=20000`;
-            const response = await fetch(url, {
+            const proxyAgent = this.getProxyAgent();
+            
+            const fetchOptions: RequestInit = {
                 method: 'GET',
                 headers: {
                     'Accept': 'text/csv',
                 },
-            });
+            };
+            
+            // Add proxy agent if configured
+            if (proxyAgent) {
+                (fetchOptions as any).dispatcher = proxyAgent;
+            }
+            
+            const response = await fetch(url, fetchOptions);
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);

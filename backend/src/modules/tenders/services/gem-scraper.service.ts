@@ -906,18 +906,27 @@ export class GemScraperService {
         const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH ||
             (process.platform === 'win32' ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' : undefined);
 
+        const args = [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-blink-features=AutomationControlled',
+            '--disable-web-security',
+            '--window-size=1920,1080',
+            '--start-maximized'
+        ];
+
+        // Add proxy support if HTTP_PROXY is configured
+        const proxyUrl = process.env.HTTP_PROXY || process.env.HTTPS_PROXY;
+        if (proxyUrl) {
+            this.logger.log(`Using proxy for browser: ${proxyUrl.replace(/:[^:@]+@/, ':****@')}`);
+            args.push(`--proxy-server=${proxyUrl}`);
+        }
+
         return puppeteer.launch({
             headless: "new" as any,
             executablePath,
-            args: [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-blink-features=AutomationControlled',
-                '--disable-web-security',
-                '--window-size=1920,1080',
-                '--start-maximized'
-            ],
+            args,
             defaultViewport: null,
         });
     }

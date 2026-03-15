@@ -608,16 +608,26 @@ export class EmailService {
 
         const purpose = (existing.purpose || 'AUTO') as string;
 
-        await this.prisma.$transaction([
-            (this.prisma as any).smtpConfig.updateMany({
-                where: { isActive: true, purpose },
-                data: { isActive: false },
-            }),
-            (this.prisma as any).smtpConfig.update({
+        // For OTP purpose: only 1 active at a time (deactivate others)
+        // For AUTO purpose: allow multiple active (for state-based routing)
+        if (purpose === 'OTP') {
+            await this.prisma.$transaction([
+                (this.prisma as any).smtpConfig.updateMany({
+                    where: { isActive: true, purpose },
+                    data: { isActive: false },
+                }),
+                (this.prisma as any).smtpConfig.update({
+                    where: { id },
+                    data: { isActive: true },
+                }),
+            ]);
+        } else {
+            // AUTO purpose: allow multiple active, just activate this one
+            await (this.prisma as any).smtpConfig.update({
                 where: { id },
                 data: { isActive: true },
-            }),
-        ]);
+            });
+        }
 
         // Bust cache
         this.cachedTransporter = null;
