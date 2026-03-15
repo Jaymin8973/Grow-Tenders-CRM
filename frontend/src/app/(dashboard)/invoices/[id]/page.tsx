@@ -211,7 +211,11 @@ export default function InvoiceDetailPage() {
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', `invoice-${invoice?.invoiceNumber || invoiceId}.pdf`);
+            // Use company name in filename
+            const companyName = invoice?.lead?.company || invoice?.customer?.company || invoice?.companyName || 'Invoice';
+            const safeCompanyName = companyName.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30);
+            const filename = `${safeCompanyName}_${invoice?.invoiceNumber || invoiceId}.pdf`;
+            link.setAttribute('download', filename);
             document.body.appendChild(link);
             link.click();
             link.remove();

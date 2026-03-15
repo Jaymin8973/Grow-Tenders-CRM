@@ -97,7 +97,7 @@ const faqs = [
 
 export function Pricing() {
   const navigate = useNavigate();
-  const { isAuthenticated, customer } = useAuth();
+  const { isAuthenticated, customer, refreshProfile } = useAuth();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [showTrialPopup, setShowTrialPopup] = useState(false);
   const [trialEndDate, setTrialEndDate] = useState<string | null>(null);
@@ -138,6 +138,9 @@ export function Pricing() {
         throw new Error(data.message || 'Failed to activate trial');
       }
 
+      // Refresh auth context to update freeTrialActive status immediately
+      await refreshProfile();
+      
       setTrialEndDate(data.trialEndDate);
       setShowTrialPopup(true);
     } catch (error) {

@@ -63,7 +63,7 @@ export function Home() {
   const [showTrialPopup, setShowTrialPopup] = useState(false);
   const [trialEndDate, setTrialEndDate] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { isAuthenticated, customer } = useAuth();
+  const { isAuthenticated, customer, refreshProfile } = useAuth();
 
   // Check if user can see free trial button
   const canShowFreeTrial = !isAuthenticated || (!customer?.freeTrialUsed && !customer?.freeTrialActive);
@@ -122,6 +122,9 @@ export function Home() {
         throw new Error(data.message || 'Failed to activate trial');
       }
 
+      // Refresh auth context to update freeTrialActive status immediately
+      await refreshProfile();
+      
       setTrialEndDate(data.trialEndDate);
       setShowTrialPopup(true);
     } catch (error) {
