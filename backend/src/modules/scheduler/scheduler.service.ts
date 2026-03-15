@@ -145,9 +145,14 @@ export class SchedulerService {
 
         this.logger.log(`Found ${newTenders.length} new tenders in the last hour.`);
 
-        // 2. Get active subscriptions
+        // 2. Get active subscriptions (exclude free trial users - they can only view tenders, no auto alerts)
         const activeSubscriptions = await this.prisma.tenderSubscription.findMany({
-            where: { isActive: true },
+            where: { 
+                isActive: true,
+                customer: {
+                    freeTrialActive: false, // Exclude free trial users
+                }
+            },
             include: { customer: true },
         });
 
