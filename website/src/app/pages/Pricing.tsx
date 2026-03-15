@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Check, X, Zap, Star, Crown, Shield, Bell, Search, FileText, Phone, ChevronDown, ChevronUp, Mail, MapPin, Upload, FileCheck } from 'lucide-react';
 import { Link, useNavigate } from 'react-router';
-import { StateSelectionModal } from '../components/StateSelectionModal';
 import { FreeTrialPopup } from '../components/FreeTrialPopup';
 import { useAuth } from '../../lib/auth-context';
 
@@ -100,7 +99,6 @@ export function Pricing() {
   const navigate = useNavigate();
   const { isAuthenticated, customer } = useAuth();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const [showStateModal, setShowStateModal] = useState(false);
   const [showTrialPopup, setShowTrialPopup] = useState(false);
   const [trialEndDate, setTrialEndDate] = useState<string | null>(null);
 
@@ -111,41 +109,40 @@ export function Pricing() {
     window.location.href = `/contact?plan=${encodeURIComponent(planName)}`;
   };
 
-  const handleFreeTrialClick = () => {
+  const handleFreeTrialClick = async () => {
     if (!isAuthenticated) {
       // Redirect to register page
       navigate('/register');
       return;
     }
-    // Show state selection modal
-    setShowStateModal(true);
-  };
-
-  const handleStateConfirm = async (state: string) => {
+    // Directly activate free trial (no state selection - users can view tenders but no auto alerts)
     const token = localStorage.getItem('accessToken');
     if (!token) {
       navigate('/login');
       return;
     }
 
-    const response = await fetch(`${API_URL}/public/auth/activate-trial`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ state }),
-    });
+    try {
+      const response = await fetch(`${API_URL}/public/auth/activate-trial`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({}), // No state required
+      });
 
-    const data = await response.json();
+      const data = await response.json();
 
-    if (!response.ok) {
-      throw new Error(data.message || 'Failed to activate trial');
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to activate trial');
+      }
+
+      setTrialEndDate(data.trialEndDate);
+      setShowTrialPopup(true);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Failed to activate trial');
     }
-
-    setShowStateModal(false);
-    setTrialEndDate(data.trialEndDate);
-    setShowTrialPopup(true);
   };
 
   const handleTrialPopupClose = () => {
@@ -294,13 +291,6 @@ export function Pricing() {
           </div>
         </div>
       </div>
-
-      {/* State Selection Modal */}
-      <StateSelectionModal
-        isOpen={showStateModal}
-        onClose={() => setShowStateModal(false)}
-        onConfirm={handleStateConfirm}
-      />
 
       {/* Free Trial Popup */}
       <FreeTrialPopup

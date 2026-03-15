@@ -294,7 +294,7 @@ export class PublicAuthService {
         return { message: 'Password changed successfully' };
     }
 
-    async activateFreeTrial(customerId: string, state: string) {
+    async activateFreeTrial(customerId: string, state?: string) {
         const customer = await this.prisma.customer.findUnique({
             where: { id: customerId },
         });
@@ -316,7 +316,7 @@ export class PublicAuthService {
         const trialEndDate = new Date(now);
         trialEndDate.setDate(trialEndDate.getDate() + 3);
 
-        // Update customer with trial activation
+        // Update customer with trial activation (no state preferences - no auto alerts during trial)
         const updatedCustomer = await this.prisma.customer.update({
             where: { id: customerId },
             data: {
@@ -328,29 +328,18 @@ export class PublicAuthService {
                 subscriptionStartDate: now,
                 subscriptionEndDate: trialEndDate,
                 planType: 'FREE_TRIAL',
-                statePreferences: [state],
+                // No statePreferences - free trial users can view tenders but won't receive auto alerts
             },
         });
 
-        // Create tender subscription for the selected state
-        await this.prisma.tenderSubscription.create({
-            data: {
-                customerId,
-                states: [state],
-                categories: [],
-                isActive: true,
-                startDate: now,
-                endDate: trialEndDate,
-                durationMonths: 0,
-            },
-        });
+        // Do NOT create tender subscription - free trial users don't get auto alerts
+        // They can only view tenders and download documents
 
-        this.logger.log(`Free trial activated for ${customer.email} with state: ${state}`);
+        this.logger.log(`Free trial activated for ${customer.email} (no auto alerts)`);
 
         return {
             message: 'Free trial activated successfully',
             trialEndDate,
-            state,
         };
     }
 

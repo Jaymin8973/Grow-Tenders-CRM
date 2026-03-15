@@ -104,13 +104,13 @@ export class PublicAuthController {
     @UseGuards(CustomerJwtAuthGuard)
     @ApiBearerAuth('Customer-JWT')
     @HttpCode(HttpStatus.OK)
-    @ApiOperation({ summary: 'Activate 3-day free trial with state preference' })
+    @ApiOperation({ summary: 'Activate 3-day free trial (no state required - users can view tenders but no auto alerts)' })
     @ApiResponse({ status: 200, description: 'Free trial activated successfully' })
     @ApiResponse({ status: 400, description: 'Free trial already used or invalid data' })
     @ApiResponse({ status: 401, description: 'Unauthorized' })
     async activateTrial(
         @CurrentCustomer('id') customerId: string,
-        @Body('state') state: string,
+        @Body('state') state?: string,
     ) {
         return this.publicAuthService.activateFreeTrial(customerId, state);
     }
