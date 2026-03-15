@@ -123,6 +123,7 @@ export default function SettingsPage() {
     const [availableStates, setAvailableStates] = useState<string[]>([]);
     const [isStatesLoading, setIsStatesLoading] = useState(false);
     const [statesPopoverOpen, setStatesPopoverOpen] = useState(false);
+    const [editingSmtpId, setEditingSmtpId] = useState<string | null>(null);
 
     const loadAvailableStates = async () => {
         setIsStatesLoading(true);
@@ -250,12 +251,29 @@ export default function SettingsPage() {
         setIsSmtpLoading(true);
         try {
             await apiClient.post(`/email/smtp-configs/${id}/activate`);
-            toast({ title: 'Activated', description: 'Active SMTP updated successfully' });
+            toast({ title: 'Activated', description: 'SMTP config activated successfully' });
             await loadSmtpConfigs();
         } catch (err: any) {
             toast({
                 title: 'Error',
                 description: err.response?.data?.message || 'Failed to activate SMTP config',
+                variant: 'destructive',
+            });
+        } finally {
+            setIsSmtpLoading(false);
+        }
+    };
+
+    const deactivateSmtpConfig = async (id: string) => {
+        setIsSmtpLoading(true);
+        try {
+            await apiClient.post(`/email/smtp-configs/${id}/deactivate`);
+            toast({ title: 'Deactivated', description: 'SMTP config deactivated successfully' });
+            await loadSmtpConfigs();
+        } catch (err: any) {
+            toast({
+                title: 'Error',
+                description: err.response?.data?.message || 'Failed to deactivate SMTP config',
                 variant: 'destructive',
             });
         } finally {
@@ -274,6 +292,112 @@ export default function SettingsPage() {
             toast({
                 title: 'Error',
                 description: err.response?.data?.message || 'Failed to delete SMTP config',
+                variant: 'destructive',
+            });
+        } finally {
+            setIsSmtpLoading(false);
+        }
+    };
+
+    const startEditSmtpConfig = (config: SmtpConfigRow) => {
+        setEditingSmtpId(config.id);
+        setSmtpForm({
+            name: config.name,
+            host: config.host,
+            port: config.port,
+            secure: config.secure,
+            username: config.username,
+            password: '', // Don't prefill password for security
+            fromEmail: config.fromEmail,
+            purpose: config.purpose || 'AUTO',
+            states: config.states || [],
+            isEnabled: config.isEnabled,
+            activate: false,
+        });
+    };
+
+    const cancelEditSmtp = () => {
+        setEditingSmtpId(null);
+        setSmtpForm({
+            name: '',
+            host: 'smtp.gmail.com',
+            port: 587,
+            secure: false,
+            username: '',
+            password: '',
+            fromEmail: '',
+            purpose: 'AUTO',
+            states: [],
+            isEnabled: true,
+            activate: false,
+        });
+    };
+
+    const updateSmtpConfig = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingSmtpId) return;
+
+        // Validate form
+        const errors = validateForm(smtpForm, {
+            name: { fieldName: 'Name', rules: { required: true, minLength: 2 } },
+            host: { fieldName: 'Host', rules: { required: true } },
+            port: { 
+                fieldName: 'Port', 
+                rules: { 
+                    required: true,
+                    custom: (value: any) => {
+                        const num = parseInt(value);
+                        if (isNaN(num) || num < 1 || num > 65535) return 'Port must be between 1 and 65535';
+                        return null;
+                    }
+                } 
+            },
+            username: { fieldName: 'Username', rules: { required: true } },
+            fromEmail: { 
+                fieldName: 'From Email', 
+                rules: { 
+                    required: true, 
+                    pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ 
+                } 
+            },
+        });
+
+        const firstError = getFirstError(errors);
+        if (firstError) {
+            toast({ 
+                title: 'Validation Error', 
+                description: firstError,
+                variant: 'destructive' 
+            });
+            return;
+        }
+
+        setIsSmtpLoading(true);
+        try {
+            const updateData: any = {
+                name: smtpForm.name,
+                host: smtpForm.host,
+                port: smtpForm.port,
+                secure: smtpForm.secure,
+                username: smtpForm.username,
+                fromEmail: smtpForm.fromEmail,
+                purpose: smtpForm.purpose,
+                states: smtpForm.purpose?.toUpperCase() === 'AUTO' ? (smtpForm.states || []) : [],
+                isEnabled: smtpForm.isEnabled,
+            };
+            // Only include password if provided
+            if (smtpForm.password && smtpForm.password.length >= 4) {
+                updateData.password = smtpForm.password;
+            }
+
+            await apiClient.put(`/email/smtp-configs/${editingSmtpId}`, updateData);
+            toast({ title: 'Updated', description: 'SMTP config updated successfully' });
+            cancelEditSmtp();
+            await loadSmtpConfigs();
+        } catch (err: any) {
+            toast({
+                title: 'Error',
+                description: err.response?.data?.message || 'Failed to update SMTP config',
                 variant: 'destructive',
             });
         } finally {
@@ -751,16 +875,37 @@ export default function SettingsPage() {
                                                             </div>
 
                                                             <div className="flex flex-wrap gap-2">
+                                                                {/* Toggle Active/Deactivate */}
+                                                                {c.isActive ? (
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        onClick={() => deactivateSmtpConfig(c.id)}
+                                                                        disabled={isSmtpLoading}
+                                                                        className="text-orange-600 border-orange-300 hover:bg-orange-50"
+                                                                    >
+                                                                        Deactivate
+                                                                    </Button>
+                                                                ) : (
+                                                                    <Button
+                                                                        onClick={() => activateSmtpConfig(c.id)}
+                                                                        disabled={isSmtpLoading || !c.isEnabled}
+                                                                    >
+                                                                        Activate
+                                                                    </Button>
+                                                                )}
+                                                                {/* Edit Button */}
                                                                 <Button
-                                                                    onClick={() => activateSmtpConfig(c.id)}
-                                                                    disabled={isSmtpLoading || c.isActive || !c.isEnabled}
+                                                                    variant="outline"
+                                                                    onClick={() => startEditSmtpConfig(c)}
+                                                                    disabled={isSmtpLoading || editingSmtpId === c.id}
                                                                 >
-                                                                    Activate
+                                                                    Edit
                                                                 </Button>
+                                                                {/* Delete Button */}
                                                                 <Button
                                                                     variant="destructive"
                                                                     onClick={() => deleteSmtpConfig(c.id)}
-                                                                    disabled={isSmtpLoading || c.isActive}
+                                                                    disabled={isSmtpLoading}
                                                                 >
                                                                     Delete
                                                                 </Button>
@@ -773,8 +918,17 @@ export default function SettingsPage() {
                                     </div>
 
                                     <div className="space-y-3">
-                                        <div className="font-semibold">Add SMTP</div>
-                                        <form onSubmit={createSmtpConfig} className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <div className="font-semibold">
+                                                {editingSmtpId ? 'Edit SMTP Config' : 'Add SMTP'}
+                                            </div>
+                                            {editingSmtpId && (
+                                                <Button variant="ghost" size="sm" onClick={cancelEditSmtp}>
+                                                    Cancel Edit
+                                                </Button>
+                                            )}
+                                        </div>
+                                        <form onSubmit={editingSmtpId ? updateSmtpConfig : createSmtpConfig} className="space-y-4">
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div className="space-y-2">
                                                     <Label htmlFor="smtpName">Name</Label>
@@ -917,8 +1071,11 @@ export default function SettingsPage() {
                                                         type="password"
                                                         value={smtpForm.password}
                                                         onChange={(e) => setSmtpForm({ ...smtpForm, password: e.target.value })}
-                                                        required
+                                                        required={!editingSmtpId}
                                                     />
+                                                    {editingSmtpId && (
+                                                        <p className="text-xs text-muted-foreground">Leave empty to keep existing password</p>
+                                                    )}
                                                 </div>
                                             </div>
 
@@ -951,7 +1108,7 @@ export default function SettingsPage() {
 
                                             <Button type="submit" disabled={isSmtpLoading}>
                                                 {isSmtpLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                                Save SMTP
+                                                {editingSmtpId ? 'Update SMTP' : 'Save SMTP'}
                                             </Button>
                                         </form>
                                     </div>

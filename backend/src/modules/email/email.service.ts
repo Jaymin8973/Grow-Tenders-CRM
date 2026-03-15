@@ -638,6 +638,24 @@ export class EmailService {
         return { success: true };
     }
 
+    async deactivateSmtpConfig(id: string) {
+        const existing = await (this.prisma as any).smtpConfig.findUnique({ where: { id } });
+        if (!existing) throw new NotFoundException('SMTP config not found');
+
+        await (this.prisma as any).smtpConfig.update({
+            where: { id },
+            data: { isActive: false },
+        });
+
+        // Bust cache
+        this.cachedTransporter = null;
+        this.cachedTransporterKey = null;
+        this.cachedFromEmail = null;
+        this.cachedTransportersById.clear();
+
+        return { success: true };
+    }
+
     async testSmtpConfig(id: string, options?: { to?: string }) {
         const existing = await (this.prisma as any).smtpConfig.findUnique({ where: { id } });
         if (!existing) throw new NotFoundException('SMTP config not found');

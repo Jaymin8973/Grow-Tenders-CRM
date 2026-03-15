@@ -138,9 +138,17 @@ export class EmailController {
     @Post('smtp-configs/:id/activate')
     @Roles('SUPER_ADMIN')
     @UseGuards(RolesGuard)
-    @ApiOperation({ summary: 'Activate SMTP configuration (only one active at a time)' })
+    @ApiOperation({ summary: 'Activate SMTP configuration' })
     activateSmtpConfig(@Param('id') id: string) {
         return this.emailService.activateSmtpConfig(id);
+    }
+
+    @Post('smtp-configs/:id/deactivate')
+    @Roles('SUPER_ADMIN')
+    @UseGuards(RolesGuard)
+    @ApiOperation({ summary: 'Deactivate SMTP configuration' })
+    deactivateSmtpConfig(@Param('id') id: string) {
+        return this.emailService.deactivateSmtpConfig(id);
     }
 
     @Post('smtp-configs/:id/test')
