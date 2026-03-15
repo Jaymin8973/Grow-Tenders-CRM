@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
 import { getErrorMessage } from '@/lib/error-utils';
+import { validateForm, getFirstError } from '@/lib/form-validation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -139,6 +140,34 @@ export default function NewPaymentPage() {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Validate form with specific error messages
+        const errors = validateForm(formData, {
+            customerId: { fieldName: 'Customer', rules: { required: true } },
+            amount: { 
+                fieldName: 'Amount', 
+                rules: { 
+                    required: true,
+                    custom: (value: any) => {
+                        const num = parseFloat(value);
+                        if (isNaN(num) || num <= 0) return 'Amount must be greater than zero';
+                        return null;
+                    }
+                } 
+            },
+            paymentDate: { fieldName: 'Payment Date', rules: { required: true } },
+            paymentMethod: { fieldName: 'Payment Method', rules: { required: true } },
+        });
+
+        const firstError = getFirstError(errors);
+        if (firstError) {
+            toast({ 
+                title: 'Validation Error', 
+                description: firstError,
+                variant: 'destructive' 
+            });
+            return;
+        }
 
         const selectedCustomer = customers?.find((c: any) => c.id === formData.customerId);
 

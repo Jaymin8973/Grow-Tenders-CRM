@@ -5,6 +5,7 @@ import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
 import { getErrorMessage } from '@/lib/error-utils';
 import { useToast } from '@/hooks/use-toast';
+import { validateForm, getFirstError } from '@/lib/form-validation';
 import {
     Dialog,
     DialogContent,
@@ -123,8 +124,26 @@ export function EditUserDialog({ user: userData, open, onOpenChange }: EditUserD
     };
 
     const handleSubmit = () => {
-        if (!formData.email || !formData.firstName || !formData.lastName) {
-            toast({ title: 'Please fill in all required fields', variant: 'destructive' });
+        // Validate form with specific error messages
+        const errors = validateForm(formData, {
+            firstName: { fieldName: 'First Name', rules: { required: true, minLength: 2 } },
+            lastName: { fieldName: 'Last Name', rules: { required: true, minLength: 2 } },
+            email: { 
+                fieldName: 'Email', 
+                rules: { 
+                    required: true, 
+                    pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ 
+                } 
+            },
+        });
+
+        const firstError = getFirstError(errors);
+        if (firstError) {
+            toast({ 
+                title: 'Validation Error', 
+                description: firstError,
+                variant: 'destructive' 
+            });
             return;
         }
         updateUserMutation.mutate(formData);

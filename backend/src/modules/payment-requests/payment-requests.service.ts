@@ -22,6 +22,17 @@ export class PaymentRequestsService {
             throw new BadRequestException('Payment screenshot is required');
         }
 
+        // Lead is required - payment request cannot be created without a lead
+        if (!data.leadId) {
+            throw new BadRequestException('Lead is required to create a payment request');
+        }
+
+        // Verify lead exists
+        const lead = await this.prisma.lead.findUnique({ where: { id: data.leadId } });
+        if (!lead) {
+            throw new NotFoundException('Lead not found');
+        }
+
         // Ensure upload directory exists
         const uploadDir = path.join(process.cwd(), 'uploads/payment_requests');
         if (!fs.existsSync(uploadDir)) {

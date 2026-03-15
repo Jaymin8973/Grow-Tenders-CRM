@@ -131,6 +131,30 @@ export function CreateInvoiceDialog({
 
     const isFormValid = selectedLeadId && lineItems.every(item => item.description && item.quantity > 0 && item.unitPrice > 0);
 
+    const handleSubmit = () => {
+        // Validate form with specific error messages
+        if (!selectedLeadId) {
+            toast({ 
+                title: 'Validation Error', 
+                description: 'Please select a lead',
+                variant: 'destructive' 
+            });
+            return;
+        }
+
+        const invalidItems = lineItems.filter(item => !item.description || item.quantity <= 0 || item.unitPrice <= 0);
+        if (invalidItems.length > 0) {
+            toast({ 
+                title: 'Validation Error', 
+                description: 'All line items must have description, quantity, and price',
+                variant: 'destructive' 
+            });
+            return;
+        }
+
+        submitMutation.mutate();
+    };
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
@@ -298,7 +322,7 @@ export function CreateInvoiceDialog({
                         Cancel
                     </Button>
                     <Button
-                        onClick={() => submitMutation.mutate()}
+                        onClick={handleSubmit}
                         disabled={!isFormValid || submitMutation.isPending || leads.length === 0}
                         className="gap-2"
                     >

@@ -13,6 +13,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { getInitials } from '@/lib/utils';
+import { validateForm, getFirstError } from '@/lib/form-validation';
 import { User, Lock, Bell, Loader2, Shield, Mail, ChevronsUpDown } from 'lucide-react';
 import apiClient from '@/lib/api-client';
 
@@ -176,6 +177,43 @@ export default function SettingsPage() {
 
     const createSmtpConfig = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Validate form with specific error messages
+        const errors = validateForm(smtpForm, {
+            name: { fieldName: 'Name', rules: { required: true, minLength: 2 } },
+            host: { fieldName: 'Host', rules: { required: true } },
+            port: { 
+                fieldName: 'Port', 
+                rules: { 
+                    required: true,
+                    custom: (value: any) => {
+                        const num = parseInt(value);
+                        if (isNaN(num) || num < 1 || num > 65535) return 'Port must be between 1 and 65535';
+                        return null;
+                    }
+                } 
+            },
+            username: { fieldName: 'Username', rules: { required: true } },
+            password: { fieldName: 'Password', rules: { required: true, minLength: 4 } },
+            fromEmail: { 
+                fieldName: 'From Email', 
+                rules: { 
+                    required: true, 
+                    pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ 
+                } 
+            },
+        });
+
+        const firstError = getFirstError(errors);
+        if (firstError) {
+            toast({ 
+                title: 'Validation Error', 
+                description: firstError,
+                variant: 'destructive' 
+            });
+            return;
+        }
+
         setIsSmtpLoading(true);
         try {
             await apiClient.post('/email/smtp-configs', {
