@@ -4,6 +4,7 @@ import {
     Post,
     Body,
     Patch,
+    Delete,
     Param,
     UseGuards,
     Query,
@@ -133,5 +134,13 @@ export class UsersController {
     @ApiOperation({ summary: 'Activate user' })
     activate(@Param('id') id: string) {
         return this.usersService.activate(id);
+    }
+
+    @Delete(':id')
+    @Roles(Role.SUPER_ADMIN)
+    @ApiOperation({ summary: 'Delete user' })
+    @ApiResponse({ status: 200, description: 'User deleted successfully' })
+    remove(@Param('id') id: string) {
+        return this.usersService.remove(id);
     }
 }

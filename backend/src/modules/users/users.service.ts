@@ -332,6 +332,41 @@ export class UsersService {
         });
     }
 
+    async remove(id: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { id },
+            select: {
+                id: true,
+                role: true,
+            },
+        });
+
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
+        if (user.role === Role.SUPER_ADMIN) {
+            throw new BadRequestException('Cannot delete super admin');
+        }
+
+        // If deleting a manager, detach employees first.
+        await this.prisma.user.updateMany({
+            where: { managerId: id },
+            data: { managerId: null },
+        });
+
+        // Soft-delete: deactivate + revoke sessions.
+        await this.prisma.user.update({
+            where: { id },
+            data: {
+                isActive: false,
+                refreshToken: null,
+            },
+        });
+
+        return { message: 'User deleted successfully' };
+    }
+
     async getTeamMembers(managerId: string, requesterRole?: string) {
         const users = await this.prisma.user.findMany({
             where: { managerId },
